@@ -90,7 +90,7 @@ export const ExamResultPage: React.FC = () => {
         className="animate-slide-up"
         style={{
           background: isPassed ? 'var(--success)' : 'var(--error)',
-          borderRadius: '24px',
+          borderRadius: 'var(--border-radius-xl)',
           padding: '36px 40px',
           color: '#FFFFFF',
           boxShadow: 'var(--shadow-lg)',

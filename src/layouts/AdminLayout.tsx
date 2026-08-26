@@ -5,6 +5,7 @@ import {
   FileQuestion,
   Users,
   BookOpen,
+  Library,
   Send,
   BarChart3,
   LogOut,
@@ -24,6 +25,7 @@ export const AdminLayout: React.FC = () => {
     { label: 'Quản lý Đề thi', path: '/admin/exams', icon: <FileQuestion size={20} /> },
     { label: 'Giao bài thi', path: '/admin/assignments', icon: <Send size={20} /> },
     { label: 'Quản lý Môn học', path: '/admin/subjects', icon: <BookOpen size={20} /> },
+    { label: 'Quản lý Tài liệu', path: '/admin/materials', icon: <Library size={20} /> },
     { label: 'Quản lý Người dùng', path: '/admin/users', icon: <Users size={20} /> },
     { label: 'Báo cáo & Kết quả', path: '/admin/results', icon: <BarChart3 size={20} /> },
   ];
@@ -45,8 +47,8 @@ export const AdminLayout: React.FC = () => {
 
       {/* Sidebar */}
       <aside
+        className={`app-sidebar ${sidebarOpen ? 'app-sidebar-open' : ''}`}
         style={{
-          width: '270px',
           backgroundColor: 'var(--bg-sidebar)',
           color: '#FFFFFF',
           display: 'flex',
@@ -70,19 +72,8 @@ export const AdminLayout: React.FC = () => {
             borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
           }}
         >
-          <div
-            style={{
-              width: '42px',
-              height: '42px',
-              borderRadius: '12px',
-              background: 'var(--secondary-gradient)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              boxShadow: 'var(--shadow-secondary)',
-            }}
-          >
-            <ShieldCheck size={24} color="#FFFFFF" />
+          <div className="sidebar-brand-icon sidebar-brand-icon--admin" aria-hidden="true">
+            <ShieldCheck size={22} color="#FFFFFF" />
           </div>
           <div>
             <h2 style={{ fontSize: '1.125rem', fontWeight: 800, lineHeight: 1.2 }}>CourseManagement</h2>
@@ -190,8 +181,9 @@ export const AdminLayout: React.FC = () => {
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
             <button
               onClick={() => setSidebarOpen(!sidebarOpen)}
+              aria-label={sidebarOpen ? 'Đóng menu' : 'Mở menu'}
+              aria-expanded={sidebarOpen}
               style={{
-                display: 'none',
                 color: 'var(--text-primary)',
                 padding: '6px',
               }}

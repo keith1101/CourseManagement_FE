@@ -23,6 +23,7 @@ import { ExamsManagementPage } from './pages/admin/ExamsManagementPage';
 import { QuestionEditorPage } from './pages/admin/QuestionEditorPage';
 import { AssignmentsPage } from './pages/admin/AssignmentsPage';
 import { SubjectsManagementPage } from './pages/admin/SubjectsManagementPage';
+import { MaterialsManagementPage } from './pages/admin/MaterialsManagementPage';
 import { UsersManagementPage } from './pages/admin/UsersManagementPage';
 import { AdminResultsPage } from './pages/admin/AdminResultsPage';
 
@@ -133,6 +134,7 @@ export const App: React.FC = () => {
               <Route path="exams" element={<ExamsManagementPage />} />
               <Route path="assignments" element={<AssignmentsPage />} />
               <Route path="subjects" element={<SubjectsManagementPage />} />
+              <Route path="materials" element={<MaterialsManagementPage />} />
               <Route path="users" element={<UsersManagementPage />} />
               <Route path="results" element={<AdminResultsPage />} />
             </Route>

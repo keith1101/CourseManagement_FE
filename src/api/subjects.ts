@@ -7,7 +7,6 @@ const toPayload = (data: Partial<Subject>) => ({
   name: data.name,
   description: data.description,
   displayOrder: data.order,
-  isActive: data.isActive,
 });
 
 export const subjectsApi = {

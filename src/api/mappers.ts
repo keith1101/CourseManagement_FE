@@ -50,6 +50,7 @@ export const mapQuestion = (raw: any): Question => {
   return {
     id: raw.id,
     examId: raw.examId,
+    subjectId: raw.subjectId || '',
     title: raw.title,
     content: raw.contentText ?? raw.content ?? '',
     type: type === 'SHORT_ANSWER' ? 'FILL_BLANK' : type === 'ESSAY' ? 'ESSAY' : type || 'SINGLE_CHOICE',
@@ -69,8 +70,6 @@ export const mapExam = (raw: any): Exam => ({
   id: raw.id,
   title: raw.title || '',
   description: raw.description || undefined,
-  subjectId: raw.subjectId || '',
-  subject: raw.subject ? mapSubject(raw.subject) : undefined,
   accessLevel: raw.accessLevel || 'FREE',
   displayOrder: raw.displayOrder,
   durationMinutes: raw.durationMinutes ?? 0,

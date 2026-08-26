@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Image as ImageIcon, ChevronDown, ChevronUp, Lightbulb, FileText, Trash } from 'lucide-react';
 import { Question, AnswerOption } from '../../types';
 import { AnswerOptionCard } from './AnswerOptionCard';
+import { subjectsApi } from '../../api/subjects';
 
 interface QuestionCanvasProps {
   question: Question;
@@ -12,6 +13,11 @@ export const QuestionCanvas: React.FC<QuestionCanvasProps> = ({ question, onChan
   const [showHint, setShowHint] = useState(!!question.hint);
   const [showExplanation, setShowExplanation] = useState(!!question.explanation);
   const [showImageInput, setShowImageInput] = useState(!!question.image);
+  const [subjects, setSubjects] = useState<{ id: string; code: string; name: string }[]>([]);
+
+  useEffect(() => {
+    void subjectsApi.getSubjects().then(setSubjects).catch(() => undefined);
+  }, []);
 
   const isChoiceType = question.type === 'SINGLE_CHOICE' || question.type === 'MULTIPLE_CHOICE';
 
@@ -45,6 +51,32 @@ export const QuestionCanvas: React.FC<QuestionCanvasProps> = ({ question, onChan
         width: '100%',
       }}
     >
+      <div
+        style={{
+          backgroundColor: '#FFFFFF',
+          borderRadius: 'var(--border-radius-lg)',
+          border: '1px solid var(--border-color)',
+          padding: '16px 24px',
+          boxShadow: 'var(--shadow-sm)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '12px',
+        }}
+      >
+        <label htmlFor="question-subject" style={{ fontWeight: 700 }}>Môn học của câu hỏi</label>
+        <select
+          id="question-subject"
+          className="input-field"
+          value={question.subjectId}
+          onChange={(event) => onChange({ ...question, subjectId: event.target.value })}
+        >
+          <option value="">Chọn môn học</option>
+          {subjects.map((subject) => (
+            <option key={subject.id} value={subject.id}>{subject.code} - {subject.name}</option>
+          ))}
+        </select>
+      </div>
+
       {/* 1. Question Title & Content Box */}
       <div
         style={{

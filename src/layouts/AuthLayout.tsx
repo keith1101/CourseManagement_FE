@@ -55,7 +55,7 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({ children, title, subtitl
           width: '100%',
           maxWidth: '460px',
           backgroundColor: '#FFFFFF',
-          borderRadius: '24px',
+          borderRadius: 'var(--border-radius-xl)',
           padding: '40px 36px',
           boxShadow: 'var(--login-card-shadow)',
           position: 'relative',

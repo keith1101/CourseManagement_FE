@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Plus, Edit2, Trash2, BookOpen, Search } from 'lucide-react';
+import { Plus, Edit2, Trash2, BookOpen, Library, Search } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '../../components/common/Button';
 import { Input } from '../../components/common/Input';
 import { Badge } from '../../components/common/Badge';
@@ -8,8 +9,10 @@ import { LoadingSpinner } from '../../components/common/LoadingSpinner';
 import { subjectsApi } from '../../api/subjects';
 import { Subject } from '../../types';
 import { useToast } from '../../contexts/ToastContext';
+import { getApiErrorMessage } from '../../api/errors';
 
 export const SubjectsManagementPage: React.FC = () => {
+  const navigate = useNavigate();
   const { success, error } = useToast();
 
   const [subjects, setSubjects] = useState<Subject[]>([]);
@@ -81,14 +84,13 @@ export const SubjectsManagementPage: React.FC = () => {
           code,
           description,
           order,
-          isActive: true,
         });
         setSubjects((prev) => [...prev, created]);
         success('Thêm môn học mới thành công!');
       }
       setIsModalOpen(false);
     } catch (err: any) {
-      error('Không thể lưu môn học. Vui lòng thử lại!');
+      error(getApiErrorMessage(err, 'Không thể lưu môn học. Vui lòng thử lại!'));
     } finally {
       setIsSaving(false);
     }
@@ -193,6 +195,18 @@ export const SubjectsManagementPage: React.FC = () => {
                   </td>
                   <td>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <button
+                        onClick={() => navigate(`/admin/materials?subjectId=${sub.id}`)}
+                        title="Quản lý tài liệu"
+                        style={{
+                          padding: '6px',
+                          borderRadius: '6px',
+                          color: 'var(--primary)',
+                          border: '1px solid var(--border-color)',
+                        }}
+                      >
+                        <Library size={16} />
+                      </button>
                       <button
                         onClick={() => handleOpenEditModal(sub)}
                         style={{

@@ -63,6 +63,7 @@ export interface AnswerOption {
 export interface Question {
   id: string;
   examId: string;
+  subjectId: string;
   title?: string;
   content: string;
   type: QuestionType;
@@ -84,7 +85,8 @@ export interface Exam {
   id: string;
   title: string;
   description?: string;
-  subjectId: string;
+  /** Deprecated: exams are not assigned to a Subject. Subjects belong to Questions. */
+  subjectId?: string;
   subject?: Subject;
   accessLevel: AccessLevel;
   displayOrder?: number;

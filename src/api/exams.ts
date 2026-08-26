@@ -9,7 +9,7 @@ const toPayload = (data: Partial<Exam>) => ({
 });
 
 export const examsApi = {
-  getExams: async (params?: { subjectId?: string; status?: ExamStatus; search?: string }): Promise<Exam[]> => {
+  getExams: async (params?: { status?: ExamStatus; search?: string }): Promise<Exam[]> => {
     const res = await apiClient.get<any[]>('/exams', { params });
     return res.data.map(mapExam);
   },

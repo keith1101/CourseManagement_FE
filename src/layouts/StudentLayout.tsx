@@ -44,8 +44,8 @@ export const StudentLayout: React.FC = () => {
 
       {/* Sidebar Navigation */}
       <aside
+        className={`app-sidebar ${sidebarOpen ? 'app-sidebar-open' : ''}`}
         style={{
-          width: '260px',
           backgroundColor: 'var(--bg-sidebar)',
           color: '#FFFFFF',
           display: 'flex',
@@ -69,17 +69,7 @@ export const StudentLayout: React.FC = () => {
             borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
           }}
         >
-          <div
-            style={{
-              width: '40px',
-              height: '40px',
-              borderRadius: '12px',
-              backgroundColor: 'rgba(255, 255, 255, 0.2)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
+          <div className="sidebar-brand-icon sidebar-brand-icon--student" aria-hidden="true">
             <BookOpen size={22} color="#FFFFFF" />
           </div>
           <div>
@@ -189,8 +179,9 @@ export const StudentLayout: React.FC = () => {
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
             <button
               onClick={() => setSidebarOpen(!sidebarOpen)}
+              aria-label={sidebarOpen ? 'Đóng menu' : 'Mở menu'}
+              aria-expanded={sidebarOpen}
               style={{
-                display: 'none',
                 color: 'var(--text-primary)',
                 padding: '6px',
               }}

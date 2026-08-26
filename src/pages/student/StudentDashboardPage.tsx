@@ -74,7 +74,7 @@ export const StudentDashboardPage: React.FC = () => {
         className="animate-slide-up"
         style={{
           background: 'var(--primary-gradient)',
-          borderRadius: '24px',
+          borderRadius: 'var(--border-radius-xl)',
           padding: '32px 36px',
           color: '#FFFFFF',
           display: 'flex',

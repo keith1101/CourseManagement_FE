@@ -3,6 +3,7 @@ import { Question } from '../types';
 import { mapQuestion } from './mappers';
 
 const toPayload = (data: Partial<Question>) => ({
+  subjectId: data.subjectId,
   questionType: data.type === 'FILL_BLANK' || data.type === 'ESSAY' ? 'SHORT_ANSWER' : 'MULTIPLE_CHOICE',
   contentText: data.content,
   imageUrl: data.image || undefined,

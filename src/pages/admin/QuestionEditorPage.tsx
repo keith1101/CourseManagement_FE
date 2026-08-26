@@ -6,7 +6,8 @@ import { QuestionCanvas } from '../../components/editor/QuestionCanvas';
 import { LoadingSpinner } from '../../components/common/LoadingSpinner';
 import { examsApi } from '../../api/exams';
 import { questionsApi } from '../../api/questions';
-import { AnswerOption, Exam, Question } from '../../types';
+import { subjectsApi } from '../../api/subjects';
+import { AnswerOption, Exam, Question, Subject } from '../../types';
 import { useToast } from '../../contexts/ToastContext';
 import { getApiErrorMessage } from '../../api/errors';
 
@@ -15,13 +16,14 @@ const defaultOptions = (): AnswerOption[] => [
   { label: 'C', content: '', isCorrect: false }, { label: 'D', content: '', isCorrect: false },
 ];
 
-const emptyQuestion = (examId: string, order: number): Question => ({ id: `temp-${Date.now()}-${order}`, examId, content: '', type: 'SINGLE_CHOICE', points: 1, timeLimit: 30, options: defaultOptions(), hint: '', explanation: '', instruction: '', order });
+const emptyQuestion = (examId: string, order: number, subjectId = ''): Question => ({ id: `temp-${Date.now()}-${order}`, examId, subjectId, content: '', type: 'SINGLE_CHOICE', points: 1, timeLimit: 30, options: defaultOptions(), hint: '', explanation: '', instruction: '', order });
 
 export const QuestionEditorPage: React.FC = () => {
   const { examId } = useParams<{ examId: string }>();
   const navigate = useNavigate();
   const { success, error, warning } = useToast();
   const [exam, setExam] = useState<Exam | null>(null);
+  const [subjects, setSubjects] = useState<Subject[]>([]);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [activeQuestion, setActiveQuestion] = useState<Question | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -32,9 +34,10 @@ export const QuestionEditorPage: React.FC = () => {
     if (!examId) return;
     setIsLoading(true);
     try {
-      const [examData, questionData] = await Promise.all([examsApi.getExamById(examId), questionsApi.getQuestionsByExam(examId)]);
+      const [examData, questionData, subjectData] = await Promise.all([examsApi.getExamById(examId), questionsApi.getQuestionsByExam(examId), subjectsApi.getSubjects()]);
       setExam(examData);
-      const list = questionData.length ? questionData : [emptyQuestion(examId, 0)];
+      setSubjects(subjectData);
+      const list = questionData.length ? questionData : [emptyQuestion(examId, 0, subjectData[0]?.id || '')];
       setQuestions(list);
       setActiveQuestion(list[0]);
     } catch (err) { error(getApiErrorMessage(err, 'Không thể tải đề thi.')); }
@@ -52,7 +55,7 @@ export const QuestionEditorPage: React.FC = () => {
     setActiveQuestion(updated); setQuestions((previous) => previous.map((question) => question.id === updated.id ? updated : question)); setIsDirty(true);
   };
 
-  const handleAdd = () => { if (!examId) return; const question = emptyQuestion(examId, questions.length); setQuestions((previous) => [...previous, question]); setActiveQuestion(question); setIsDirty(true); };
+  const handleAdd = () => { if (!examId) return; const question = emptyQuestion(examId, questions.length, subjects[0]?.id || ''); setQuestions((previous) => [...previous, question]); setActiveQuestion(question); setIsDirty(true); };
   const handleDuplicate = (question: Question) => { const duplicate = { ...question, id: `temp-${Date.now()}`, content: `${question.content} (Bản sao)`, order: questions.length }; setQuestions((previous) => [...previous, duplicate]); setActiveQuestion(duplicate); setIsDirty(true); };
 
   const handleDelete = async (id: string) => {
@@ -72,6 +75,7 @@ export const QuestionEditorPage: React.FC = () => {
 
   const handleSave = async () => {
     if (!activeQuestion || !examId) return;
+    if (!activeQuestion.subjectId) return error('Vui long chon mon hoc cho cau hoi.');
     if (!activeQuestion.content.trim()) return error('Vui lòng nhập nội dung câu hỏi.');
     if ((activeQuestion.type === 'SINGLE_CHOICE' || activeQuestion.type === 'MULTIPLE_CHOICE') && !activeQuestion.options.some((option) => option.isCorrect)) return warning('Vui lòng chọn ít nhất một đáp án đúng.');
     setIsSaving(true);

@@ -131,8 +131,8 @@ export const UsersManagementPage: React.FC = () => {
       </div>
 
       {/* Users Table */}
-      <div className="table-container">
-        <table className="data-table">
+      <div className="table-container users-table-container">
+        <table className="data-table users-table">
           <thead>
             <tr>
               <th>Họ Và Tên</th>

@@ -7,9 +7,11 @@ import { LoadingSpinner } from '../../components/common/LoadingSpinner';
 import { usersApi } from '../../api/users';
 import { User, UserRole, UserStatus, UserTier } from '../../types';
 import { useToast } from '../../contexts/ToastContext';
+import { useAuth } from '../../contexts/AuthContext';
 
 export const UsersManagementPage: React.FC = () => {
   const { success, error } = useToast();
+  const { user: currentUser } = useAuth();
 
   const [users, setUsers] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -38,6 +40,11 @@ export const UsersManagementPage: React.FC = () => {
   }, [fetchUsers]);
 
   const handleToggleLock = async (u: User) => {
+    if (u.id === currentUser?.id && u.status === 'ACTIVE') {
+      error('Bạn không thể khóa tài khoản đang đăng nhập.');
+      return;
+    }
+
     const nextStatus: UserStatus = u.status === 'ACTIVE' ? 'LOCKED' : 'ACTIVE';
     try {
       await usersApi.toggleStatus(u.id, nextStatus);
@@ -51,6 +58,11 @@ export const UsersManagementPage: React.FC = () => {
   };
 
   const handleOpenEditUser = (u: User) => {
+    if (u.id === currentUser?.id) {
+      error('Bạn không thể tự phân quyền cho tài khoản đang đăng nhập.');
+      return;
+    }
+
     setSelectedUser(u);
     setTargetRole(u.role);
     setTargetTier(u.tier || 'FREE');
@@ -198,17 +210,33 @@ export const UsersManagementPage: React.FC = () => {
                   </td>
                   <td>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <Button size="sm" variant="outline" onClick={() => handleOpenEditUser(u)}>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleOpenEditUser(u)}
+                        disabled={u.id === currentUser?.id}
+                        title={u.id === currentUser?.id ? 'Không thể tự phân quyền' : 'Phân quyền tài khoản'}
+                        style={{
+                          opacity: u.id === currentUser?.id ? 0.55 : 1,
+                          cursor: u.id === currentUser?.id ? 'not-allowed' : 'pointer',
+                        }}
+                      >
                         Phân quyền
                       </Button>
                       <button
+                        type="button"
                         onClick={() => handleToggleLock(u)}
-                        title={u.status === 'ACTIVE' ? 'Khóa tài khoản' : 'Mở khóa tài khoản'}
+                        disabled={u.id === currentUser?.id && u.status === 'ACTIVE'}
+                        title={u.id === currentUser?.id && u.status === 'ACTIVE'
+                          ? 'Không thể tự khóa tài khoản đang đăng nhập'
+                          : u.status === 'ACTIVE' ? 'Khóa tài khoản' : 'Mở khóa tài khoản'}
                         style={{
                           padding: '6px',
                           borderRadius: '6px',
                           color: u.status === 'ACTIVE' ? 'var(--error)' : 'var(--success)',
                           border: '1px solid var(--border-color)',
+                          opacity: u.id === currentUser?.id && u.status === 'ACTIVE' ? 0.45 : 1,
+                          cursor: u.id === currentUser?.id && u.status === 'ACTIVE' ? 'not-allowed' : 'pointer',
                         }}
                       >
                         {u.status === 'ACTIVE' ? <Lock size={16} /> : <Unlock size={16} />}

@@ -49,6 +49,7 @@ export const ExamTakingPage: React.FC = () => {
   const [now, setNow] = useState(Date.now());
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submittingAction, setSubmittingAction] = useState<'question' | 'exam' | null>(null);
   const [showSubmitModal, setShowSubmitModal] = useState(false);
   const [showUpgrade, setShowUpgrade] = useState(false);
 
@@ -169,11 +170,38 @@ export const ExamTakingPage: React.FC = () => {
     return () => window.clearTimeout(timer);
   }, [answers, attempt?.id, currentFeedback, currentQuestion, persistAnswer]);
 
+  const handleSubmitQuestion = async () => {
+    if (!attempt?.id || !currentQuestion) return;
+    if (currentFeedback) {
+      setShowSubmitModal(false);
+      return warning(`Câu ${currentIndex + 1} đã được nộp.`);
+    }
+
+    const value = answers[currentQuestion.id]?.trim();
+    if (!value) return error('Vui lòng trả lời câu hỏi hiện tại trước khi nộp.');
+
+    setIsSubmitting(true);
+    setSubmittingAction('question');
+    try {
+      await persistAnswer(currentQuestion, value);
+      setShowSubmitModal(false);
+      success(`Đã nộp câu ${currentIndex + 1}.`);
+    } catch (err) {
+      error(getApiErrorMessage(err, 'Không thể nộp câu hỏi.'));
+    } finally {
+      setIsSubmitting(false);
+      setSubmittingAction(null);
+    }
+  };
+
   const handleSubmitExam = async () => {
     if (!attempt?.id) return;
     setIsSubmitting(true);
+    setSubmittingAction('exam');
     try {
-      if (currentQuestion && !currentFeedback && answers[currentQuestion.id] && currentQuestion.type !== 'SINGLE_CHOICE' && currentQuestion.type !== 'MULTIPLE_CHOICE') await persistAnswer(currentQuestion, answers[currentQuestion.id]);
+      if (currentQuestion && !currentFeedback && answers[currentQuestion.id]) {
+        await persistAnswer(currentQuestion, answers[currentQuestion.id]);
+      }
       await attemptsApi.submitAttempt(attempt.id);
       success('Nộp bài thi thành công!');
       navigate(`/student/attempts/${attempt.id}/result`);
@@ -181,6 +209,7 @@ export const ExamTakingPage: React.FC = () => {
       error(getApiErrorMessage(err, 'Không thể nộp bài.'));
     } finally {
       setIsSubmitting(false);
+      setSubmittingAction(null);
       setShowSubmitModal(false);
     }
   };
@@ -201,16 +230,16 @@ export const ExamTakingPage: React.FC = () => {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', maxWidth: '1280px', margin: '0 auto', paddingBottom: '40px' }}>
       <ExamProgress sections={sections} activeSectionIndex={0} />
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px', backgroundColor: '#FFFFFF', padding: '16px 24px', borderRadius: 'var(--border-radius-lg)', border: '1px solid var(--border-color)', boxShadow: 'var(--shadow-sm)' }}><div><span style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)', fontWeight: 600 }}>{exam?.subject?.name || 'Môn học'}</span><h2 style={{ fontSize: '1.25rem', fontWeight: 800 }}>{exam?.title || 'Bài thi'}</h2></div><CountdownTimer formattedTime={`${String(Math.floor(secondsLeft / 60)).padStart(2, '0')}:${String(secondsLeft % 60).padStart(2, '0')}`} isWarning={secondsLeft > 0 && secondsLeft <= 300} isUrgent={secondsLeft > 0 && secondsLeft <= 60} /></div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 300px', gap: '24px', alignItems: 'start' }}>
+      <div className="exam-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px', backgroundColor: '#FFFFFF', padding: '16px 24px', borderRadius: 'var(--border-radius-lg)', border: '1px solid var(--border-color)', boxShadow: 'var(--shadow-sm)' }}><div><span style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)', fontWeight: 600 }}>{exam?.subject?.name || 'Môn học'}</span><h2 style={{ fontSize: '1.25rem', fontWeight: 800 }}>{exam?.title || 'Bài thi'}</h2></div><CountdownTimer formattedTime={`${String(Math.floor(secondsLeft / 60)).padStart(2, '0')}:${String(secondsLeft % 60).padStart(2, '0')}`} isWarning={secondsLeft > 0 && secondsLeft <= 300} isUrgent={secondsLeft > 0 && secondsLeft <= 60} /></div>
+      <div className="exam-layout" style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 300px', gap: '24px', alignItems: 'start' }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           <QuestionCard question={currentQuestion} currentIndex={currentIndex} totalQuestions={questions.length} selectedOptionId={answers[currentQuestion.id]} textAnswer={answers[currentQuestion.id] || ''} feedback={currentFeedback} disabled={secondsLeft === 0 && !currentFeedback} isFlagged={!!flaggedQuestions[currentIndex]} onSelectOption={handleSelectOption} onTextAnswerChange={handleTextAnswerChange} onToggleFlag={() => setFlaggedQuestions((previous) => ({ ...previous, [currentIndex]: !previous[currentIndex] }))} />
           {currentFeedback && <div style={{ display: 'flex', justifyContent: 'flex-end' }}><Button variant="primary" disabled={currentIndex === questions.length - 1} onClick={handleNextQuestion} rightIcon={<ChevronRight size={18} />}>Tiếp tục</Button></div>}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#FFFFFF', padding: '16px 24px', borderRadius: 'var(--border-radius-lg)', border: '1px solid var(--border-color)', boxShadow: 'var(--shadow-sm)' }}><Button variant="outline" disabled={currentIndex === 0} onClick={() => setCurrentIndex((index) => Math.max(0, index - 1))} leftIcon={<ChevronLeft size={18} />}>Câu trước</Button><Button variant="secondary" onClick={() => setShowSubmitModal(true)} leftIcon={<Send size={16} />}>Nộp bài</Button><Button variant="primary" disabled={currentIndex === questions.length - 1 || ((currentQuestion.type === 'SINGLE_CHOICE' || currentQuestion.type === 'MULTIPLE_CHOICE') && !currentFeedback)} onClick={handleNextQuestion} rightIcon={<ChevronRight size={18} />}>Câu sau</Button></div>
+          <div className="exam-navigation" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#FFFFFF', padding: '16px 24px', borderRadius: 'var(--border-radius-lg)', border: '1px solid var(--border-color)', boxShadow: 'var(--shadow-sm)' }}><Button variant="outline" disabled={currentIndex === 0} onClick={() => setCurrentIndex((index) => Math.max(0, index - 1))} leftIcon={<ChevronLeft size={18} />}>Câu trước</Button><Button variant="secondary" onClick={() => setShowSubmitModal(true)} leftIcon={<Send size={16} />}>Nộp bài</Button><Button variant="primary" disabled={currentIndex === questions.length - 1 || ((currentQuestion.type === 'SINGLE_CHOICE' || currentQuestion.type === 'MULTIPLE_CHOICE') && !currentFeedback)} onClick={handleNextQuestion} rightIcon={<ChevronRight size={18} />}>Câu sau</Button></div>
         </div>
-        <div style={{ position: 'sticky', top: '88px' }}><QuestionPalette totalQuestions={questions.length} currentIndex={currentIndex} answers={answers} flaggedQuestions={flaggedQuestions} questionIds={questionIds} onSelectIndex={(index) => setCurrentIndex(index)} /></div>
+        <div className="exam-palette" style={{ position: 'sticky', top: '88px' }}><QuestionPalette totalQuestions={questions.length} currentIndex={currentIndex} answers={answers} flaggedQuestions={flaggedQuestions} questionIds={questionIds} onSelectIndex={(index) => setCurrentIndex(index)} /></div>
       </div>
-      <SubmitConfirmModal isOpen={showSubmitModal} totalQuestions={questions.length} answeredCount={answeredCount} isSubmitting={isSubmitting} onConfirm={handleSubmitExam} onClose={() => setShowSubmitModal(false)} />
+      <SubmitConfirmModal isOpen={showSubmitModal} totalQuestions={questions.length} answeredCount={answeredCount} isSubmitting={isSubmitting} submittingAction={submittingAction} onSubmitQuestion={handleSubmitQuestion} onSubmitExam={handleSubmitExam} onClose={() => setShowSubmitModal(false)} />
       <UpgradeModal isOpen={showUpgrade} onClose={() => setShowUpgrade(false)} />
     </div>
   );

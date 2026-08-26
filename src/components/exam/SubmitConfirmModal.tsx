@@ -8,7 +8,9 @@ interface SubmitConfirmModalProps {
   totalQuestions: number;
   answeredCount: number;
   isSubmitting: boolean;
-  onConfirm: () => void;
+  submittingAction: 'question' | 'exam' | null;
+  onSubmitQuestion: () => void;
+  onSubmitExam: () => void;
   onClose: () => void;
 }
 
@@ -17,7 +19,9 @@ export const SubmitConfirmModal: React.FC<SubmitConfirmModalProps> = ({
   totalQuestions,
   answeredCount,
   isSubmitting,
-  onConfirm,
+  submittingAction,
+  onSubmitQuestion,
+  onSubmitExam,
   onClose,
 }) => {
   const unansweredCount = totalQuestions - answeredCount;
@@ -27,22 +31,32 @@ export const SubmitConfirmModal: React.FC<SubmitConfirmModalProps> = ({
       isOpen={isOpen}
       onClose={onClose}
       title="Xác nhận nộp bài thi"
-      maxWidth="480px"
+      maxWidth="640px"
       footer={
-        <>
+        <div className="submit-confirm-actions">
           <Button variant="outline" onClick={onClose} disabled={isSubmitting}>
             Tiếp tục làm bài
           </Button>
           <Button
+            variant="secondary"
+            onClick={onSubmitQuestion}
+            isLoading={submittingAction === 'question'}
+            disabled={isSubmitting}
+            leftIcon={<CheckCircle2 size={16} />}
+          >
+            Nộp câu hiện tại
+          </Button>
+          <Button
             variant="primary"
-            onClick={onConfirm}
-            isLoading={isSubmitting}
+            onClick={onSubmitExam}
+            isLoading={submittingAction === 'exam'}
+            disabled={isSubmitting}
             leftIcon={<Send size={16} />}
             style={{ backgroundColor: 'var(--primary)' }}
           >
-            Đồng ý Nộp Bài
+            Nộp cả đề thi
           </Button>
-        </>
+        </div>
       }
     >
       <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
@@ -76,7 +90,7 @@ export const SubmitConfirmModal: React.FC<SubmitConfirmModalProps> = ({
         </div>
 
         <div style={{ fontSize: '0.9375rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
-          Bạn có chắc chắn muốn nộp bài thi bây giờ? Sau khi nộp, hệ thống sẽ tiến hành chấm điểm và bạn không thể thay đổi đáp án.
+          Chọn <strong>nộp câu hiện tại</strong> để chốt riêng câu đang xem, hoặc chọn <strong>nộp cả đề thi</strong> để kết thúc bài và chuyển sang trang kết quả.
         </div>
 
         <div

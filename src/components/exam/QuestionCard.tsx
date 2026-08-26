@@ -34,8 +34,8 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
   const correctOptionId = feedback?.correctOptionId;
 
   return (
-    <div className="card animate-slide-up" style={{ width: '100%', backgroundColor: '#FFFFFF', borderRadius: 'var(--border-radius-lg)', padding: '32px 36px', border: '1.5px solid var(--border-color)', boxShadow: 'var(--shadow-card)', display: 'flex', flexDirection: 'column', gap: '22px' }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--border-color)', paddingBottom: '16px' }}>
+    <div className="card question-card animate-slide-up" style={{ width: '100%', backgroundColor: '#FFFFFF', borderRadius: 'var(--border-radius-lg)', padding: '32px 36px', border: '1.5px solid var(--border-color)', boxShadow: 'var(--shadow-card)', display: 'flex', flexDirection: 'column', gap: '22px' }}>
+      <div className="question-card-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--border-color)', paddingBottom: '16px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <span style={{ backgroundColor: 'var(--primary)', color: '#FFFFFF', fontWeight: 800, fontSize: '0.875rem', padding: '4px 12px', borderRadius: 'var(--border-radius-full)' }}>Câu {currentIndex + 1} / {totalQuestions}</span>
           <span style={{ fontSize: '0.9375rem', color: 'var(--text-secondary)', fontWeight: 600 }}>({question.points} điểm)</span>
@@ -53,7 +53,7 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
       </div>
 
       {isChoice ? (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '16px' }}>
+        <div className="question-options" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(320px, 100%), 1fr))', gap: '16px' }}>
           {question.options.map((option, index) => {
             const optionId = option.id || option.label || `option-${index}`;
             const selected = selectedOptionId === optionId || selectedOptionId === option.label;

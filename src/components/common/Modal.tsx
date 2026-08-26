@@ -36,6 +36,7 @@ export const Modal: React.FC<ModalProps> = ({
 
   return (
     <div
+      className="modal-overlay"
       style={{
         position: 'fixed',
         inset: 0,
@@ -51,6 +52,7 @@ export const Modal: React.FC<ModalProps> = ({
       onClick={onClose}
     >
       <div
+        className="modal-dialog"
         style={{
           backgroundColor: '#FFFFFF',
           borderRadius: 'var(--border-radius-lg)',
@@ -67,6 +69,7 @@ export const Modal: React.FC<ModalProps> = ({
       >
         {/* Header */}
         <div
+          className="modal-header"
           style={{
             padding: '20px 24px',
             borderBottom: '1px solid var(--border-color)',
@@ -95,11 +98,12 @@ export const Modal: React.FC<ModalProps> = ({
         </div>
 
         {/* Body */}
-        <div style={{ padding: '24px', overflowY: 'auto', flex: 1 }}>{children}</div>
+        <div className="modal-body" style={{ padding: '24px', overflowY: 'auto', flex: 1 }}>{children}</div>
 
         {/* Footer */}
         {footer && (
           <div
+            className="modal-footer"
             style={{
               padding: '16px 24px',
               borderTop: '1px solid var(--border-color)',

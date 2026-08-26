@@ -67,7 +67,7 @@ export const AdminDashboardPage: React.FC = () => {
     <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
       {/* 1. Header Banner */}
       <div
-        className="animate-slide-up"
+        className="dashboard-banner admin-dashboard-banner animate-slide-up"
         style={{
           background: 'var(--primary-gradient)',
           borderRadius: 'var(--border-radius-xl)',
@@ -156,7 +156,7 @@ export const AdminDashboardPage: React.FC = () => {
       </div>
 
       {/* 3. Recent Exams & Attempts Section */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(450px, 1fr))', gap: '24px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(450px, 100%), 1fr))', gap: '24px' }}>
         {/* Recent Exams */}
         <Card style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>

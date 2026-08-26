@@ -18,9 +18,6 @@ interface MaterialFormState {
   materialType: MaterialType;
   storageUrl: string;
   embedUrl: string;
-  originalFileName: string;
-  mimeType: string;
-  fileSizeBytes: string;
   accessLevel: AccessLevel;
 }
 
@@ -30,9 +27,6 @@ const createEmptyForm = (subjectId = ''): MaterialFormState => ({
   materialType: 'PDF',
   storageUrl: '',
   embedUrl: '',
-  originalFileName: '',
-  mimeType: 'application/pdf',
-  fileSizeBytes: '',
   accessLevel: 'FREE',
 });
 
@@ -56,6 +50,7 @@ export const MaterialsManagementPage: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingMaterial, setEditingMaterial] = useState<Material | null>(null);
   const [form, setForm] = useState<MaterialFormState>(createEmptyForm());
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [actionId, setActionId] = useState<string | null>(null);
 
@@ -100,51 +95,79 @@ export const MaterialsManagementPage: React.FC = () => {
 
   const openCreate = () => {
     setEditingMaterial(null);
+    setSelectedFile(null);
     setForm(createEmptyForm(selectedSubjectId || subjects[0]?.id || ''));
     setIsModalOpen(true);
   };
 
   const openEdit = (material: Material) => {
     setEditingMaterial(material);
+    setSelectedFile(null);
     setForm({
       subjectId: material.subjectId,
       title: material.title,
       materialType: material.materialType,
       storageUrl: material.storageUrl || '',
       embedUrl: material.embedUrl || '',
-      originalFileName: material.originalFileName || '',
-      mimeType: material.mimeType || '',
-      fileSizeBytes: material.fileSizeBytes ? String(material.fileSizeBytes) : '',
       accessLevel: material.accessLevel,
     });
     setIsModalOpen(true);
+  };
+
+  const closeModal = () => {
+    if (isSaving) return;
+    setIsModalOpen(false);
+    setSelectedFile(null);
   };
 
   const updateForm = <K extends keyof MaterialFormState>(key: K, value: MaterialFormState[K]) => {
     setForm((previous) => ({ ...previous, [key]: value }));
   };
 
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0] || null;
+    setSelectedFile(file);
+    if (file) updateForm('storageUrl', '');
+  };
+
+  const handleStorageUrlChange = (value: string) => {
+    updateForm('storageUrl', value);
+    if (value.trim()) setSelectedFile(null);
+  };
+
   const handleTypeChange = (materialType: MaterialType) => {
+    setSelectedFile(null);
     setForm((previous) => ({
       ...previous,
       materialType,
       storageUrl: materialType === 'EMBEDDED_VIDEO' ? '' : previous.storageUrl,
       embedUrl: materialType === 'EMBEDDED_VIDEO' ? previous.embedUrl : '',
-      mimeType:
-        materialType === 'PDF'
-          ? 'application/pdf'
-          : materialType === 'DOCX'
-            ? 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-            : '',
     }));
   };
 
   const handleSave = async (event: React.FormEvent) => {
     event.preventDefault();
+    const uploadFile = !editingMaterial && form.materialType !== 'EMBEDDED_VIDEO' ? selectedFile : null;
     const source = form.materialType === 'EMBEDDED_VIDEO' ? form.embedUrl : form.storageUrl;
     if (!form.subjectId) return error('Vui lòng chọn môn học.');
     if (!form.title.trim()) return error('Tên tài liệu không được để trống.');
-    if (!source.trim()) return error('Vui lòng nhập URL tài liệu hợp lệ.');
+    if (!uploadFile && !source.trim()) return error('Vui lòng chọn file hoặc nhập URL tài liệu.');
+
+    if (uploadFile) {
+      const fileName = uploadFile.name.toLowerCase();
+      const isPdf = uploadFile.type === 'application/pdf' || fileName.endsWith('.pdf');
+      const isDocx =
+        uploadFile.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
+        fileName.endsWith('.docx');
+      const isExpectedType = form.materialType === 'PDF' ? isPdf : isDocx;
+
+      if (!isExpectedType) {
+        return error(`Vui lòng chọn đúng file ${form.materialType}.`);
+      }
+      if (uploadFile.size > 25 * 1024 * 1024) {
+        return error('Dung lượng file không được vượt quá 25 MB.');
+      }
+    }
 
     setIsSaving(true);
     try {
@@ -152,16 +175,23 @@ export const MaterialsManagementPage: React.FC = () => {
         subjectId: form.subjectId,
         title: form.title.trim(),
         materialType: form.materialType,
-        storageUrl: form.materialType === 'EMBEDDED_VIDEO' ? undefined : form.storageUrl.trim(),
+        storageUrl:
+          form.materialType === 'EMBEDDED_VIDEO' ||
+          (editingMaterial && form.storageUrl.trim().startsWith('gs://'))
+            ? undefined
+            : form.storageUrl.trim(),
         embedUrl: form.materialType === 'EMBEDDED_VIDEO' ? form.embedUrl.trim() : undefined,
-        originalFileName: form.materialType === 'EMBEDDED_VIDEO' ? undefined : form.originalFileName.trim() || undefined,
-        mimeType: form.materialType === 'EMBEDDED_VIDEO' ? undefined : form.mimeType.trim() || undefined,
-        fileSizeBytes: form.materialType === 'EMBEDDED_VIDEO' || !form.fileSizeBytes ? undefined : Number(form.fileSizeBytes),
         accessLevel: form.accessLevel,
       };
-      const saved = editingMaterial
-        ? await materialsApi.updateMaterial(editingMaterial.id, payload)
-        : await materialsApi.createMaterial(payload);
+      const saved = uploadFile
+        ? await materialsApi.uploadMaterial(uploadFile, {
+            subjectId: form.subjectId,
+            title: form.title.trim(),
+            accessLevel: form.accessLevel,
+          })
+        : editingMaterial
+          ? await materialsApi.updateMaterial(editingMaterial.id, payload)
+          : await materialsApi.createMaterial(payload);
 
       setMaterials((previous) =>
         editingMaterial
@@ -169,11 +199,27 @@ export const MaterialsManagementPage: React.FC = () => {
           : [saved, ...previous],
       );
       setIsModalOpen(false);
-      success(editingMaterial ? 'Đã cập nhật tài liệu.' : 'Đã tạo tài liệu ở trạng thái nháp.');
+      setSelectedFile(null);
+      success(editingMaterial ? 'Đã cập nhật tài liệu.' : 'Đã tải tài liệu lên ở trạng thái nháp.');
     } catch (err) {
       error(getApiErrorMessage(err, 'Không thể lưu tài liệu.'));
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleOpenMaterial = async (material: Material) => {
+    const source = materialSource(material);
+    if (!source) return;
+
+    try {
+      const url =
+        material.materialType === 'EMBEDDED_VIDEO' || !source.startsWith('gs://')
+          ? source
+          : (await materialsApi.getMaterialDownloadUrl(material.id)).url;
+      window.open(url, '_blank', 'noopener,noreferrer');
+    } catch (err) {
+      error(getApiErrorMessage(err, 'Không thể mở tài liệu.'));
     }
   };
 
@@ -275,15 +321,13 @@ export const MaterialsManagementPage: React.FC = () => {
                       <div style={{ minWidth: 0 }}>
                         <strong className="material-card-title" title={material.title}>{material.title}</strong>
                         {materialSource(material) && (
-                          <a
-                            href={materialSource(material)}
-                            target="_blank"
-                            rel="noreferrer"
-                            onClick={(event) => event.stopPropagation()}
+                          <button
+                            type="button"
+                            onClick={() => void handleOpenMaterial(material)}
                             style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', color: 'var(--text-secondary)', fontSize: '0.75rem', marginTop: '4px' }}
                           >
                             Mở nguồn <ExternalLink size={12} />
-                          </a>
+                          </button>
                         )}
                       </div>
                     </div>
@@ -318,13 +362,13 @@ export const MaterialsManagementPage: React.FC = () => {
 
       <Modal
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
+        onClose={closeModal}
         title={editingMaterial ? 'Chỉnh sửa tài liệu' : 'Thêm tài liệu mới'}
         maxWidth="620px"
       >
         <form onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <div className="form-group">
-            <label className="form-label" htmlFor="material-form-subject">Môn học</label>
+            <label className="form-label" htmlFor="material-form-subject">Môn học <span className="required">*</span></label>
             <select id="material-form-subject" className="input-field" value={form.subjectId} onChange={(event) => updateForm('subjectId', event.target.value)} required>
               <option value="">Chọn môn học</option>
               {subjects.map((subject) => <option key={subject.id} value={subject.id}>{subject.name}</option>)}
@@ -335,16 +379,16 @@ export const MaterialsManagementPage: React.FC = () => {
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
             <div className="form-group">
-              <label className="form-label" htmlFor="material-form-type">Loại tài liệu</label>
-              <select id="material-form-type" className="input-field" value={form.materialType} onChange={(event) => handleTypeChange(event.target.value as MaterialType)}>
+              <label className="form-label" htmlFor="material-form-type">Loại tài liệu <span className="required">*</span></label>
+              <select id="material-form-type" className="input-field" value={form.materialType} onChange={(event) => handleTypeChange(event.target.value as MaterialType)} required>
                 <option value="PDF">PDF</option>
                 <option value="DOCX">DOCX</option>
                 <option value="EMBEDDED_VIDEO">Video nhúng</option>
               </select>
             </div>
             <div className="form-group">
-              <label className="form-label" htmlFor="material-form-access">Gói truy cập</label>
-              <select id="material-form-access" className="input-field" value={form.accessLevel} onChange={(event) => updateForm('accessLevel', event.target.value as AccessLevel)}>
+              <label className="form-label" htmlFor="material-form-access">Gói truy cập <span className="required">*</span></label>
+              <select id="material-form-access" className="input-field" value={form.accessLevel} onChange={(event) => updateForm('accessLevel', event.target.value as AccessLevel)} required>
                 <option value="FREE">FREE</option>
                 <option value="PRO">PRO</option>
               </select>
@@ -355,12 +399,28 @@ export const MaterialsManagementPage: React.FC = () => {
             <Input label="Embed URL" type="url" placeholder="https://www.youtube.com/embed/..." value={form.embedUrl} onChange={(event) => updateForm('embedUrl', event.target.value)} required />
           ) : (
             <>
-              <Input label="Storage URL" type="url" placeholder="https://example.com/file.pdf" value={form.storageUrl} onChange={(event) => updateForm('storageUrl', event.target.value)} required />
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                <Input label="Tên file gốc" value={form.originalFileName} onChange={(event) => updateForm('originalFileName', event.target.value)} />
-                <Input label="Dung lượng (bytes)" type="number" min={1} value={form.fileSizeBytes} onChange={(event) => updateForm('fileSizeBytes', event.target.value)} />
-              </div>
-              <Input label="MIME type" value={form.mimeType} onChange={(event) => updateForm('mimeType', event.target.value)} />
+              {!editingMaterial && (
+                <div className="form-group">
+                  <label className="form-label" htmlFor="material-form-file">Chọn file từ máy tính <span className="required">*</span></label>
+                  <input
+                    id="material-form-file"
+                    className="input-field"
+                    type="file"
+                    accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                    onChange={handleFileChange}
+                    required={!form.storageUrl.trim()}
+                  />
+                  {selectedFile && (
+                    <small style={{ display: 'block', color: 'var(--text-secondary)', marginTop: '6px' }}>
+                      Đã chọn: {selectedFile.name} ({Math.ceil(selectedFile.size / 1024)} KB)
+                    </small>
+                  )}
+                  <small style={{ display: 'block', color: 'var(--text-secondary)', marginTop: '6px' }}>
+                    Chỉ hỗ trợ PDF/DOCX, tối đa 25 MB. Bắt buộc chọn file hoặc nhập Storage URL.
+                  </small>
+                </div>
+              )}
+              <Input label="Storage URL" type="text" placeholder="https://example.com/file.pdf" value={form.storageUrl} onChange={(event) => handleStorageUrlChange(event.target.value)} required={!selectedFile} />
             </>
           )}
 
@@ -369,7 +429,7 @@ export const MaterialsManagementPage: React.FC = () => {
           </p>
 
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '4px' }}>
-            <Button variant="outline" type="button" onClick={() => setIsModalOpen(false)}>Hủy</Button>
+            <Button variant="outline" type="button" onClick={closeModal}>Hủy</Button>
             <Button variant="primary" type="submit" isLoading={isSaving}>{editingMaterial ? 'Lưu thay đổi' : 'Tạo tài liệu'}</Button>
           </div>
         </form>

@@ -71,7 +71,7 @@ export const StudentDashboardPage: React.FC = () => {
     <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
       {/* 1. Welcome Banner */}
       <div
-        className="animate-slide-up"
+        className="dashboard-banner student-dashboard-banner animate-slide-up"
         style={{
           background: 'var(--primary-gradient)',
           borderRadius: 'var(--border-radius-xl)',
@@ -159,7 +159,7 @@ export const StudentDashboardPage: React.FC = () => {
             </p>
           </Card>
         ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '20px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(320px, 100%), 1fr))', gap: '20px' }}>
             {pendingAssignments.slice(0, 3).map((assign) => (
               <Card key={assign.id} interactive style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>

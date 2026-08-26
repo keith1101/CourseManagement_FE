@@ -10,6 +10,7 @@ interface AuthLayoutProps {
 export const AuthLayout: React.FC<AuthLayoutProps> = ({ children, title, subtitle }) => {
   return (
     <div
+      className="auth-shell"
       style={{
         minHeight: '100vh',
         width: '100%',
@@ -50,7 +51,7 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({ children, title, subtitl
 
       {/* Main Card (Mẫu 3 Style) */}
       <div
-        className="animate-slide-up"
+        className="auth-card animate-slide-up"
         style={{
           width: '100%',
           maxWidth: '460px',

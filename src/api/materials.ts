@@ -1,11 +1,35 @@
 import { apiClient } from './client';
-import { Material } from '../types';
+import { AccessLevel, Material } from '../types';
 import { mapMaterial } from './mappers';
 
 export const materialsApi = {
   getMaterials: async (params?: { subjectId?: string; materialType?: string; accessLevel?: string }): Promise<Material[]> => {
     const res = await apiClient.get<any[]>('/materials', { params });
     return res.data.map(mapMaterial);
+  },
+
+  uploadMaterial: async (
+    file: File,
+    data: { subjectId: string; title: string; accessLevel: AccessLevel },
+  ): Promise<Material> => {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('subjectId', data.subjectId);
+    formData.append('title', data.title);
+    formData.append('accessLevel', data.accessLevel);
+
+    const res = await apiClient.post<any>('/materials/upload', formData);
+
+    return mapMaterial(res.data);
+  },
+
+  getMaterialDownloadUrl: async (
+    id: string,
+  ): Promise<{ url: string; expiresAt: string }> => {
+    const res = await apiClient.get<{ url: string; expiresAt: string }>(
+      `/materials/${id}/download`,
+    );
+    return res.data;
   },
 
   getMaterialById: async (id: string): Promise<Material> => {
@@ -44,8 +68,5 @@ const toPayload = (data: Partial<Material>) => ({
   materialType: data.materialType,
   storageUrl: data.materialType === 'EMBEDDED_VIDEO' ? undefined : data.storageUrl,
   embedUrl: data.materialType === 'EMBEDDED_VIDEO' ? data.embedUrl : undefined,
-  originalFileName: data.materialType === 'EMBEDDED_VIDEO' ? undefined : data.originalFileName,
-  mimeType: data.materialType === 'EMBEDDED_VIDEO' ? undefined : data.mimeType,
-  fileSizeBytes: data.materialType === 'EMBEDDED_VIDEO' ? undefined : data.fileSizeBytes,
   accessLevel: data.accessLevel,
 });

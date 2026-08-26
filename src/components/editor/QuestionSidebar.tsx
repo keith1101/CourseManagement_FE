@@ -13,7 +13,7 @@ interface QuestionSidebarProps {
 }
 
 export const QuestionSidebar: React.FC<QuestionSidebarProps> = ({ questions, activeQuestionId, onSelectQuestion, onAddNewQuestion, onDuplicateQuestion, onDeleteQuestion, onMoveQuestion }) => (
-  <aside style={{ width: '280px', background: '#fff', borderRight: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', height: 'calc(100vh - 64px)', overflowY: 'auto' }}>
+  <aside className="question-editor-sidebar" style={{ width: '280px', background: '#fff', borderRight: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', height: 'calc(100vh - 64px)', overflowY: 'auto' }}>
     <div style={{ padding: '16px', borderBottom: '1px solid var(--border-color)' }}><button type="button" onClick={onAddNewQuestion} style={{ width: '100%', background: 'var(--primary)', color: '#fff', borderRadius: 'var(--border-radius-md)', padding: '10px 16px', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', fontWeight: 700 }}><Plus size={18} />Thêm câu hỏi</button></div>
     <div style={{ flex: 1, padding: '12px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
       {questions.length === 0 ? <div style={{ padding: '32px 16px', textAlign: 'center', color: 'var(--text-muted)' }}><HelpCircle size={32} style={{ margin: '0 auto 8px' }} />Chưa có câu hỏi.</div> : questions.map((question, index) => {

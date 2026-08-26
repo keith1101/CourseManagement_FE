@@ -175,8 +175,8 @@ export const StudentLayout: React.FC = () => {
       {/* Main Content Area */}
       <div className="main-content">
         {/* Topbar */}
-        <header className="topbar">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+        <header className="topbar student-topbar">
+          <div className="topbar-leading" style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
             <button
               onClick={() => setSidebarOpen(!sidebarOpen)}
               aria-label={sidebarOpen ? 'Đóng menu' : 'Mở menu'}
@@ -189,13 +189,13 @@ export const StudentLayout: React.FC = () => {
             >
               {sidebarOpen ? <X size={24} /> : <Menu size={24} />}
             </button>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <div className="topbar-greeting" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <span style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>Xin chào,</span>
               <strong style={{ color: 'var(--text-primary)', fontSize: '1rem' }}>{user?.fullName}</strong>
             </div>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+          <div className="topbar-actions" style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
             {isProActive(user) && (
               <span
                 style={{

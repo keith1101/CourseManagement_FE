@@ -22,6 +22,7 @@ export const QuestionPalette: React.FC<QuestionPaletteProps> = ({
 
   return (
     <div
+      className="question-palette"
       style={{
         backgroundColor: '#FFFFFF',
         borderRadius: 'var(--border-radius-lg)',
@@ -45,6 +46,7 @@ export const QuestionPalette: React.FC<QuestionPaletteProps> = ({
 
       {/* Grid of question buttons */}
       <div
+        className="question-palette-grid"
         style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(5, 1fr)',

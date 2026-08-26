@@ -136,7 +136,7 @@ export const SubjectsManagementPage: React.FC = () => {
       </div>
 
       {/* Search Input */}
-      <div style={{ position: 'relative', width: '280px' }}>
+      <div className="page-search" style={{ position: 'relative', width: '280px' }}>
         <Search
           size={16}
           style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }}

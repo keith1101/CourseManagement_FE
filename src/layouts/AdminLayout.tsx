@@ -177,8 +177,8 @@ export const AdminLayout: React.FC = () => {
       {/* Main Content Area */}
       <div className="main-content">
         {/* Topbar */}
-        <header className="topbar">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+        <header className="topbar admin-topbar">
+          <div className="topbar-leading" style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
             <button
               onClick={() => setSidebarOpen(!sidebarOpen)}
               aria-label={sidebarOpen ? 'Đóng menu' : 'Mở menu'}
@@ -199,7 +199,7 @@ export const AdminLayout: React.FC = () => {
             </div>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div className="topbar-actions" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <span
               style={{
                 backgroundColor: 'var(--primary-light)',

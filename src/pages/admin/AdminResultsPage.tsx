@@ -67,7 +67,7 @@ export const AdminResultsPage: React.FC = () => {
       </div>
 
       {/* Filter Toolbar */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
+      <div className="results-toolbar" style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
         <div style={{ position: 'relative', width: '280px' }}>
           <Search
             size={16}

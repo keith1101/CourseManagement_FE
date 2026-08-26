@@ -37,6 +37,7 @@ export const QuestionCanvas: React.FC<QuestionCanvasProps> = ({ question, onChan
 
   return (
     <div
+      className="question-editor-canvas"
       style={{
         flex: 1,
         height: 'calc(100vh - 64px)',
@@ -52,6 +53,7 @@ export const QuestionCanvas: React.FC<QuestionCanvasProps> = ({ question, onChan
       }}
     >
       <div
+        className="question-subject-row"
         style={{
           backgroundColor: '#FFFFFF',
           borderRadius: 'var(--border-radius-lg)',
@@ -147,6 +149,7 @@ export const QuestionCanvas: React.FC<QuestionCanvasProps> = ({ question, onChan
         {/* Optional Image Input & Preview */}
         {showImageInput && (
           <div
+            className="question-editor-heading"
             style={{
               padding: '16px',
               backgroundColor: 'var(--bg-subtle)',
@@ -157,7 +160,7 @@ export const QuestionCanvas: React.FC<QuestionCanvasProps> = ({ question, onChan
               gap: '12px',
             }}
           >
-            <div style={{ display: 'flex', gap: '8px' }}>
+            <div className="question-image-row" style={{ display: 'flex', gap: '8px' }}>
               <input
                 type="text"
                 value={question.image || ''}
@@ -213,6 +216,7 @@ export const QuestionCanvas: React.FC<QuestionCanvasProps> = ({ question, onChan
       {isChoiceType ? (
         <div>
           <div
+            className="question-options-heading"
             style={{
               display: 'flex',
               alignItems: 'center',
@@ -229,6 +233,7 @@ export const QuestionCanvas: React.FC<QuestionCanvasProps> = ({ question, onChan
           </div>
 
           <div
+            className="editor-options-grid"
             style={{
               display: 'grid',
               gridTemplateColumns: 'repeat(2, 1fr)',

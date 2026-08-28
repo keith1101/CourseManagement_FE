@@ -1,7 +1,7 @@
 import React, { ReactNode, useEffect } from 'react';
 import { X } from 'lucide-react';
 
-interface ModalProps {
+export interface ModalProps {
   isOpen: boolean;
   onClose: () => void;
   title: string;
@@ -16,7 +16,7 @@ export const Modal: React.FC<ModalProps> = ({
   title,
   children,
   footer,
-  maxWidth = '550px',
+  maxWidth = '560px',
 }) => {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -37,86 +37,51 @@ export const Modal: React.FC<ModalProps> = ({
   return (
     <div
       className="modal-overlay"
-      style={{
-        position: 'fixed',
-        inset: 0,
-        backgroundColor: 'rgba(15, 23, 42, 0.6)',
-        backdropFilter: 'blur(4px)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        zIndex: 999,
-        padding: '20px',
-        animation: 'fadeIn 150ms ease-out',
-      }}
       onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="modal-title"
     >
       <div
         className="modal-dialog"
-        style={{
-          backgroundColor: '#FFFFFF',
-          borderRadius: 'var(--border-radius-lg)',
-          width: '100%',
-          maxWidth,
-          boxShadow: 'var(--shadow-xl)',
-          display: 'flex',
-          flexDirection: 'column',
-          maxHeight: '90vh',
-          animation: 'scaleIn 200ms ease-out',
-          overflow: 'hidden',
-        }}
+        style={{ maxWidth }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div
-          className="modal-header"
-          style={{
-            padding: '20px 24px',
-            borderBottom: '1px solid var(--border-color)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-          }}
-        >
-          <h3 style={{ fontSize: '1.125rem', fontWeight: 700, color: 'var(--text-primary)' }}>
+        <div className="modal-header">
+          <h3 id="modal-title">
             {title}
           </h3>
           <button
             onClick={onClose}
+            aria-label="Đóng cửa sổ"
             style={{
               color: 'var(--text-muted)',
-              padding: '4px',
+              padding: '6px',
               borderRadius: 'var(--border-radius-sm)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              transition: 'background var(--transition-fast)',
+              transition: 'all var(--transition-fast)',
+            }}
+            onMouseEnter={(e) => {
+              (e.currentTarget as HTMLElement).style.color = 'var(--text-primary)';
+              (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--bg-subtle)';
+            }}
+            onMouseLeave={(e) => {
+              (e.currentTarget as HTMLElement).style.color = 'var(--text-muted)';
+              (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent';
             }}
           >
-            <X size={20} />
+            <X size={18} />
           </button>
         </div>
 
         {/* Body */}
-        <div className="modal-body" style={{ padding: '24px', overflowY: 'auto', flex: 1 }}>{children}</div>
+        <div className="modal-body">{children}</div>
 
         {/* Footer */}
-        {footer && (
-          <div
-            className="modal-footer"
-            style={{
-              padding: '16px 24px',
-              borderTop: '1px solid var(--border-color)',
-              backgroundColor: 'var(--bg-subtle)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'flex-end',
-              gap: '12px',
-            }}
-          >
-            {footer}
-          </div>
-        )}
+        {footer && <div className="modal-footer">{footer}</div>}
       </div>
     </div>
   );

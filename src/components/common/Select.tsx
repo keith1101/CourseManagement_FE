@@ -1,19 +1,20 @@
 import React, { SelectHTMLAttributes, forwardRef } from 'react';
 
-interface SelectOption {
+export interface SelectOption {
   value: string | number;
   label: string;
 }
 
-interface SelectProps extends SelectHTMLAttributes<HTMLSelectElement> {
+export interface SelectProps extends SelectHTMLAttributes<HTMLSelectElement> {
   label?: string;
   options: SelectOption[];
   error?: string;
   required?: boolean;
+  helperText?: string;
 }
 
 export const Select = forwardRef<HTMLSelectElement, SelectProps>(
-  ({ label, options, error, required, className = '', ...props }, ref) => {
+  ({ label, options, error, required, helperText, className = '', ...props }, ref) => {
     return (
       <div className="form-group">
         {label && (
@@ -24,7 +25,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
         <select
           ref={ref}
           className={`input-field ${error ? 'input-error' : ''} ${className}`}
-          style={{ cursor: 'pointer', background: '#FFFFFF' }}
+          style={{ cursor: 'pointer' }}
           {...props}
         >
           {options.map((opt) => (
@@ -34,6 +35,9 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
           ))}
         </select>
         {error && <span className="input-error-msg">{error}</span>}
+        {!error && helperText && (
+          <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{helperText}</span>
+        )}
       </div>
     );
   }

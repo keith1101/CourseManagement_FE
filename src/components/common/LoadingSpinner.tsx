@@ -1,7 +1,7 @@
 import React from 'react';
 import { Loader2 } from 'lucide-react';
 
-interface LoadingSpinnerProps {
+export interface LoadingSpinnerProps {
   text?: string;
   size?: number;
   fullPage?: boolean;
@@ -9,7 +9,7 @@ interface LoadingSpinnerProps {
 
 export const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
   text = 'Đang tải dữ liệu...',
-  size = 36,
+  size = 32,
   fullPage = false,
 }) => {
   const content = (
@@ -19,8 +19,8 @@ export const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        gap: '12px',
-        padding: '32px',
+        gap: '14px',
+        padding: '36px 20px',
       }}
     >
       <Loader2
@@ -31,7 +31,14 @@ export const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
         }}
       />
       {text && (
-        <span style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', fontWeight: 500 }}>
+        <span
+          style={{
+            fontSize: '0.875rem',
+            color: 'var(--text-secondary)',
+            fontWeight: 500,
+            letterSpacing: '0.01em',
+          }}
+        >
           {text}
         </span>
       )}
@@ -44,7 +51,7 @@ export const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
         style={{
           position: 'fixed',
           inset: 0,
-          backgroundColor: 'rgba(241, 248, 247, 0.8)',
+          backgroundColor: 'rgba(247, 244, 237, 0.85)',
           backdropFilter: 'blur(4px)',
           display: 'flex',
           alignItems: 'center',

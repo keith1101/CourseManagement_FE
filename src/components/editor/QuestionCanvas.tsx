@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { Image as ImageIcon, ChevronDown, ChevronUp, Lightbulb, FileText, Trash } from 'lucide-react';
+import { Image as ImageIcon, ChevronDown, ChevronUp, Lightbulb, FileText, Trash, BookOpen } from 'lucide-react';
 import { Question, AnswerOption } from '../../types';
 import { AnswerOptionCard } from './AnswerOptionCard';
 import { subjectsApi } from '../../api/subjects';
 
-interface QuestionCanvasProps {
+export interface QuestionCanvasProps {
   question: Question;
   onChange: (updated: Question) => void;
 }
@@ -24,7 +24,6 @@ export const QuestionCanvas: React.FC<QuestionCanvasProps> = ({ question, onChan
   const handleOptionChange = (index: number, updatedOption: AnswerOption) => {
     let newOptions = [...question.options];
     if (question.type === 'SINGLE_CHOICE' && updatedOption.isCorrect) {
-      // Single choice -> only 1 correct answer
       newOptions = newOptions.map((opt, i) => ({
         ...opt,
         isCorrect: i === index,
@@ -36,172 +35,152 @@ export const QuestionCanvas: React.FC<QuestionCanvasProps> = ({ question, onChan
   };
 
   return (
-    <div
-      className="question-editor-canvas"
-      style={{
-        flex: 1,
-        height: 'calc(100vh - 64px)',
-        overflowY: 'auto',
-        backgroundColor: 'var(--bg-app)',
-        padding: '32px 40px',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '24px',
-        maxWidth: '1200px',
-        margin: '0 auto',
-        width: '100%',
-      }}
-    >
+    <div className="question-editor-canvas">
+      {/* 1. Subject Select Row */}
       <div
-        className="question-subject-row"
+        className="card"
         style={{
-          backgroundColor: '#FFFFFF',
-          borderRadius: 'var(--border-radius-lg)',
-          border: '1px solid var(--border-color)',
-          padding: '16px 24px',
-          boxShadow: 'var(--shadow-sm)',
+          padding: '16px 20px',
           display: 'flex',
           alignItems: 'center',
-          gap: '12px',
+          gap: '14px',
+          flexWrap: 'wrap',
         }}
       >
-        <label htmlFor="question-subject" style={{ fontWeight: 700 }}>Môn học của câu hỏi</label>
+        <label
+          htmlFor="question-subject"
+          style={{
+            fontWeight: 700,
+            fontSize: '0.875rem',
+            color: 'var(--text-primary)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          <BookOpen size={16} color="var(--primary)" /> Môn học của câu hỏi:
+        </label>
         <select
           id="question-subject"
           className="input-field"
           value={question.subjectId}
           onChange={(event) => onChange({ ...question, subjectId: event.target.value })}
+          style={{ flex: 1, minWidth: '220px', height: '38px', minHeight: '38px' }}
         >
-          <option value="">Chọn môn học</option>
+          <option value="">-- Chọn môn học --</option>
           {subjects.map((subject) => (
-            <option key={subject.id} value={subject.id}>{subject.code} - {subject.name}</option>
+            <option key={subject.id} value={subject.id}>
+              {subject.code} - {subject.name}
+            </option>
           ))}
         </select>
       </div>
 
-      {/* 1. Question Title & Content Box */}
-      <div
-        style={{
-          backgroundColor: '#FFFFFF',
-          borderRadius: 'var(--border-radius-lg)',
-          border: '1px solid var(--border-color)',
-          boxShadow: 'var(--shadow-sm)',
-          padding: '24px',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '16px',
-        }}
-      >
+      {/* 2. Question Title & Content Box */}
+      <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <label style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-primary)' }}>
             Nội dung câu hỏi <span style={{ color: 'var(--error)' }}>*</span>
           </label>
           <button
             type="button"
-            onClick={() => setShowImageInput(!showImageInput)}
+            onClick={() => setShowImageInput((value) => !value)}
             style={{
               display: 'flex',
               alignItems: 'center',
               gap: '6px',
               color: 'var(--primary)',
-              fontSize: '0.875rem',
+              fontSize: '0.8125rem',
               fontWeight: 600,
-              padding: '6px 12px',
-              borderRadius: 'var(--border-radius-md)',
-              backgroundColor: 'var(--primary-light)',
             }}
           >
-            <ImageIcon size={16} />
-            {showImageInput ? 'Ẩn hình ảnh' : 'Chèn hình ảnh'}
+            <ImageIcon size={15} />
+            {showImageInput ? 'Ẩn đường dẫn ảnh' : 'Thêm hình ảnh minh họa'}
           </button>
         </div>
 
-        <textarea
-          rows={3}
-          value={question.content}
-          onChange={(e) => onChange({ ...question, content: e.target.value })}
-          placeholder="Nhập nội dung câu hỏi trắc nghiệm ở đây (Ví dụ: Thủ đô của Việt Nam là gì?)..."
-          style={{
-            width: '100%',
-            padding: '14px 16px',
-            fontSize: '1.0625rem',
-            lineHeight: 1.6,
-            borderRadius: 'var(--border-radius-md)',
-            border: '1.5px solid var(--border-color)',
-            outline: 'none',
-            fontFamily: 'inherit',
-            resize: 'vertical',
-            color: 'var(--text-primary)',
-          }}
-        />
-
-        <div className="form-group">
-          <label className="form-label">Hướng dẫn hiển thị cho học sinh</label>
-          <textarea
-            rows={2}
+        {/* Instruction (Optional) */}
+        <div>
+          <label style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)', fontWeight: 500 }}>
+            Hướng dẫn trả lời (tùy chọn)
+          </label>
+          <input
+            type="text"
+            className="input-field"
             value={question.instruction || ''}
             onChange={(e) => onChange({ ...question, instruction: e.target.value })}
-            placeholder="Ví dụ: Chọn một đáp án đúng nhất."
-            className="input-field"
+            placeholder="Ví dụ: Chọn câu trả lời đúng nhất, Điền số thích hợp..."
+            style={{ marginTop: '4px', height: '38px', minHeight: '38px' }}
           />
         </div>
 
-        {/* Optional Image Input & Preview */}
+        {/* Content Textarea */}
+        <textarea
+          rows={4}
+          className="input-field"
+          value={question.content}
+          onChange={(e) => onChange({ ...question, content: e.target.value })}
+          placeholder="Nhập nội dung câu hỏi tại đây..."
+          style={{
+            fontSize: '1rem',
+            lineHeight: 1.6,
+            padding: '14px 16px',
+          }}
+        />
+
+        {/* Image Input and Preview */}
         {showImageInput && (
           <div
-            className="question-editor-heading"
             style={{
-              padding: '16px',
+              padding: '14px',
               backgroundColor: 'var(--bg-subtle)',
               borderRadius: 'var(--border-radius-md)',
-              border: '1px dashed var(--border-color)',
+              border: '1px solid var(--border-color)',
               display: 'flex',
               flexDirection: 'column',
-              gap: '12px',
+              gap: '10px',
             }}
           >
-            <div className="question-image-row" style={{ display: 'flex', gap: '8px' }}>
+            <div style={{ display: 'flex', gap: '8px' }}>
               <input
-                type="text"
+                type="url"
+                className="input-field"
                 value={question.image || ''}
                 onChange={(e) => onChange({ ...question, image: e.target.value })}
-                placeholder="Dán đường dẫn ảnh minh họa (URL https://...)"
-                style={{
-                  flex: 1,
-                  padding: '8px 12px',
-                  borderRadius: 'var(--border-radius-sm)',
-                  border: '1px solid var(--border-color)',
-                  fontSize: '0.875rem',
-                  outline: 'none',
-                }}
+                placeholder="Dán đường dẫn URL hình ảnh (https://...)"
+                style={{ flex: 1, height: '38px', minHeight: '38px' }}
               />
               {question.image && (
                 <button
                   type="button"
                   onClick={() => onChange({ ...question, image: '' })}
                   style={{
-                    color: 'var(--error)',
                     padding: '8px 12px',
-                    backgroundColor: '#FFFFFF',
-                    borderRadius: 'var(--border-radius-sm)',
+                    borderRadius: 'var(--border-radius-md)',
                     border: '1px solid var(--border-color)',
+                    color: 'var(--error)',
+                    backgroundColor: 'var(--bg-card)',
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '4px',
-                    fontSize: '0.8125rem',
-                    fontWeight: 600,
                   }}
+                  title="Xóa ảnh"
                 >
-                  <Trash size={14} /> Xóa ảnh
+                  <Trash size={16} />
                 </button>
               )}
             </div>
             {question.image && (
-              <div style={{ maxWidth: '350px', maxHeight: '200px', overflow: 'hidden', borderRadius: '8px' }}>
+              <div style={{ textAlign: 'center', marginTop: '6px' }}>
                 <img
                   src={question.image}
-                  alt="Ảnh minh họa"
-                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  alt="Xem trước hình ảnh"
+                  style={{
+                    maxHeight: '200px',
+                    objectFit: 'contain',
+                    borderRadius: 'var(--border-radius-sm)',
+                    border: '1px solid var(--border-color)',
+                  }}
                   onError={(e) => {
                     (e.target as HTMLElement).style.display = 'none';
                   }}
@@ -212,183 +191,124 @@ export const QuestionCanvas: React.FC<QuestionCanvasProps> = ({ question, onChan
         )}
       </div>
 
-      {/* 2. Answer Options Area (Kahoot Style 2x2 Grid) */}
+      {/* 3. Answers Grid / Form */}
       {isChoiceType ? (
-        <div>
-          <div
-            className="question-options-heading"
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              marginBottom: '16px',
-            }}
-          >
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <h3 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-primary)' }}>
-              Các lựa chọn đáp án (A, B, C, D)
+              Các Lựa Chọn Đáp Án (A, B, C, D)
             </h3>
             <span style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)' }}>
-              * Tích chọn nút <strong>ĐÁP ÁN ĐÚNG</strong> ở góc mỗi ô
+              Bấm “Đặt làm đáp án đúng” trên thẻ tương ứng
             </span>
           </div>
 
           <div
-            className="editor-options-grid"
             style={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(2, 1fr)',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(min(320px, 100%), 1fr))',
               gap: '16px',
             }}
           >
-            {question.options.map((option, idx) => (
+            {question.options.map((option, index) => (
               <AnswerOptionCard
-                key={idx}
+                key={option.label || index}
                 option={option}
-                index={idx}
+                index={index}
                 isMultiChoice={question.type === 'MULTIPLE_CHOICE'}
-                onChange={(updated) => handleOptionChange(idx, updated)}
+                onChange={(updated) => handleOptionChange(index, updated)}
               />
             ))}
           </div>
         </div>
       ) : (
-        /* Essay / Fill-in-the-blank Form */
-        <div
-          style={{
-            backgroundColor: '#FFFFFF',
-            borderRadius: 'var(--border-radius-lg)',
-            border: '1px solid var(--border-color)',
-            padding: '24px',
-            boxShadow: 'var(--shadow-sm)',
-          }}
-        >
-          <h3 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '12px' }}>
-            Đáp án chuẩn / Từ khóa chấm điểm
+        <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          <h3 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-primary)' }}>
+            Đáp án chuẩn mẫu (Dành cho tự luận / điền từ)
           </h3>
           <textarea
             rows={3}
+            className="input-field"
             value={question.options[0]?.content || ''}
-            onChange={(e) =>
-              onChange({
-                ...question,
-                options: [{ label: 'Answer', content: e.target.value, isCorrect: true }],
-              })
-            }
-            placeholder="Nhập câu trả lời mẫu hoặc các từ khóa bắt buộc..."
-            style={{
-              width: '100%',
-              padding: '12px',
-              borderRadius: 'var(--border-radius-md)',
-              border: '1.5px solid var(--border-color)',
-              outline: 'none',
-              fontSize: '0.9375rem',
+            onChange={(e) => {
+              const opts = [{ label: 'A', content: e.target.value, isCorrect: true }];
+              onChange({ ...question, options: opts });
             }}
+            placeholder="Nhập nội dung đáp án chuẩn..."
+            style={{ padding: '14px 16px' }}
           />
         </div>
       )}
 
-      {/* 3. Collapsible Hint Section */}
-      <div
-        style={{
-          backgroundColor: '#FFFFFF',
-          borderRadius: 'var(--border-radius-lg)',
-          border: '1px solid var(--border-color)',
-          overflow: 'hidden',
-          boxShadow: 'var(--shadow-sm)',
-        }}
-      >
-        <button
-          type="button"
-          onClick={() => setShowHint(!showHint)}
-          style={{
-            width: '100%',
-            padding: '16px 20px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            backgroundColor: showHint ? 'var(--primary-subtle)' : '#FFFFFF',
-            fontWeight: 600,
-            fontSize: '0.9375rem',
-            color: 'var(--text-primary)',
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Lightbulb size={18} color="var(--secondary)" />
-            <span>Gợi ý / Hướng dẫn giải (Tùy chọn)</span>
-          </div>
-          {showHint ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
-        </button>
-        {showHint && (
-          <div style={{ padding: '16px 20px' }}>
-            <textarea
-              rows={2}
-              value={question.hint || ''}
-              onChange={(e) => onChange({ ...question, hint: e.target.value })}
-              placeholder="Nhập gợi ý giúp học sinh tự suy luận..."
-              style={{
-                width: '100%',
-                padding: '10px 14px',
-                borderRadius: 'var(--border-radius-md)',
-                border: '1.5px solid var(--border-color)',
-                outline: 'none',
-                fontSize: '0.875rem',
-                color: 'var(--text-primary)',
-              }}
-            />
-          </div>
-        )}
-      </div>
+      {/* 4. Collapsible Hint & Explanation Section */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+        {/* Hint Accordion */}
+        <div className="card" style={{ padding: '16px 20px' }}>
+          <button
+            type="button"
+            onClick={() => setShowHint((value) => !value)}
+            style={{
+              width: '100%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              fontWeight: 700,
+              fontSize: '0.9375rem',
+              color: 'var(--text-primary)',
+            }}
+          >
+            <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Lightbulb size={17} color="var(--accent)" /> Gợi ý làm bài (Hint)
+            </span>
+            {showHint ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+          </button>
+          {showHint && (
+            <div style={{ marginTop: '12px' }}>
+              <textarea
+                rows={2}
+                className="input-field"
+                value={question.hint || ''}
+                onChange={(e) => onChange({ ...question, hint: e.target.value })}
+                placeholder="Nhập gợi ý hướng dẫn học sinh suy luận..."
+                style={{ padding: '10px 14px' }}
+              />
+            </div>
+          )}
+        </div>
 
-      {/* 4. Collapsible Explanation Section */}
-      <div
-        style={{
-          backgroundColor: '#FFFFFF',
-          borderRadius: 'var(--border-radius-lg)',
-          border: '1px solid var(--border-color)',
-          overflow: 'hidden',
-          boxShadow: 'var(--shadow-sm)',
-        }}
-      >
-        <button
-          type="button"
-          onClick={() => setShowExplanation(!showExplanation)}
-          style={{
-            width: '100%',
-            padding: '16px 20px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            backgroundColor: showExplanation ? 'var(--primary-subtle)' : '#FFFFFF',
-            fontWeight: 600,
-            fontSize: '0.9375rem',
-            color: 'var(--text-primary)',
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <FileText size={18} color="var(--primary)" />
-            <span>Giải thích chi tiết đáp án (Hiện khi xem kết quả)</span>
-          </div>
-          {showExplanation ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
-        </button>
-        {showExplanation && (
-          <div style={{ padding: '16px 20px' }}>
-            <textarea
-              rows={3}
-              value={question.explanation || ''}
-              onChange={(e) => onChange({ ...question, explanation: e.target.value })}
-              placeholder="Nhập lời giải chi tiết và kiến thức liên quan..."
-              style={{
-                width: '100%',
-                padding: '10px 14px',
-                borderRadius: 'var(--border-radius-md)',
-                border: '1.5px solid var(--border-color)',
-                outline: 'none',
-                fontSize: '0.875rem',
-                color: 'var(--text-primary)',
-              }}
-            />
-          </div>
-        )}
+        {/* Explanation Accordion */}
+        <div className="card" style={{ padding: '16px 20px' }}>
+          <button
+            type="button"
+            onClick={() => setShowExplanation((value) => !value)}
+            style={{
+              width: '100%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              fontWeight: 700,
+              fontSize: '0.9375rem',
+              color: 'var(--text-primary)',
+            }}
+          >
+            <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <FileText size={17} color="var(--primary)" /> Giải thích chi tiết đáp án (Explanation)
+            </span>
+            {showExplanation ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+          </button>
+          {showExplanation && (
+            <div style={{ marginTop: '12px' }}>
+              <textarea
+                rows={3}
+                className="input-field"
+                value={question.explanation || ''}
+                onChange={(e) => onChange({ ...question, explanation: e.target.value })}
+                placeholder="Nhập phần giải thích chi tiết vì sao đáp án này là đúng..."
+                style={{ padding: '10px 14px' }}
+              />
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

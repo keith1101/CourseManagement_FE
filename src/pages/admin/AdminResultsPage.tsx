@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Award, CheckCircle2, XCircle, Clock, Eye } from 'lucide-react';
+import { Search, Eye, Calendar, Clock } from 'lucide-react';
 import { Button } from '../../components/common/Button';
 import { Badge } from '../../components/common/Badge';
 import { LoadingSpinner } from '../../components/common/LoadingSpinner';
+import { PageHeader } from '../../components/common/PageHeader';
+import { EmptyState } from '../../components/common/EmptyState';
 import { attemptsApi } from '../../api/attempts';
 import { examsApi } from '../../api/exams';
 import { ExamAttempt, Exam } from '../../types';
@@ -56,22 +58,25 @@ export const AdminResultsPage: React.FC = () => {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-      {/* Header */}
-      <div>
-        <h1 style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--text-primary)' }}>
-          Báo Cáo Điểm Số & Kết Quả Toàn Hệ Thống
-        </h1>
-        <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', marginTop: '2px' }}>
-          Xem chi tiết kết quả làm bài của tất cả học sinh theo từng đề thi
-        </p>
-      </div>
+      <PageHeader
+        eyebrow="Thống kê & Báo cáo"
+        title="Báo cáo kết quả bài thi toàn trường"
+        description="Xem chi tiết điểm số, tỉ lệ chính xác và thời gian làm bài của học sinh theo từng đề thi."
+      />
 
       {/* Filter Toolbar */}
-      <div className="results-toolbar" style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
-        <div style={{ position: 'relative', width: '280px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
+        <div style={{ position: 'relative', width: '300px' }}>
           <Search
             size={16}
-            style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }}
+            style={{
+              position: 'absolute',
+              left: '12px',
+              top: '50%',
+              transform: 'translateY(-50%)',
+              color: 'var(--text-muted)',
+              pointerEvents: 'none',
+            }}
           />
           <input
             type="text"
@@ -79,7 +84,7 @@ export const AdminResultsPage: React.FC = () => {
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="input-field"
-            style={{ paddingLeft: '36px', height: '40px' }}
+            style={{ paddingLeft: '36px', height: '40px', minHeight: '40px' }}
           />
         </div>
 
@@ -87,7 +92,7 @@ export const AdminResultsPage: React.FC = () => {
           value={examFilter}
           onChange={(e) => setExamFilter(e.target.value)}
           className="input-field"
-          style={{ width: '220px', height: '40px', cursor: 'pointer' }}
+          style={{ width: '240px', height: '40px', minHeight: '40px', cursor: 'pointer' }}
         >
           <option value="ALL">Tất cả đề thi</option>
           {exams.map((ex) => (
@@ -103,57 +108,123 @@ export const AdminResultsPage: React.FC = () => {
         <table className="data-table">
           <thead>
             <tr>
-              <th>Học Sinh</th>
-              <th>Đề Thi</th>
-              <th>Thời Gian Hoàn Thành</th>
-              <th>Điểm Số</th>
-              <th>Đánh Giá</th>
-              <th>Hành Động</th>
+              <th>Học sinh</th>
+              <th>Đề thi</th>
+              <th>Thời gian nộp</th>
+              <th>Thời lượng</th>
+              <th>Điểm số</th>
+              <th>Kết quả</th>
+              <th>Thao tác</th>
             </tr>
           </thead>
           <tbody>
             {filtered.length === 0 ? (
               <tr>
-                <td colSpan={6} style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>
-                  Chưa có kết quả làm bài nào
+                <td colSpan={7} style={{ textAlign: 'center', padding: '40px' }}>
+                  <EmptyState
+                    title="Chưa có lượt thi nào hoàn thành"
+                    description="Hiện chưa có kết quả làm bài nào phù hợp với bộ lọc."
+                  />
                 </td>
               </tr>
             ) : (
               filtered.map((att) => {
-                const score = att.score !== undefined ? att.score : 0;
-                const isPassed = score >= (att.exam?.passingScore || 5);
+                const totalQ = att.totalQuestions || att.questions?.length || 0;
+                const correct = att.correctAnswers ?? 0;
+                const score =
+                  att.score !== undefined
+                    ? att.score.toFixed(1)
+                    : totalQ > 0
+                    ? ((correct / totalQ) * 10).toFixed(1)
+                    : '0.0';
+                const isPassed = Number(score) >= (att.exam?.passingScore || 5);
 
                 return (
                   <tr key={att.id}>
                     <td>
-                      <div>
-                        <strong>{att.student?.fullName || 'Học sinh'}</strong>
-                        <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-                          {att.student?.email}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <div
+                          style={{
+                            width: '32px',
+                            height: '32px',
+                            borderRadius: '50%',
+                            backgroundColor: 'var(--primary-light)',
+                            color: 'var(--primary)',
+                            fontWeight: 700,
+                            fontSize: '0.8125rem',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                          }}
+                        >
+                          {att.student?.fullName?.charAt(0) || 'H'}
+                        </div>
+                        <div>
+                          <strong style={{ fontSize: '0.9375rem', color: 'var(--text-primary)' }}>
+                            {att.student?.fullName || 'Học sinh'}
+                          </strong>
+                          <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                            {att.student?.email}
+                          </div>
                         </div>
                       </div>
                     </td>
                     <td>
-                      <strong>{att.exam?.title || 'Đề thi'}</strong>
+                      <strong style={{ color: 'var(--text-primary)' }}>
+                        {att.exam?.title || 'Đề thi trắc nghiệm'}
+                      </strong>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                        Môn: {att.exam?.subject?.name || 'Chung'}
+                      </div>
                     </td>
                     <td>
-                      <span style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)' }}>
-                        {att.submittedAt ? new Date(att.submittedAt).toLocaleString('vi-VN') : 'Đang làm'}
+                      <span
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                          fontSize: '0.8125rem',
+                          color: 'var(--text-secondary)',
+                        }}
+                      >
+                        <Calendar size={13} />
+                        {att.submittedAt
+                          ? new Date(att.submittedAt).toLocaleString('vi-VN')
+                          : '-'}
+                      </span>
+                    </td>
+                    <td>
+                      <span
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                          fontSize: '0.8125rem',
+                          color: 'var(--text-secondary)',
+                        }}
+                      >
+                        <Clock size={13} />
+                        {att.durationSeconds
+                          ? `${Math.floor(att.durationSeconds / 60)} phút`
+                          : '-'}
                       </span>
                     </td>
                     <td>
                       <strong
                         style={{
-                          fontSize: '1.0625rem',
                           color: isPassed ? 'var(--success)' : 'var(--error)',
+                          fontSize: '1.0625rem',
                         }}
                       >
-                        {att.score !== undefined ? `${score}/10` : '-'}
+                        {score} / 10
                       </strong>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                        {correct}/{totalQ} câu đúng
+                      </div>
                     </td>
                     <td>
                       <Badge variant={isPassed ? 'success' : 'error'}>
-                        {isPassed ? 'ĐẠT CHUẨN' : 'CHƯA ĐẠT'}
+                        {isPassed ? 'Đạt' : 'Chưa đạt'}
                       </Badge>
                     </td>
                     <td>
@@ -163,7 +234,7 @@ export const AdminResultsPage: React.FC = () => {
                         onClick={() => navigate(`/student/attempts/${att.id}/result`)}
                         leftIcon={<Eye size={14} />}
                       >
-                        Xem chi tiết
+                        Chi tiết
                       </Button>
                     </td>
                   </tr>

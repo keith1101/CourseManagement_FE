@@ -1,5 +1,4 @@
 import React from 'react';
-import { Flag, CheckCircle } from 'lucide-react';
 
 interface QuestionPaletteProps {
   totalQuestions: number;
@@ -18,51 +17,29 @@ export const QuestionPalette: React.FC<QuestionPaletteProps> = ({
   questionIds,
   onSelectIndex,
 }) => {
-  const answeredCount = Object.keys(answers).length;
+  const answeredCount = Object.keys(answers).filter((k) => answers[k] !== '' && answers[k] !== undefined).length;
 
   return (
-    <div
-      className="question-palette"
-      style={{
-        backgroundColor: '#FFFFFF',
-        borderRadius: 'var(--border-radius-lg)',
-        border: '1px solid var(--border-color)',
-        padding: '20px',
-        boxShadow: 'var(--shadow-sm)',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '16px',
-      }}
-    >
+    <div className="card question-palette">
       {/* Header Info */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <h4 style={{ fontSize: '0.9375rem', fontWeight: 700, color: 'var(--text-primary)' }}>
           Danh Sách Câu Hỏi
         </h4>
-        <span style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--primary)' }}>
-          Đã làm: {answeredCount}/{totalQuestions}
+        <span style={{ fontSize: '0.8125rem', fontWeight: 700, color: 'var(--primary)' }}>
+          {answeredCount} / {totalQuestions} đã làm
         </span>
       </div>
 
       {/* Grid of question buttons */}
-      <div
-        className="question-palette-grid"
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(5, 1fr)',
-          gap: '8px',
-          maxHeight: '300px',
-          overflowY: 'auto',
-          padding: '4px',
-        }}
-      >
+      <div className="question-palette-grid">
         {Array.from({ length: totalQuestions }).map((_, idx) => {
           const qId = questionIds[idx];
           const isAnswered = answers[qId] !== undefined && answers[qId] !== '';
           const isFlagged = !!flaggedQuestions[idx];
           const isCurrent = idx === currentIndex;
 
-          let bg = '#FFFFFF';
+          let bg = 'var(--bg-card)';
           let color = 'var(--text-primary)';
           let border = '1px solid var(--border-color)';
 
@@ -77,18 +54,18 @@ export const QuestionPalette: React.FC<QuestionPaletteProps> = ({
               key={idx}
               onClick={() => onSelectIndex(idx)}
               style={{
-                height: '40px',
-                borderRadius: '8px',
+                height: '38px',
+                borderRadius: 'var(--border-radius-sm)',
                 backgroundColor: bg,
                 color,
-                border: isCurrent ? '2px solid var(--secondary)' : border,
+                border: isCurrent ? '2px solid var(--accent)' : border,
                 fontWeight: 700,
                 fontSize: '0.875rem',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 position: 'relative',
-                boxShadow: isCurrent ? '0 0 0 3px rgba(242, 184, 75, 0.35)' : 'none',
+                boxShadow: isCurrent ? '0 0 0 2px rgba(200, 100, 62, 0.3)' : 'none',
                 transition: 'all var(--transition-fast)',
               }}
             >
@@ -97,13 +74,13 @@ export const QuestionPalette: React.FC<QuestionPaletteProps> = ({
                 <div
                   style={{
                     position: 'absolute',
-                    top: '-4px',
-                    right: '-4px',
-                    width: '12px',
-                    height: '12px',
+                    top: '-3px',
+                    right: '-3px',
+                    width: '10px',
+                    height: '10px',
                     borderRadius: '50%',
-                    backgroundColor: 'var(--secondary-accent)',
-                    border: '2px solid #FFFFFF',
+                    backgroundColor: 'var(--accent)',
+                    border: '1.5px solid #FFFFFF',
                   }}
                 />
               )}
@@ -129,11 +106,11 @@ export const QuestionPalette: React.FC<QuestionPaletteProps> = ({
           <span>Đã trả lời ({answeredCount})</span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <div style={{ width: '12px', height: '12px', borderRadius: '3px', backgroundColor: '#FFFFFF', border: '1px solid var(--border-color)' }} />
+          <div style={{ width: '12px', height: '12px', borderRadius: '3px', backgroundColor: 'var(--bg-card)', border: '1px solid var(--border-color)' }} />
           <span>Chưa trả lời ({totalQuestions - answeredCount})</span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <div style={{ width: '12px', height: '12px', borderRadius: '50%', backgroundColor: 'var(--secondary-accent)' }} />
+          <div style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: 'var(--accent)' }} />
           <span>Đã đánh dấu xem lại</span>
         </div>
       </div>

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Outlet, NavLink, useNavigate } from 'react-router-dom';
+import { Outlet, NavLink, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard,
   FileQuestion,
@@ -14,21 +14,34 @@ import {
   ShieldCheck,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { Breadcrumbs } from '../components/common/Breadcrumbs';
 
 export const AdminLayout: React.FC = () => {
   const { user, logout } = useAuth();
-  const navigate = useNavigate();
+  const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const navItems = [
-    { label: 'Bảng điều khiển', path: '/admin', icon: <LayoutDashboard size={20} /> },
-    { label: 'Quản lý Đề thi', path: '/admin/exams', icon: <FileQuestion size={20} /> },
-    { label: 'Giao bài thi', path: '/admin/assignments', icon: <Send size={20} /> },
-    { label: 'Quản lý Môn học', path: '/admin/subjects', icon: <BookOpen size={20} /> },
-    { label: 'Quản lý Tài liệu', path: '/admin/materials', icon: <Library size={20} /> },
-    { label: 'Quản lý Người dùng', path: '/admin/users', icon: <Users size={20} /> },
-    { label: 'Báo cáo & Kết quả', path: '/admin/results', icon: <BarChart3 size={20} /> },
+    { label: 'Bảng điều khiển', path: '/admin', icon: <LayoutDashboard size={19} /> },
+    { label: 'Quản lý Đề thi', path: '/admin/exams', icon: <FileQuestion size={19} /> },
+    { label: 'Giao bài thi', path: '/admin/assignments', icon: <Send size={19} /> },
+    { label: 'Quản lý Môn học', path: '/admin/subjects', icon: <BookOpen size={19} /> },
+    { label: 'Quản lý Tài liệu', path: '/admin/materials', icon: <Library size={19} /> },
+    { label: 'Quản lý Người dùng', path: '/admin/users', icon: <Users size={19} /> },
+    { label: 'Báo cáo & Kết quả', path: '/admin/results', icon: <BarChart3 size={19} /> },
   ];
+
+  const getBreadcrumbs = () => {
+    const path = location.pathname;
+    if (path === '/admin') return [{ label: 'Hệ Thống Quản Trị', path: '/admin' }, { label: 'Bảng điều khiển' }];
+    if (path.startsWith('/admin/exams')) return [{ label: 'Hệ Thống Quản Trị', path: '/admin' }, { label: 'Quản lý Đề thi' }];
+    if (path.startsWith('/admin/assignments')) return [{ label: 'Hệ Thống Quản Trị', path: '/admin' }, { label: 'Giao bài thi' }];
+    if (path.startsWith('/admin/subjects')) return [{ label: 'Hệ Thống Quản Trị', path: '/admin' }, { label: 'Quản lý Môn học' }];
+    if (path.startsWith('/admin/materials')) return [{ label: 'Hệ Thống Quản Trị', path: '/admin' }, { label: 'Quản lý Tài liệu' }];
+    if (path.startsWith('/admin/users')) return [{ label: 'Hệ Thống Quản Trị', path: '/admin' }, { label: 'Quản lý Người dùng' }];
+    if (path.startsWith('/admin/results')) return [{ label: 'Hệ Thống Quản Trị', path: '/admin' }, { label: 'Báo cáo & Kết quả' }];
+    return [{ label: 'Hệ Thống Quản Trị', path: '/admin' }];
+  };
 
   return (
     <div className="app-container">
@@ -39,29 +52,15 @@ export const AdminLayout: React.FC = () => {
           style={{
             position: 'fixed',
             inset: 0,
-            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            backgroundColor: 'rgba(24, 32, 47, 0.6)',
+            backdropFilter: 'blur(3px)',
             zIndex: 45,
           }}
         />
       )}
 
       {/* Sidebar */}
-      <aside
-        className={`app-sidebar ${sidebarOpen ? 'app-sidebar-open' : ''}`}
-        style={{
-          backgroundColor: 'var(--bg-sidebar)',
-          color: '#FFFFFF',
-          display: 'flex',
-          flexDirection: 'column',
-          flexShrink: 0,
-          position: 'sticky',
-          top: 0,
-          height: '100vh',
-          zIndex: 50,
-          transition: 'transform var(--transition-normal)',
-          transform: sidebarOpen ? 'translateX(0)' : undefined,
-        }}
-      >
+      <aside className={`app-sidebar ${sidebarOpen ? 'app-sidebar-open' : ''}`}>
         {/* Brand */}
         <div
           style={{
@@ -69,22 +68,40 @@ export const AdminLayout: React.FC = () => {
             display: 'flex',
             alignItems: 'center',
             gap: '12px',
-            borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+            borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
           }}
         >
-          <div className="sidebar-brand-icon sidebar-brand-icon--admin" aria-hidden="true">
-            <ShieldCheck size={22} color="#FFFFFF" />
+          <div className="sidebar-brand-icon sidebar-brand-icon--admin">
+            <ShieldCheck size={20} />
           </div>
           <div>
-            <h2 style={{ fontSize: '1.125rem', fontWeight: 800, lineHeight: 1.2 }}>CourseManagement</h2>
-            <span style={{ fontSize: '0.75rem', color: 'rgba(255, 255, 255, 0.75)', fontWeight: 600 }}>
-              Quản Trị Viên
+            <h2
+              style={{
+                fontSize: '1.0625rem',
+                fontWeight: 800,
+                lineHeight: 1.2,
+                letterSpacing: '-0.02em',
+                color: '#FFFFFF',
+              }}
+            >
+              CourseManagement
+            </h2>
+            <span style={{ fontSize: '0.75rem', color: 'rgba(255, 255, 255, 0.65)' }}>
+              Quản Trị Hệ Thống
             </span>
           </div>
         </div>
 
         {/* Navigation Items */}
-        <nav style={{ flex: 1, padding: '20px 12px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+        <nav
+          style={{
+            flex: 1,
+            padding: '20px 12px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '4px',
+          }}
+        >
           {navItems.map((item) => (
             <NavLink
               key={item.path}
@@ -95,14 +112,14 @@ export const AdminLayout: React.FC = () => {
                 display: 'flex',
                 alignItems: 'center',
                 gap: '12px',
-                padding: '12px 16px',
+                padding: '11px 16px',
                 borderRadius: 'var(--border-radius-md)',
-                color: '#FFFFFF',
+                color: isActive ? '#FFFFFF' : 'rgba(255, 255, 255, 0.75)',
                 fontWeight: isActive ? 700 : 500,
                 fontSize: '0.9375rem',
-                backgroundColor: isActive ? 'var(--bg-sidebar-active)' : 'transparent',
+                backgroundColor: isActive ? 'var(--primary)' : 'transparent',
                 transition: 'all var(--transition-fast)',
-                borderLeft: isActive ? '4px solid var(--secondary)' : '4px solid transparent',
+                borderLeft: isActive ? '3px solid var(--accent)' : '3px solid transparent',
               })}
             >
               {item.icon}
@@ -114,8 +131,8 @@ export const AdminLayout: React.FC = () => {
         {/* User Mini Profile & Logout */}
         <div
           style={{
-            padding: '16px 20px',
-            borderTop: '1px solid rgba(255, 255, 255, 0.1)',
+            padding: '16px 18px',
+            borderTop: '1px solid rgba(255, 255, 255, 0.08)',
             backgroundColor: 'rgba(0, 0, 0, 0.15)',
             display: 'flex',
             alignItems: 'center',
@@ -128,14 +145,15 @@ export const AdminLayout: React.FC = () => {
                 width: '36px',
                 height: '36px',
                 borderRadius: '50%',
-                backgroundColor: '#FFFFFF',
-                color: 'var(--primary)',
+                backgroundColor: '#FFFDF8',
+                color: 'var(--secondary)',
                 fontWeight: 800,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 fontSize: '0.875rem',
                 flexShrink: 0,
+                border: '1px solid var(--border-color)',
               }}
             >
               A
@@ -143,16 +161,17 @@ export const AdminLayout: React.FC = () => {
             <div style={{ overflow: 'hidden' }}>
               <div
                 style={{
-                  fontWeight: 700,
+                  fontWeight: 600,
                   fontSize: '0.875rem',
                   whiteSpace: 'nowrap',
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
+                  color: '#FFFFFF',
                 }}
               >
                 {user?.fullName || 'Quản trị viên'}
               </div>
-              <div style={{ fontSize: '0.75rem', color: 'rgba(255, 255, 255, 0.7)' }}>
+              <div style={{ fontSize: '0.75rem', color: 'rgba(255, 255, 255, 0.65)' }}>
                 {user?.email || 'admin@system.com'}
               </div>
             </div>
@@ -160,14 +179,18 @@ export const AdminLayout: React.FC = () => {
           <button
             onClick={logout}
             title="Đăng xuất"
+            aria-label="Đăng xuất"
             style={{
-              color: 'rgba(255, 255, 255, 0.75)',
+              color: 'rgba(255, 255, 255, 0.65)',
               padding: '6px',
               borderRadius: '6px',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
+              transition: 'all var(--transition-fast)',
             }}
+            onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.color = '#FFFFFF')}
+            onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.color = 'rgba(255, 255, 255, 0.65)')}
           >
             <LogOut size={18} />
           </button>
@@ -177,38 +200,23 @@ export const AdminLayout: React.FC = () => {
       {/* Main Content Area */}
       <div className="main-content">
         {/* Topbar */}
-        <header className="topbar admin-topbar">
-          <div className="topbar-leading" style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+        <header className="topbar">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
             <button
               onClick={() => setSidebarOpen(!sidebarOpen)}
               aria-label={sidebarOpen ? 'Đóng menu' : 'Mở menu'}
               aria-expanded={sidebarOpen}
-              style={{
-                color: 'var(--text-primary)',
-                padding: '6px',
-              }}
               className="mobile-menu-btn"
             >
-              {sidebarOpen ? <X size={24} /> : <Menu size={24} />}
+              {sidebarOpen ? <X size={20} /> : <Menu size={20} />}
             </button>
-            <div>
-              <span style={{ color: 'var(--text-secondary)', fontSize: '0.8125rem' }}>Hệ thống quản trị</span>
-              <h3 style={{ fontSize: '1.0625rem', fontWeight: 700, color: 'var(--text-primary)' }}>
-                Bảng Điều Khiển Quản Lý
-              </h3>
-            </div>
+            <Breadcrumbs items={getBreadcrumbs()} />
           </div>
 
-          <div className="topbar-actions" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <span
-              style={{
-                backgroundColor: 'var(--primary-light)',
-                color: 'var(--primary)',
-                fontWeight: 700,
-                fontSize: '0.75rem',
-                padding: '4px 12px',
-                borderRadius: 'var(--border-radius-full)',
-              }}
+              className="badge badge-primary"
+              style={{ fontSize: '0.75rem', padding: '4px 10px' }}
             >
               ADMIN
             </span>

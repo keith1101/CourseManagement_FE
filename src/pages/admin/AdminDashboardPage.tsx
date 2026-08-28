@@ -160,31 +160,44 @@ export const AdminDashboardPage: React.FC = () => {
               <div
                 key={ex.id}
                 style={{
-                  display: 'flex',
+                  display: 'grid',
+                  gridTemplateColumns: '1fr 110px 120px',
                   alignItems: 'center',
-                  justifyContent: 'space-between',
+                  gap: '12px',
                   padding: '12px 16px',
                   backgroundColor: 'var(--bg-subtle)',
                   borderRadius: 'var(--border-radius-md)',
                   border: '1px solid var(--border-color)',
                 }}
               >
-                <div>
-                  <strong style={{ fontSize: '0.9375rem', color: 'var(--text-primary)' }}>
+                <div style={{ minWidth: 0 }}>
+                  <strong
+                    style={{
+                      fontSize: '0.9375rem',
+                      color: 'var(--text-primary)',
+                      display: 'block',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
                     {ex.title}
                   </strong>
                   <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '2px' }}>
                     {ex.durationMinutes} phút • {ex.questionsCount || 0} câu hỏi
                   </div>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div style={{ display: 'flex', justifyContent: 'center' }}>
                   <Badge variant={ex.status === 'PUBLISHED' ? 'success' : 'warning'}>
                     {ex.status === 'PUBLISHED' ? 'Đã duyệt' : 'Bản nháp'}
                   </Badge>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
                   <Button
                     size="sm"
                     variant="outline"
                     onClick={() => navigate(`/admin/exams/${ex.id}/questions`)}
+                    style={{ whiteSpace: 'nowrap' }}
                   >
                     Soạn câu hỏi
                   </Button>
@@ -211,49 +224,70 @@ export const AdminDashboardPage: React.FC = () => {
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            {attempts.slice(0, 4).map((att) => (
-              <div
-                key={att.id}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  padding: '12px 16px',
-                  backgroundColor: 'var(--bg-subtle)',
-                  borderRadius: 'var(--border-radius-md)',
-                  border: '1px solid var(--border-color)',
-                }}
-              >
-                <div>
-                  <strong style={{ fontSize: '0.9375rem', color: 'var(--text-primary)' }}>
-                    {att.student?.fullName || 'Học sinh'}
-                  </strong>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '2px' }}>
-                    {att.exam?.title || 'Đề thi trắc nghiệm'}
+            {attempts.slice(0, 4).map((att) => {
+              const isCompleted =
+                att.status === 'SUBMITTED' || att.status === 'SCORED' || att.status === 'COMPLETED';
+              return (
+                <div
+                  key={att.id}
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: '1fr 90px 130px',
+                    alignItems: 'center',
+                    gap: '12px',
+                    padding: '12px 16px',
+                    backgroundColor: 'var(--bg-subtle)',
+                    borderRadius: 'var(--border-radius-md)',
+                    border: '1px solid var(--border-color)',
+                  }}
+                >
+                  <div style={{ minWidth: 0 }}>
+                    <strong
+                      style={{
+                        fontSize: '0.9375rem',
+                        color: 'var(--text-primary)',
+                        display: 'block',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {att.student?.fullName || 'Học sinh'}
+                    </strong>
+                    <div
+                      style={{
+                        fontSize: '0.75rem',
+                        color: 'var(--text-secondary)',
+                        marginTop: '2px',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {att.exam?.title || 'Đề thi trắc nghiệm'}
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'center' }}>
+                    <span
+                      style={{
+                        fontWeight: 800,
+                        color: (att.score || 0) >= 5 ? 'var(--success)' : 'var(--error)',
+                        fontSize: '1rem',
+                        fontFamily: 'var(--font-mono)',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {att.score !== undefined ? `${Number(att.score).toFixed(0)}/10` : '-'}
+                    </span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                    <Badge variant={isCompleted ? 'success' : 'warning'}>
+                      {isCompleted ? 'ĐÃ HOÀN THÀNH' : 'ĐANG LÀM'}
+                    </Badge>
                   </div>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <span
-                    style={{
-                      fontWeight: 800,
-                      color: (att.score || 0) >= 5 ? 'var(--success)' : 'var(--error)',
-                      fontSize: '0.9375rem',
-                    }}
-                  >
-                    {att.score !== undefined ? `${att.score}/10` : '-'}
-                  </span>
-                  <Badge
-                    variant={
-                      att.status === 'SUBMITTED' || att.status === 'SCORED' || att.status === 'COMPLETED'
-                        ? 'success'
-                        : 'warning'
-                    }
-                  >
-                    {att.status}
-                  </Badge>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </Card>
       </div>

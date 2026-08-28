@@ -165,13 +165,13 @@ export const UsersManagementPage: React.FC = () => {
         <table className="data-table users-table">
           <thead>
             <tr>
-              <th>Họ và tên</th>
-              <th>Email</th>
-              <th>Số điện thoại</th>
-              <th>Vai trò</th>
-              <th>Gói thành viên</th>
-              <th>Trạng thái</th>
-              <th>Thao tác</th>
+              <th style={{ minWidth: '180px' }}>Họ và tên</th>
+              <th style={{ minWidth: '200px' }}>Email</th>
+              <th style={{ minWidth: '130px' }}>Số điện thoại</th>
+              <th style={{ textAlign: 'center', width: '120px', minWidth: '110px' }}>Vai trò</th>
+              <th style={{ textAlign: 'center', width: '130px', minWidth: '120px' }}>Gói thành viên</th>
+              <th style={{ textAlign: 'center', width: '120px', minWidth: '110px' }}>Trạng thái</th>
+              <th style={{ textAlign: 'center', width: '180px', minWidth: '180px' }}>Thao tác</th>
             </tr>
           </thead>
           <tbody>
@@ -223,49 +223,64 @@ export const UsersManagementPage: React.FC = () => {
                       {u.phoneNumber || '-'}
                     </span>
                   </td>
-                  <td>
+                  <td style={{ textAlign: 'center' }}>
                     <Badge variant={u.role === 'ADMIN' ? 'primary' : 'neutral'}>
                       {u.role === 'ADMIN' ? 'Quản trị' : 'Học sinh'}
                     </Badge>
                   </td>
-                  <td>
+                  <td style={{ textAlign: 'center' }}>
                     <Badge variant={u.tier === 'PRO' ? 'premium' : 'neutral'}>
                       {u.tier === 'PRO' ? '⭐ Gói PRO' : 'Miễn phí'}
                     </Badge>
                   </td>
-                  <td>
+                  <td style={{ textAlign: 'center' }}>
                     <Badge variant={u.status === 'ACTIVE' ? 'success' : 'error'}>
                       {u.status === 'ACTIVE' ? 'Hoạt động' : 'Đã khóa'}
                     </Badge>
                   </td>
-                  <td>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <td style={{ textAlign: 'center', width: '180px', minWidth: '180px', whiteSpace: 'nowrap' }}>
+                    <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
                       <button
                         onClick={() => handleOpenEditUser(u)}
                         title="Phân quyền vai trò & gói PRO"
                         style={{
-                          padding: '6px 10px',
+                          padding: '6px 12px',
                           borderRadius: '6px',
+                          backgroundColor: 'var(--bg-card)',
                           color: 'var(--primary)',
                           border: '1px solid var(--border-color)',
                           fontSize: '0.8125rem',
                           fontWeight: 600,
                           display: 'inline-flex',
                           alignItems: 'center',
-                          gap: '4px',
+                          gap: '6px',
+                          cursor: 'pointer',
+                          whiteSpace: 'nowrap',
+                          transition: 'all var(--transition-fast)',
                         }}
                       >
                         <Edit2 size={14} /> Phân quyền
                       </button>
                       <button
                         onClick={() => handleToggleLock(u)}
-                        title={u.status === 'ACTIVE' ? 'Khóa tài khoản' : 'Mở khóa'}
+                        title={u.status === 'ACTIVE' ? 'Khóa tài khoản' : 'Mở khóa tài khoản'}
                         style={{
-                          padding: '6px',
+                          padding: '6px 8px',
                           borderRadius: '6px',
+                          backgroundColor:
+                            u.status === 'ACTIVE' ? 'rgba(239, 68, 68, 0.08)' : 'rgba(16, 185, 129, 0.08)',
                           color: u.status === 'ACTIVE' ? 'var(--error)' : 'var(--success)',
-                          border: '1px solid var(--border-color)',
-                          display: 'flex',
+                          border: `1px solid ${
+                            u.status === 'ACTIVE' ? 'rgba(239, 68, 68, 0.25)' : 'rgba(16, 185, 129, 0.25)'
+                          }`,
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          cursor: 'pointer',
+                          flexShrink: 0,
+                          minWidth: '32px',
+                          height: '32px',
+                          transition: 'all var(--transition-fast)',
                         }}
                       >
                         {u.status === 'ACTIVE' ? <Lock size={15} /> : <Unlock size={15} />}

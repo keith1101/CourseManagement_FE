@@ -124,55 +124,57 @@ export const LoginPage: React.FC = () => {
           Đăng Nhập
         </Button>
 
-        {/* Quick Mock Login Shortcuts */}
-        <div
-          style={{
-            marginTop: '24px',
-            paddingTop: '20px',
-            borderTop: '1px dashed var(--border-color)',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '10px',
-          }}
-        >
+        {/* Quick Mock Login Shortcuts (Only visible when VITE_ENABLE_MOCKS=true) */}
+        {import.meta.env.VITE_ENABLE_MOCKS === 'true' && (
           <div
             style={{
-              fontSize: '0.75rem',
-              fontWeight: 700,
-              textTransform: 'uppercase',
-              letterSpacing: '0.06em',
-              color: 'var(--accent)',
-              textAlign: 'center',
+              marginTop: '24px',
+              paddingTop: '20px',
+              borderTop: '1px dashed var(--border-color)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '10px',
             }}
           >
-            ⚡ Tài khoản thử nghiệm nhanh (Mock)
-          </div>
+            <div
+              style={{
+                fontSize: '0.75rem',
+                fontWeight: 700,
+                textTransform: 'uppercase',
+                letterSpacing: '0.06em',
+                color: 'var(--accent)',
+                textAlign: 'center',
+              }}
+            >
+              ⚡ Tài khoản thử nghiệm nhanh (Mock)
+            </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => handleQuickLogin('student@test.com')}
-              disabled={isLoading}
-              leftIcon={<UserCheck size={14} color="var(--primary)" />}
-              style={{ fontSize: '0.8125rem' }}
-            >
-              Học Sinh (PRO)
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => handleQuickLogin('admin@test.com')}
-              disabled={isLoading}
-              leftIcon={<ShieldCheck size={14} color="var(--secondary)" />}
-              style={{ fontSize: '0.8125rem' }}
-            >
-              Quản Trị (ADMIN)
-            </Button>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => handleQuickLogin('student@test.com')}
+                disabled={isLoading}
+                leftIcon={<UserCheck size={14} color="var(--primary)" />}
+                style={{ fontSize: '0.8125rem' }}
+              >
+                Học Sinh (PRO)
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => handleQuickLogin('admin@test.com')}
+                disabled={isLoading}
+                leftIcon={<ShieldCheck size={14} color="var(--secondary)" />}
+                style={{ fontSize: '0.8125rem' }}
+              >
+                Quản Trị (ADMIN)
+              </Button>
+            </div>
           </div>
-        </div>
+        )}
 
         <div
           style={{

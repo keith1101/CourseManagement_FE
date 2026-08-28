@@ -356,7 +356,6 @@ export const ExamTakingPage: React.FC = () => {
             {exam?.subject?.name || 'Môn học'}
           </span>
           <h2
-            className="font-serif"
             style={{ fontSize: '1.35rem', fontWeight: 700, color: 'var(--text-primary)', marginTop: '2px' }}
           >
             {exam?.title || 'Bài thi trắc nghiệm'}

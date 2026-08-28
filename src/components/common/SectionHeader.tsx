@@ -18,12 +18,12 @@ export const SectionHeader: React.FC<SectionHeaderProps> = ({
   return (
     <div className={`section-header ${className}`} style={{ flexWrap: 'wrap', gap: '12px' }}>
       <div style={{ minWidth: 0 }}>
-        <h2 className="section-header-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <h2 className="section-header-title section-title-uppercase" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
           {icon && <span style={{ color: 'var(--primary)', display: 'inline-flex' }}>{icon}</span>}
           <span>{title}</span>
         </h2>
         {description && (
-          <p style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)', marginTop: '2px' }}>
+          <p style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)', marginTop: '6px' }}>
             {description}
           </p>
         )}

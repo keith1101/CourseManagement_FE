@@ -75,6 +75,7 @@ export const AdminResultsPage: React.FC = () => {
               top: '50%',
               transform: 'translateY(-50%)',
               color: 'var(--text-muted)',
+              pointerEvents: 'none',
             }}
           />
           <input

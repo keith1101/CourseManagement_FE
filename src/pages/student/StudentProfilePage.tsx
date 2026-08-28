@@ -60,7 +60,7 @@ export const StudentProfilePage: React.FC = () => {
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '32px', maxWidth: '820px', margin: '0 auto' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '28px', width: '100%' }}>
       <PageHeader
         eyebrow="Tài khoản & Thiết lập"
         title="Hồ sơ cá nhân"
@@ -73,16 +73,18 @@ export const StudentProfilePage: React.FC = () => {
           display: 'flex',
           alignItems: 'center',
           gap: '24px',
-          padding: '32px',
+          padding: '28px 32px',
           backgroundColor: 'var(--bg-card)',
           borderRadius: 'var(--border-radius-lg)',
           border: '1px solid var(--border-color)',
+          boxShadow: 'var(--shadow-card)',
+          flexWrap: 'wrap',
         }}
       >
         <div
           style={{
-            width: '76px',
-            height: '76px',
+            width: '72px',
+            height: '72px',
             borderRadius: '50%',
             backgroundColor: 'var(--primary-light)',
             color: 'var(--primary)',
@@ -98,12 +100,11 @@ export const StudentProfilePage: React.FC = () => {
           {user?.fullName?.charAt(0) || 'U'}
         </div>
 
-        <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ flex: 1, minWidth: '240px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
             <h2
-              className="font-serif"
               style={{
-                fontSize: '1.45rem',
+                fontSize: '1.35rem',
                 fontWeight: 700,
                 color: 'var(--text-primary)',
               }}
@@ -114,8 +115,8 @@ export const StudentProfilePage: React.FC = () => {
               {user?.role === 'ADMIN' ? 'Quản trị viên' : 'Học sinh'}
             </Badge>
             {isProActive(user) ? (
-              <Badge variant="premium">
-                <Sparkles size={12} /> Gói PRO
+              <Badge variant="premium" icon={<Sparkles size={13} />}>
+                Gói PRO
               </Badge>
             ) : user?.tier === 'PRO' ? (
               <Badge variant="error">PRO đã hết hạn</Badge>
@@ -129,116 +130,124 @@ export const StudentProfilePage: React.FC = () => {
           </p>
 
           {user?.proExpiresAt && (
-            <div style={{ fontSize: '0.8125rem', color: 'var(--accent)', fontWeight: 600, marginTop: '6px' }}>
+            <div style={{ fontSize: '0.8125rem', color: 'var(--secondary)', fontWeight: 600, marginTop: '6px' }}>
               Thời hạn PRO đến ngày {new Date(user.proExpiresAt).toLocaleDateString('vi-VN')}
             </div>
           )}
         </div>
       </Card>
 
-      {/* Account Info Form Card */}
-      <Card style={{ padding: '28px' }}>
-        <h3
-          style={{
-            fontSize: '1.125rem',
-            fontWeight: 700,
-            color: 'var(--text-primary)',
-            marginBottom: '20px',
-            paddingBottom: '12px',
-            borderBottom: '1px solid var(--border-color)',
-          }}
-        >
-          Thông tin tài khoản
-        </h3>
-        <form onSubmit={handleUpdateProfile}>
-          <Input
-            label="Họ và tên học viên"
-            value={fullName}
-            onChange={(e) => setFullName(e.target.value)}
-            leftIcon={<UserIcon size={18} />}
-            required
-          />
-          <Input
-            label="Địa chỉ Email"
-            value={user?.email || ''}
-            disabled
-            leftIcon={<Mail size={18} />}
-            helperText="Email được dùng làm tên đăng nhập cố định và không thể thay đổi."
-          />
-          <Input
-            label="Số điện thoại liên hệ"
-            value={phoneNumber}
-            onChange={(e) => setPhoneNumber(e.target.value)}
-            leftIcon={<Phone size={18} />}
-            placeholder="0987654321"
-          />
-          <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '8px' }}>
-            <Button
-              type="submit"
-              variant="primary"
-              isLoading={isUpdatingProfile}
-              leftIcon={<Save size={16} />}
-            >
-              Lưu thay đổi
-            </Button>
-          </div>
-        </form>
-      </Card>
+      {/* 2-Column Responsive Forms Grid */}
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(min(420px, 100%), 1fr))',
+          gap: '24px',
+          alignItems: 'start',
+        }}
+      >
+        {/* Account Info Form Card */}
+        <Card style={{ padding: '28px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <h3
+            style={{
+              fontSize: '1.125rem',
+              fontWeight: 700,
+              color: 'var(--primary)',
+              paddingBottom: '12px',
+              borderBottom: '1px solid var(--border-color)',
+            }}
+          >
+            Thông tin tài khoản
+          </h3>
+          <form onSubmit={handleUpdateProfile} style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+            <Input
+              label="Họ và tên học viên"
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+              leftIcon={<UserIcon size={18} />}
+              required
+            />
+            <Input
+              label="Địa chỉ Email"
+              value={user?.email || ''}
+              disabled
+              leftIcon={<Mail size={18} />}
+              helperText="Email được dùng làm tên đăng nhập cố định và không thể thay đổi."
+            />
+            <Input
+              label="Số điện thoại liên hệ"
+              value={phoneNumber}
+              onChange={(e) => setPhoneNumber(e.target.value)}
+              leftIcon={<Phone size={18} />}
+              placeholder="0987654321"
+            />
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '12px' }}>
+              <Button
+                type="submit"
+                variant="primary"
+                isLoading={isUpdatingProfile}
+                leftIcon={<Save size={16} />}
+              >
+                Lưu thay đổi
+              </Button>
+            </div>
+          </form>
+        </Card>
 
-      {/* Change Password Form Card */}
-      <Card style={{ padding: '28px' }}>
-        <h3
-          style={{
-            fontSize: '1.125rem',
-            fontWeight: 700,
-            color: 'var(--text-primary)',
-            marginBottom: '20px',
-            paddingBottom: '12px',
-            borderBottom: '1px solid var(--border-color)',
-          }}
-        >
-          Đổi mật khẩu bảo mật
-        </h3>
-        <form onSubmit={handleChangePassword}>
-          <Input
-            label="Mật khẩu hiện tại"
-            type="password"
-            placeholder="Nhập mật khẩu hiện tại"
-            value={currentPassword}
-            onChange={(e) => setCurrentPassword(e.target.value)}
-            leftIcon={<Lock size={18} />}
-            required
-          />
-          <Input
-            label="Mật khẩu mới"
-            type="password"
-            placeholder="Ít nhất 8 ký tự"
-            value={newPassword}
-            onChange={(e) => setNewPassword(e.target.value)}
-            leftIcon={<Lock size={18} />}
-            required
-          />
-          <Input
-            label="Xác nhận mật khẩu mới"
-            type="password"
-            placeholder="Nhập lại mật khẩu mới"
-            value={confirmNewPassword}
-            onChange={(e) => setConfirmNewPassword(e.target.value)}
-            leftIcon={<Lock size={18} />}
-            required
-          />
-          <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '8px' }}>
-            <Button
-              type="submit"
-              variant="secondary"
-              isLoading={isChangingPassword}
-              leftIcon={<Shield size={16} />}
-            >
-              Cập nhật mật khẩu
-            </Button>
-          </div>
-        </form>
-      </Card>
+        {/* Change Password Form Card */}
+        <Card style={{ padding: '28px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <h3
+            style={{
+              fontSize: '1.125rem',
+              fontWeight: 700,
+              color: 'var(--primary)',
+              paddingBottom: '12px',
+              borderBottom: '1px solid var(--border-color)',
+            }}
+          >
+            Đổi mật khẩu bảo mật
+          </h3>
+          <form onSubmit={handleChangePassword} style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+            <Input
+              label="Mật khẩu hiện tại"
+              type="password"
+              placeholder="Nhập mật khẩu hiện tại"
+              value={currentPassword}
+              onChange={(e) => setCurrentPassword(e.target.value)}
+              leftIcon={<Lock size={18} />}
+              required
+            />
+            <Input
+              label="Mật khẩu mới"
+              type="password"
+              placeholder="Ít nhất 8 ký tự"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              leftIcon={<Lock size={18} />}
+              required
+            />
+            <Input
+              label="Xác nhận mật khẩu mới"
+              type="password"
+              placeholder="Nhập lại mật khẩu mới"
+              value={confirmNewPassword}
+              onChange={(e) => setConfirmNewPassword(e.target.value)}
+              leftIcon={<Lock size={18} />}
+              required
+            />
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '12px' }}>
+              <Button
+                type="submit"
+                variant="secondary"
+                isLoading={isChangingPassword}
+                leftIcon={<Shield size={16} />}
+              >
+                Cập nhật mật khẩu
+              </Button>
+            </div>
+          </form>
+        </Card>
+      </div>
     </div>
   );
 };

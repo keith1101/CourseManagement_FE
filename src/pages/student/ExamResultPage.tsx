@@ -115,10 +115,9 @@ export const ExamResultPage: React.FC = () => {
             </Badge>
           </div>
           <h1
-            className="font-serif"
             style={{
               fontSize: '1.75rem',
-              fontWeight: 700,
+              fontWeight: 800,
               color: 'var(--text-primary)',
               lineHeight: 1.3,
             }}
@@ -146,7 +145,6 @@ export const ExamResultPage: React.FC = () => {
           }}
         >
           <span
-            className="score-hero-number"
             style={{
               fontSize: '2.5rem',
               fontWeight: 800,
@@ -210,12 +208,12 @@ export const ExamResultPage: React.FC = () => {
       <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
         <div>
           <h2
-            className="font-serif"
-            style={{ fontSize: '1.35rem', fontWeight: 700, color: 'var(--text-primary)' }}
+            className="section-title-uppercase"
+            style={{ fontSize: '1.25rem' }}
           >
             Chi Tiết Đáp Án & Lời Giải Chuyên Sâu
           </h2>
-          <p style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)', marginTop: '2px' }}>
+          <p style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)', marginTop: '6px' }}>
             Xem lại từng câu hỏi, lựa chọn của bạn và giải thích chi tiết đáp án đúng.
           </p>
         </div>

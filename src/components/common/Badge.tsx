@@ -5,6 +5,7 @@ export interface BadgeProps {
   children: ReactNode;
   icon?: ReactNode;
   className?: string;
+  style?: React.CSSProperties;
 }
 
 export const Badge: React.FC<BadgeProps> = ({
@@ -12,11 +13,12 @@ export const Badge: React.FC<BadgeProps> = ({
   children,
   icon,
   className = '',
+  style,
 }) => {
   return (
-    <span className={`badge badge-${variant} ${className}`}>
+    <span className={`badge badge-${variant} ${className}`} style={style}>
       {icon && <span style={{ display: 'inline-flex', alignItems: 'center' }}>{icon}</span>}
-      <span>{children}</span>
+      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>{children}</span>
     </span>
   );
 };

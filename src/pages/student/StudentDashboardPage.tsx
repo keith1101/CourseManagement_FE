@@ -70,11 +70,12 @@ export const StudentDashboardPage: React.FC = () => {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
-      {/* 1. Welcome Editorial Hero Banner */}
+      {/* 1. Welcome HCMUS Hero Banner */}
       <div
         className="card animate-slide-up"
         style={{
-          backgroundColor: 'var(--bg-card)',
+          background: 'linear-gradient(135deg, #004085 0%, #002B5C 100%)',
+          color: '#FFFFFF',
           border: '1px solid var(--border-color)',
           borderRadius: 'var(--border-radius-xl)',
           padding: '36px 40px',
@@ -83,7 +84,7 @@ export const StudentDashboardPage: React.FC = () => {
           justifyContent: 'space-between',
           flexWrap: 'wrap',
           gap: '24px',
-          boxShadow: 'var(--shadow-card)',
+          boxShadow: 'var(--shadow-lg)',
           position: 'relative',
           overflow: 'hidden',
         }}
@@ -92,34 +93,34 @@ export const StudentDashboardPage: React.FC = () => {
           <div
             style={{
               fontSize: '0.75rem',
-              fontWeight: 700,
+              fontWeight: 800,
               textTransform: 'uppercase',
               letterSpacing: '0.08em',
-              color: 'var(--accent)',
+              color: '#FFA89E',
               marginBottom: '8px',
             }}
           >
-            Hồ sơ học tập cá nhân
+            Hồ sơ học tập & Khảo thí
           </div>
           <h1
-            className="font-serif"
             style={{
-              fontSize: '1.85rem',
-              fontWeight: 700,
-              color: 'var(--text-primary)',
+              fontSize: '1.75rem',
+              fontWeight: 800,
+              color: '#FFFFFF',
               lineHeight: 1.3,
+              letterSpacing: '-0.02em',
             }}
           >
             Chào mừng trở lại, {user?.fullName}!
           </h1>
-          <p style={{ marginTop: '8px', color: 'var(--text-secondary)', fontSize: '0.9375rem', lineHeight: 1.6 }}>
-            Hôm nay bạn có <strong>{pendingAssignments.length}</strong> bài thi cần hoàn thành. Hãy duy trì tiến độ và luyện tập đều đặn nhé.
+          <p style={{ marginTop: '8px', color: 'rgba(255, 255, 255, 0.85)', fontSize: '0.9375rem', lineHeight: 1.6 }}>
+            Hôm nay bạn có <strong>{pendingAssignments.length}</strong> bài thi cần hoàn thành. Hãy duy trì tiến độ ôn tập đều đặn nhé.
           </p>
         </div>
 
         <div style={{ zIndex: 2 }}>
           <Button
-            variant="primary"
+            variant="secondary"
             size="lg"
             onClick={() => navigate('/student/assignments')}
             rightIcon={<ArrowRight size={18} />}
@@ -166,10 +167,10 @@ export const StudentDashboardPage: React.FC = () => {
       <div>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
           <div>
-            <h2 className="font-serif" style={{ fontSize: '1.35rem', fontWeight: 700, color: 'var(--text-primary)' }}>
+            <h2 className="section-title-uppercase" style={{ fontSize: '1.25rem' }}>
               Bài Thi Cần Làm Gần Đây
             </h2>
-            <p style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)', marginTop: '2px' }}>
+            <p style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)', marginTop: '6px' }}>
               Danh sách các bài tập chưa làm hoặc đang làm dở
             </p>
           </div>
@@ -226,10 +227,10 @@ export const StudentDashboardPage: React.FC = () => {
       {attempts.length > 0 && (
         <div>
           <div style={{ marginBottom: '16px' }}>
-            <h2 className="font-serif" style={{ fontSize: '1.35rem', fontWeight: 700, color: 'var(--text-primary)' }}>
+            <h2 className="section-title-uppercase" style={{ fontSize: '1.25rem' }}>
               Lịch Sử Làm Bài Gần Đây
             </h2>
-            <p style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)', marginTop: '2px' }}>
+            <p style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)', marginTop: '6px' }}>
               Kết quả điểm số và phân tích các bài thi bạn đã nộp
             </p>
           </div>

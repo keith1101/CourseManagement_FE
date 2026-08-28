@@ -115,8 +115,9 @@ export const MaterialsPage: React.FC = () => {
                 position: 'absolute',
                 left: '12px',
                 top: '50%',
-                transform: 'translateY(-50)',
+                transform: 'translateY(-50%)',
                 color: 'var(--text-muted)',
+                pointerEvents: 'none',
               }}
             />
             <input

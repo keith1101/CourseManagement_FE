@@ -18,7 +18,7 @@ export const LoginPage: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showResetHelp, setShowResetHelp] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const zaloUrl = import.meta.env.VITE_ZALO_URL;
+  const zaloUrl = import.meta.env.ZALO_URL || import.meta.env.VITE_ZALO_URL;
 
   useEffect(() => {
     const authMessage = localStorage.getItem('auth_message');
@@ -124,8 +124,8 @@ export const LoginPage: React.FC = () => {
           Đăng Nhập
         </Button>
 
-        {/* Quick Mock Login Shortcuts (Only visible when VITE_ENABLE_MOCKS=true) */}
-        {import.meta.env.VITE_ENABLE_MOCKS === 'true' && (
+        {/* Quick Mock Login Shortcuts (Only visible when ENABLE_MOCKS=true) */}
+        {(import.meta.env.ENABLE_MOCKS ?? import.meta.env.VITE_ENABLE_MOCKS) === 'true' && (
           <div
             style={{
               marginTop: '24px',

@@ -22,4 +22,4 @@ export const getApiErrorMessage = (error: unknown, fallback = 'Đã xảy ra l�
   return error instanceof Error && error.message ? error.message : fallback;
 };
 
-export const isMockEnabled = import.meta.env.VITE_ENABLE_MOCKS === 'true';
+export const isMockEnabled = (import.meta.env.ENABLE_MOCKS ?? import.meta.env.VITE_ENABLE_MOCKS) === 'true';

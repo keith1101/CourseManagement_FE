@@ -61,7 +61,7 @@ let attemptsState: ExamAttempt[] = [...MOCK_ATTEMPTS];
 export const setupMockAdapter = (client: AxiosInstance) => {
   // Use request adapter to intercept all calls before sending to network
   client.interceptors.request.use(async (config: InternalAxiosRequestConfig) => {
-    const isMock = import.meta.env.VITE_ENABLE_MOCKS === 'true';
+    const isMock = (import.meta.env.ENABLE_MOCKS ?? import.meta.env.VITE_ENABLE_MOCKS) === 'true';
     if (!isMock) return config;
 
     const url = config.url || '';

@@ -14,7 +14,7 @@ export const UpgradeModal: React.FC<UpgradeModalProps> = ({
   onClose,
   title = 'Nội dung dành riêng cho tài khoản PRO',
 }) => {
-  const zaloUrl = import.meta.env.VITE_ZALO_URL || '#';
+  const zaloUrl = import.meta.env.ZALO_URL || import.meta.env.VITE_ZALO_URL || '#';
 
   return (
     <Modal

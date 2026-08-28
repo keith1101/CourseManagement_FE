@@ -253,8 +253,8 @@ export const StudentDashboardPage: React.FC = () => {
                     </td>
                     <td>{att.submittedAt ? new Date(att.submittedAt).toLocaleString('vi-VN') : 'Đang làm'}</td>
                     <td>
-                      <strong style={{ color: (att.score || 0) >= 5 ? 'var(--success)' : 'var(--error)', fontSize: '1rem' }}>
-                        {att.score !== undefined ? `${att.score}/10` : '-'}
+                      <strong style={{ color: (att.score || 0) >= 5 ? 'var(--success)' : 'var(--error)', fontSize: '1rem', fontFamily: 'var(--font-mono)' }}>
+                        {att.score !== undefined ? `${Number(att.score).toFixed(1)} / 10` : '-'}
                       </strong>
                     </td>
                     <td>

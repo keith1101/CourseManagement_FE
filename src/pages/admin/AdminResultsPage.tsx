@@ -219,13 +219,9 @@ export const AdminResultsPage: React.FC = () => {
                             fontSize: '1.125rem',
                             fontWeight: 800,
                             fontFamily: 'var(--font-mono)',
-                            letterSpacing: '-0.02em',
                           }}
                         >
-                          {score}{' '}
-                          <span style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
-                            / 10
-                          </span>
+                          {score} / 10
                         </strong>
                         <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '2px' }}>
                           {correct}/{totalQ} câu đúng

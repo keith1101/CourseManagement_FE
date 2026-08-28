@@ -114,7 +114,7 @@ export const AdminResultsPage: React.FC = () => {
               <th>Đề thi</th>
               <th>Thời gian nộp</th>
               <th>Thời lượng</th>
-              <th>Điểm số</th>
+              <th style={{ minWidth: '160px', width: '170px' }}>Điểm số</th>
               <th>Kết quả</th>
               <th>Thao tác</th>
             </tr>
@@ -211,17 +211,25 @@ export const AdminResultsPage: React.FC = () => {
                           : '-'}
                       </span>
                     </td>
-                    <td>
-                      <strong
-                        style={{
-                          color: isPassed ? 'var(--success)' : 'var(--error)',
-                          fontSize: '1.0625rem',
-                        }}
-                      >
-                        {score} / 10
-                      </strong>
-                      <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-                        {correct}/{totalQ} câu đúng
+                    <td style={{ minWidth: '160px', whiteSpace: 'nowrap' }}>
+                      <div style={{ display: 'inline-flex', flexDirection: 'column' }}>
+                        <strong
+                          style={{
+                            color: isPassed ? 'var(--success)' : 'var(--error)',
+                            fontSize: '1.125rem',
+                            fontWeight: 800,
+                            fontFamily: 'var(--font-mono)',
+                            letterSpacing: '-0.02em',
+                          }}
+                        >
+                          {score}{' '}
+                          <span style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
+                            / 10
+                          </span>
+                        </strong>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '2px' }}>
+                          {correct}/{totalQ} câu đúng
+                        </div>
                       </div>
                     </td>
                     <td>

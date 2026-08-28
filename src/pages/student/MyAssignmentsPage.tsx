@@ -98,24 +98,26 @@ export const MyAssignmentsPage: React.FC = () => {
         </div>
 
         {/* Search Bar */}
-        <div style={{ position: 'relative', width: '280px' }}>
-          <Search
-            size={16}
+        <div style={{ position: 'relative', display: 'flex', alignItems: 'center', width: '300px', maxWidth: '100%' }}>
+          <span
             style={{
               position: 'absolute',
-              left: '12px',
-              top: '50%',
-              transform: 'translateY(-50%)',
+              left: '14px',
               color: 'var(--text-muted)',
+              display: 'flex',
+              alignItems: 'center',
               pointerEvents: 'none',
+              zIndex: 2,
             }}
-          />
+          >
+            <Search size={18} />
+          </span>
           <input
             placeholder="Tìm theo tên đề thi hoặc môn..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="input-field"
-            style={{ paddingLeft: '36px', height: '40px', minHeight: '40px' }}
+            style={{ paddingLeft: '44px', width: '100%' }}
           />
         </div>
       </div>

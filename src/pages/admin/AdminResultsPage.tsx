@@ -65,26 +65,28 @@ export const AdminResultsPage: React.FC = () => {
       />
 
       {/* Filter Toolbar */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
-        <div style={{ position: 'relative', width: '300px' }}>
-          <Search
-            size={16}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '20px', flexWrap: 'wrap' }}>
+        <div style={{ position: 'relative', display: 'flex', alignItems: 'center', width: '360px', maxWidth: '100%' }}>
+          <span
             style={{
               position: 'absolute',
-              left: '12px',
-              top: '50%',
-              transform: 'translateY(-50%)',
+              left: '14px',
               color: 'var(--text-muted)',
+              display: 'flex',
+              alignItems: 'center',
               pointerEvents: 'none',
+              zIndex: 2,
             }}
-          />
+          >
+            <Search size={18} />
+          </span>
           <input
             type="text"
-            placeholder="Tìm theo tên học sinh hoặc đề thi..."
+            placeholder="Tìm theo học sinh hoặc đề thi..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="input-field"
-            style={{ paddingLeft: '36px', height: '40px', minHeight: '40px' }}
+            style={{ paddingLeft: '44px', width: '100%' }}
           />
         </div>
 
@@ -92,7 +94,7 @@ export const AdminResultsPage: React.FC = () => {
           value={examFilter}
           onChange={(e) => setExamFilter(e.target.value)}
           className="input-field"
-          style={{ width: '240px', height: '40px', minHeight: '40px', cursor: 'pointer' }}
+          style={{ minWidth: '280px', width: 'auto', height: '46px', minHeight: '46px', cursor: 'pointer' }}
         >
           <option value="ALL">Tất cả đề thi</option>
           {exams.map((ex) => (

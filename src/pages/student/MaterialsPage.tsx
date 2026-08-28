@@ -108,24 +108,26 @@ export const MaterialsPage: React.FC = () => {
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
-          <div style={{ position: 'relative', width: '280px' }}>
-            <Search
-              size={16}
+          <div style={{ position: 'relative', display: 'flex', alignItems: 'center', width: '300px', maxWidth: '100%' }}>
+            <span
               style={{
                 position: 'absolute',
-                left: '12px',
-                top: '50%',
-                transform: 'translateY(-50%)',
+                left: '14px',
                 color: 'var(--text-muted)',
+                display: 'flex',
+                alignItems: 'center',
                 pointerEvents: 'none',
+                zIndex: 2,
               }}
-            />
+            >
+              <Search size={18} />
+            </span>
             <input
               placeholder="Tìm kiếm tài liệu..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="input-field"
-              style={{ paddingLeft: '36px', height: '40px', minHeight: '40px' }}
+              style={{ paddingLeft: '44px', width: '100%' }}
             />
           </div>
 
@@ -133,7 +135,7 @@ export const MaterialsPage: React.FC = () => {
             value={typeFilter}
             onChange={(e) => setTypeFilter(e.target.value)}
             className="input-field"
-            style={{ width: '170px', height: '40px', minHeight: '40px', cursor: 'pointer' }}
+            style={{ minWidth: '220px', width: 'auto', height: '46px', minHeight: '46px', cursor: 'pointer' }}
           >
             <option value="ALL">Tất cả định dạng</option>
             <option value="PDF">Tài liệu PDF</option>

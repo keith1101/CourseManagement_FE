@@ -189,27 +189,31 @@ export const AssignmentsPage: React.FC = () => {
         }
       />
 
-      {/* Search Toolbar */}
-      <div style={{ position: 'relative', width: '320px' }}>
-        <Search
-          size={16}
-          style={{
-            position: 'absolute',
-            left: '12px',
-            top: '50%',
-            transform: 'translateY(-50%)',
-            color: 'var(--text-muted)',
-            pointerEvents: 'none',
-          }}
-        />
-        <input
-          type="text"
-          placeholder="Tìm theo tên học sinh hoặc đề thi..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="input-field"
-          style={{ paddingLeft: '36px', height: '40px', minHeight: '40px' }}
-        />
+      {/* Filter / Search Toolbar */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px', flexWrap: 'wrap' }}>
+        <div style={{ position: 'relative', display: 'flex', alignItems: 'center', width: '360px', maxWidth: '100%' }}>
+          <span
+            style={{
+              position: 'absolute',
+              left: '14px',
+              color: 'var(--text-muted)',
+              display: 'flex',
+              alignItems: 'center',
+              pointerEvents: 'none',
+              zIndex: 2,
+            }}
+          >
+            <Search size={18} />
+          </span>
+          <input
+            type="text"
+            placeholder="Tìm theo học sinh hoặc đề thi..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="input-field"
+            style={{ paddingLeft: '44px', width: '100%' }}
+          />
+        </div>
       </div>
 
       {/* Assignments Table */}

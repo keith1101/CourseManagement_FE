@@ -125,25 +125,27 @@ export const ExamsManagementPage: React.FC = () => {
       />
 
       {/* Filter Toolbar */}
-      <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-        <div style={{ position: 'relative', width: '280px' }}>
-          <Search
-            size={16}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px', flexWrap: 'wrap' }}>
+        <div style={{ position: 'relative', display: 'flex', alignItems: 'center', width: '320px', maxWidth: '100%' }}>
+          <span
             style={{
               position: 'absolute',
-              left: '12px',
-              top: '50%',
-              transform: 'translateY(-50%)',
+              left: '14px',
               color: 'var(--text-muted)',
+              display: 'flex',
+              alignItems: 'center',
               pointerEvents: 'none',
+              zIndex: 2,
             }}
-          />
+          >
+            <Search size={18} />
+          </span>
           <input
             className="input-field"
             value={search}
             onChange={(event) => setSearch(event.target.value)}
             placeholder="Tìm theo tên đề thi..."
-            style={{ paddingLeft: '36px', height: '40px', minHeight: '40px' }}
+            style={{ paddingLeft: '44px', width: '100%' }}
           />
         </div>
 
@@ -151,7 +153,7 @@ export const ExamsManagementPage: React.FC = () => {
           className="input-field"
           value={status}
           onChange={(event) => setStatus(event.target.value)}
-          style={{ width: '180px', height: '40px', minHeight: '40px', cursor: 'pointer' }}
+          style={{ minWidth: '210px', width: 'auto', height: '46px', minHeight: '46px', cursor: 'pointer' }}
         >
           <option value="ALL">Tất cả trạng thái</option>
           <option value="PUBLISHED">Đã công khai</option>

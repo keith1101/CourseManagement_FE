@@ -37,8 +37,8 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
             ref={ref}
             className={`input-field ${error ? 'input-error' : ''} ${className}`}
             style={{
-              paddingLeft: leftIcon ? '42px' : '14px',
-              paddingRight: rightIcon ? '42px' : '14px',
+              paddingLeft: leftIcon ? '46px' : '16px',
+              paddingRight: rightIcon ? '46px' : '16px',
             }}
             {...props}
           />

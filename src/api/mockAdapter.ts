@@ -448,7 +448,8 @@ export const setupMockAdapter = (client: AxiosInstance) => {
       }
 
       if (url.includes('/result') || url.includes('/score')) {
-        const sample = attemptsState[0] || MOCK_ATTEMPTS[0];
+        const attemptId = url.split('/')[2];
+        const sample = attemptsState.find((attempt) => attempt.id === attemptId) || attemptsState[0] || MOCK_ATTEMPTS[0];
         return Promise.reject({ isMock: true, mockResponse: mockResponse(sample) });
       }
 

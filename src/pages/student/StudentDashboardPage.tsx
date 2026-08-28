@@ -2,18 +2,19 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   FileText,
-  CheckCircle,
+  CheckCircle2,
   Award,
-  Clock,
   ArrowRight,
   PlayCircle,
-  BarChart,
   Calendar,
+  Clock,
+  BookOpen,
 } from 'lucide-react';
 import { Card } from '../../components/common/Card';
 import { Button } from '../../components/common/Button';
 import { Badge } from '../../components/common/Badge';
 import { LoadingSpinner } from '../../components/common/LoadingSpinner';
+import { EmptyState } from '../../components/common/EmptyState';
 import { useAuth } from '../../contexts/AuthContext';
 import { assignmentsApi } from '../../api/assignments';
 import { attemptsApi } from '../../api/attempts';
@@ -69,46 +70,70 @@ export const StudentDashboardPage: React.FC = () => {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
-      {/* 1. Welcome Banner */}
+      {/* 1. Welcome Editorial Hero Banner */}
       <div
-        className="dashboard-banner student-dashboard-banner animate-slide-up"
+        className="card animate-slide-up"
         style={{
-          background: 'var(--primary-gradient)',
+          backgroundColor: 'var(--bg-card)',
+          border: '1px solid var(--border-color)',
           borderRadius: 'var(--border-radius-xl)',
-          padding: '32px 36px',
-          color: '#FFFFFF',
+          padding: '36px 40px',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
           flexWrap: 'wrap',
-          gap: '20px',
-          boxShadow: 'var(--shadow-md)',
+          gap: '24px',
+          boxShadow: 'var(--shadow-card)',
+          position: 'relative',
+          overflow: 'hidden',
         }}
       >
-        <div>
-          <h1 style={{ fontSize: '1.75rem', fontWeight: 800 }}>
-            Chào mừng trở lại, {user?.fullName}! 👋
+        <div style={{ maxWidth: '640px', zIndex: 2 }}>
+          <div
+            style={{
+              fontSize: '0.75rem',
+              fontWeight: 700,
+              textTransform: 'uppercase',
+              letterSpacing: '0.08em',
+              color: 'var(--accent)',
+              marginBottom: '8px',
+            }}
+          >
+            Hồ sơ học tập cá nhân
+          </div>
+          <h1
+            className="font-serif"
+            style={{
+              fontSize: '1.85rem',
+              fontWeight: 700,
+              color: 'var(--text-primary)',
+              lineHeight: 1.3,
+            }}
+          >
+            Chào mừng trở lại, {user?.fullName}!
           </h1>
-          <p style={{ marginTop: '6px', opacity: 0.9, fontSize: '0.9375rem' }}>
-            Hôm nay bạn có <strong>{pendingAssignments.length}</strong> bài thi cần hoàn thành. Hãy tiếp tục nâng cao kiến thức nhé!
+          <p style={{ marginTop: '8px', color: 'var(--text-secondary)', fontSize: '0.9375rem', lineHeight: 1.6 }}>
+            Hôm nay bạn có <strong>{pendingAssignments.length}</strong> bài thi cần hoàn thành. Hãy duy trì tiến độ và luyện tập đều đặn nhé.
           </p>
         </div>
-        <Button
-          variant="secondary"
-          size="lg"
-          onClick={() => navigate('/student/assignments')}
-          rightIcon={<ArrowRight size={18} />}
-          style={{ backgroundColor: 'var(--secondary)', fontWeight: 700 }}
-        >
-          Xem Bài Thi Cần Làm
-        </Button>
+
+        <div style={{ zIndex: 2 }}>
+          <Button
+            variant="primary"
+            size="lg"
+            onClick={() => navigate('/student/assignments')}
+            rightIcon={<ArrowRight size={18} />}
+          >
+            Xem bài thi cần làm
+          </Button>
+        </div>
       </div>
 
-      {/* 2. Stats Grid */}
+      {/* 2. Key Metrics Summary Grid */}
       <div className="stat-grid">
         <div className="stat-card">
           <div className="stat-icon-wrapper" style={{ backgroundColor: 'var(--primary-light)', color: 'var(--primary)' }}>
-            <FileText size={26} />
+            <FileText size={24} />
           </div>
           <div className="stat-info">
             <span className="stat-value">{assignments.length}</span>
@@ -118,7 +143,7 @@ export const StudentDashboardPage: React.FC = () => {
 
         <div className="stat-card">
           <div className="stat-icon-wrapper" style={{ backgroundColor: 'var(--success-bg)', color: 'var(--success)' }}>
-            <CheckCircle size={26} />
+            <CheckCircle2 size={24} />
           </div>
           <div className="stat-info">
             <span className="stat-value">{completedCount}</span>
@@ -128,11 +153,11 @@ export const StudentDashboardPage: React.FC = () => {
 
         <div className="stat-card">
           <div className="stat-icon-wrapper" style={{ backgroundColor: 'var(--secondary-light)', color: 'var(--secondary)' }}>
-            <Award size={26} />
+            <Award size={24} />
           </div>
           <div className="stat-info">
             <span className="stat-value">{averageScore}</span>
-            <span className="stat-label">Điểm trung bình (Hệ 10)</span>
+            <span className="stat-label">Điểm trung bình (Thang 10)</span>
           </div>
         </div>
       </div>
@@ -140,24 +165,25 @@ export const StudentDashboardPage: React.FC = () => {
       {/* 3. Pending Assignments List */}
       <div>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
-          <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-primary)' }}>
-            Bài Thi Cần Làm Gần Đây
-          </h2>
+          <div>
+            <h2 className="font-serif" style={{ fontSize: '1.35rem', fontWeight: 700, color: 'var(--text-primary)' }}>
+              Bài Thi Cần Làm Gần Đây
+            </h2>
+            <p style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)', marginTop: '2px' }}>
+              Danh sách các bài tập chưa làm hoặc đang làm dở
+            </p>
+          </div>
           <Button variant="ghost" size="sm" onClick={() => navigate('/student/assignments')} rightIcon={<ArrowRight size={14} />}>
             Xem tất cả
           </Button>
         </div>
 
         {pendingAssignments.length === 0 ? (
-          <Card style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--text-secondary)' }}>
-            <CheckCircle size={40} color="var(--success)" style={{ margin: '0 auto 12px' }} />
-            <p style={{ fontWeight: 600, fontSize: '1rem', color: 'var(--text-primary)' }}>
-              Bạn không có bài thi nào đang chờ!
-            </p>
-            <p style={{ fontSize: '0.875rem', marginTop: '4px' }}>
-              Hãy nghỉ ngơi hoặc ôn lại các bài kiểm tra đã hoàn thành bên dưới.
-            </p>
-          </Card>
+          <EmptyState
+            icon={<CheckCircle2 size={40} color="var(--success)" />}
+            title="Không có bài thi nào đang chờ"
+            description="Bạn đã hoàn thành tất cả các bài tập được giao. Hãy xem lại lịch sử làm bài bên dưới."
+          />
         ) : (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(320px, 100%), 1fr))', gap: '20px' }}>
             {pendingAssignments.slice(0, 3).map((assign) => (
@@ -165,17 +191,21 @@ export const StudentDashboardPage: React.FC = () => {
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <Badge variant="primary">{assign.exam?.subject?.name || 'Môn học'}</Badge>
                   <span style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-                    <Calendar size={12} /> Hạn: {assign.dueDate ? new Date(assign.dueDate).toLocaleDateString('vi-VN') : 'Không giới hạn'}
+                    <Calendar size={13} /> Hạn: {assign.dueDate ? new Date(assign.dueDate).toLocaleDateString('vi-VN') : 'Không giới hạn'}
                   </span>
                 </div>
 
                 <div>
-                  <h3 style={{ fontSize: '1.0625rem', fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1.3 }}>
+                  <h3 style={{ fontSize: '1.0625rem', fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1.4 }}>
                     {assign.exam?.title || 'Bài thi trắc nghiệm'}
                   </h3>
-                  <p style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)', marginTop: '4px' }}>
-                    Thời gian: {assign.exam?.durationMinutes || 45} phút • {assign.exam?.totalPoints || 10} điểm
-                  </p>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginTop: '6px', fontSize: '0.8125rem', color: 'var(--text-secondary)' }}>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <Clock size={13} /> {assign.exam?.durationMinutes || 45} phút
+                    </span>
+                    <span>•</span>
+                    <span>{assign.exam?.totalPoints || 10} điểm</span>
+                  </div>
                 </div>
 
                 <Button
@@ -195,9 +225,14 @@ export const StudentDashboardPage: React.FC = () => {
       {/* 4. Recent Attempts Table */}
       {attempts.length > 0 && (
         <div>
-          <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '16px' }}>
-            Lịch Sử Làm Bài Gần Đây
-          </h2>
+          <div style={{ marginBottom: '16px' }}>
+            <h2 className="font-serif" style={{ fontSize: '1.35rem', fontWeight: 700, color: 'var(--text-primary)' }}>
+              Lịch Sử Làm Bài Gần Đây
+            </h2>
+            <p style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)', marginTop: '2px' }}>
+              Kết quả điểm số và phân tích các bài thi bạn đã nộp
+            </p>
+          </div>
           <div className="table-container">
             <table className="data-table">
               <thead>
@@ -213,7 +248,7 @@ export const StudentDashboardPage: React.FC = () => {
                 {attempts.slice(0, 5).map((att) => (
                   <tr key={att.id}>
                     <td>
-                      <strong>{att.exam?.title || 'Bài thi trắc nghiệm'}</strong>
+                      <strong style={{ fontSize: '0.9375rem' }}>{att.exam?.title || 'Bài thi trắc nghiệm'}</strong>
                     </td>
                     <td>{att.submittedAt ? new Date(att.submittedAt).toLocaleString('vi-VN') : 'Đang làm'}</td>
                     <td>
@@ -222,8 +257,8 @@ export const StudentDashboardPage: React.FC = () => {
                       </strong>
                     </td>
                     <td>
-                      <Badge variant={att.status === 'SUBMITTED' || att.status === 'SCORED' ? 'success' : 'warning'}>
-                        {att.status === 'SUBMITTED' || att.status === 'SCORED' ? 'Đã hoàn thành' : 'Đang làm'}
+                      <Badge variant={att.status === 'SUBMITTED' || att.status === 'SCORED' || att.status === 'COMPLETED' ? 'success' : 'warning'}>
+                        {att.status === 'SUBMITTED' || att.status === 'SCORED' || att.status === 'COMPLETED' ? 'Đã hoàn thành' : 'Đang làm'}
                       </Badge>
                     </td>
                     <td>

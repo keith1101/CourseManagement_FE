@@ -1,5 +1,5 @@
 import React, { ReactNode } from 'react';
-import { BookOpen } from 'lucide-react';
+import { BookOpen, CheckCircle2, Sparkles, GraduationCap } from 'lucide-react';
 
 interface AuthLayoutProps {
   children: ReactNode;
@@ -10,93 +10,185 @@ interface AuthLayoutProps {
 export const AuthLayout: React.FC<AuthLayoutProps> = ({ children, title, subtitle }) => {
   return (
     <div
-      className="auth-shell"
       style={{
         minHeight: '100vh',
         width: '100%',
-        background: 'var(--login-gradient)',
+        backgroundColor: 'var(--bg-app)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
         padding: '24px 16px',
-        position: 'relative',
-        overflow: 'hidden',
       }}
     >
-      {/* Decorative background circles */}
       <div
-        style={{
-          position: 'absolute',
-          width: '500px',
-          height: '500px',
-          borderRadius: '50%',
-          background: 'rgba(255, 255, 255, 0.15)',
-          top: '-150px',
-          right: '-100px',
-          pointerEvents: 'none',
-        }}
-      />
-      <div
-        style={{
-          position: 'absolute',
-          width: '350px',
-          height: '350px',
-          borderRadius: '50%',
-          background: 'rgba(255, 255, 255, 0.12)',
-          bottom: '-100px',
-          left: '-80px',
-          pointerEvents: 'none',
-        }}
-      />
-
-      {/* Main Card (Mẫu 3 Style) */}
-      <div
-        className="auth-card animate-slide-up"
         style={{
           width: '100%',
-          maxWidth: '460px',
-          backgroundColor: '#FFFFFF',
+          maxWidth: '1020px',
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))',
+          backgroundColor: 'var(--bg-card)',
           borderRadius: 'var(--border-radius-xl)',
-          padding: '40px 36px',
-          boxShadow: 'var(--login-card-shadow)',
-          position: 'relative',
-          zIndex: 10,
+          border: '1px solid var(--border-color)',
+          boxShadow: 'var(--shadow-xl)',
+          overflow: 'hidden',
         }}
       >
-        {/* Brand Header */}
-        <div style={{ textAlign: 'center', marginBottom: '32px' }}>
+        {/* Left Editorial Brand Panel */}
+        <div
+          style={{
+            backgroundColor: 'var(--bg-sidebar)',
+            color: '#FFFFFF',
+            padding: '48px 40px',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between',
+            position: 'relative',
+            borderRight: '1px solid rgba(255, 255, 255, 0.08)',
+          }}
+        >
+          <div>
+            {/* Logo */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '32px' }}>
+              <div
+                style={{
+                  width: '42px',
+                  height: '42px',
+                  borderRadius: 'var(--border-radius-md)',
+                  backgroundColor: 'var(--primary)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: '#FFFFFF',
+                  boxShadow: 'var(--shadow-primary)',
+                }}
+              >
+                <BookOpen size={22} />
+              </div>
+              <div>
+                <span
+                  style={{
+                    fontSize: '1.25rem',
+                    fontWeight: 800,
+                    letterSpacing: '-0.02em',
+                    display: 'block',
+                    lineHeight: 1.1,
+                  }}
+                >
+                  CourseManagement
+                </span>
+                <span style={{ fontSize: '0.75rem', color: 'rgba(255, 255, 255, 0.65)' }}>
+                  Hệ thống Ôn tập & Luyện thi
+                </span>
+              </div>
+            </div>
+
+            {/* Headline / Editorial Quote */}
+            <div style={{ marginTop: '24px' }}>
+              <div
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  backgroundColor: 'rgba(200, 100, 62, 0.2)',
+                  color: '#F4A988',
+                  padding: '4px 12px',
+                  borderRadius: 'var(--border-radius-full)',
+                  fontSize: '0.75rem',
+                  fontWeight: 700,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.06em',
+                  marginBottom: '16px',
+                }}
+              >
+                <Sparkles size={13} /> Nền tảng học thuật cao cấp
+              </div>
+              <h2
+                className="font-serif"
+                style={{
+                  fontSize: '1.85rem',
+                  fontWeight: 700,
+                  lineHeight: 1.3,
+                  color: '#FFFFFF',
+                  marginBottom: '16px',
+                }}
+              >
+                Tối ưu hóa hành trình ôn luyện và kiểm tra trực tuyến.
+              </h2>
+              <p
+                style={{
+                  fontSize: '0.9375rem',
+                  color: 'rgba(255, 255, 255, 0.75)',
+                  lineHeight: 1.6,
+                }}
+              >
+                Trải nghiệm giao diện tinh gọn, tập trung hoàn toàn vào nội dung đề thi với hệ thống phân tích kết quả chuyên sâu.
+              </p>
+            </div>
+
+            {/* Value Highlights */}
+            <div style={{ marginTop: '32px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '0.875rem' }}>
+                <CheckCircle2 size={18} color="var(--accent)" />
+                <span style={{ color: 'rgba(255, 255, 255, 0.9)' }}>Soạn thảo và làm bài trắc nghiệm tương tác</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '0.875rem' }}>
+                <CheckCircle2 size={18} color="var(--accent)" />
+                <span style={{ color: 'rgba(255, 255, 255, 0.9)' }}>Ngân hàng tài liệu PDF & Video đa phương tiện</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '0.875rem' }}>
+                <CheckCircle2 size={18} color="var(--accent)" />
+                <span style={{ color: 'rgba(255, 255, 255, 0.9)' }}>Báo cáo chi tiết và giải thích đáp án chuẩn xác</span>
+              </div>
+            </div>
+          </div>
+
           <div
             style={{
-              width: '64px',
-              height: '64px',
-              borderRadius: '18px',
-              background: 'var(--primary-gradient)',
-              color: '#FFFFFF',
-              display: 'inline-flex',
+              paddingTop: '24px',
+              borderTop: '1px solid rgba(255, 255, 255, 0.1)',
+              fontSize: '0.75rem',
+              color: 'rgba(255, 255, 255, 0.5)',
+              display: 'flex',
               alignItems: 'center',
-              justifyContent: 'center',
-              boxShadow: 'var(--shadow-primary)',
-              marginBottom: '16px',
+              gap: '6px',
             }}
           >
-            <BookOpen size={32} />
+            <GraduationCap size={16} />
+            <span>Tiêu chuẩn chất lượng khảo thí giáo dục</span>
           </div>
-          <h1
-            style={{
-              fontSize: '1.5rem',
-              fontWeight: 800,
-              color: 'var(--text-primary)',
-              letterSpacing: '-0.02em',
-              marginBottom: '6px',
-            }}
-          >
-            {title}
-          </h1>
-          <p style={{ fontSize: '0.9375rem', color: 'var(--text-secondary)' }}>{subtitle}</p>
         </div>
 
-        {/* Content / Form */}
-        {children}
+        {/* Right Form Panel */}
+        <div
+          style={{
+            padding: '48px 40px',
+            backgroundColor: 'var(--bg-card)',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'center',
+          }}
+        >
+          <div style={{ marginBottom: '28px' }}>
+            <h1
+              className="font-serif"
+              style={{
+                fontSize: '1.65rem',
+                fontWeight: 700,
+                color: 'var(--text-primary)',
+                letterSpacing: '-0.01em',
+                lineHeight: 1.25,
+                marginBottom: '6px',
+              }}
+            >
+              {title}
+            </h1>
+            <p style={{ fontSize: '0.9375rem', color: 'var(--text-secondary)' }}>
+              {subtitle}
+            </p>
+          </div>
+
+          {children}
+        </div>
       </div>
     </div>
   );

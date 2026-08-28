@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
-import { Outlet, NavLink, useNavigate } from 'react-router-dom';
+import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard,
   FileCheck2,
-  Award,
   User,
   LogOut,
   Menu,
@@ -14,51 +13,48 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { isProActive } from '../utils/access';
+import { Breadcrumbs } from '../components/common/Breadcrumbs';
 
 export const StudentLayout: React.FC = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const navItems = [
-    { label: 'Trang chủ', path: '/student', icon: <LayoutDashboard size={20} /> },
-    { label: 'Bài thi được giao', path: '/student/assignments', icon: <FileCheck2 size={20} /> },
-    { label: 'Tài liệu học tập', path: '/student/materials', icon: <Library size={20} /> },
-    { label: 'Hồ sơ cá nhân', path: '/student/profile', icon: <User size={20} /> },
+    { label: 'Trang chủ', path: '/student', icon: <LayoutDashboard size={19} /> },
+    { label: 'Bài thi được giao', path: '/student/assignments', icon: <FileCheck2 size={19} /> },
+    { label: 'Tài liệu học tập', path: '/student/materials', icon: <Library size={19} /> },
+    { label: 'Hồ sơ cá nhân', path: '/student/profile', icon: <User size={19} /> },
   ];
+
+  const getBreadcrumbs = () => {
+    const path = location.pathname;
+    if (path === '/student') return [{ label: 'Cổng Học Sinh', path: '/student' }, { label: 'Tổng quan' }];
+    if (path.startsWith('/student/assignments')) return [{ label: 'Cổng Học Sinh', path: '/student' }, { label: 'Bài thi được giao' }];
+    if (path.startsWith('/student/materials')) return [{ label: 'Cổng Học Sinh', path: '/student' }, { label: 'Tài liệu học tập' }];
+    if (path.startsWith('/student/profile')) return [{ label: 'Cổng Học Sinh', path: '/student' }, { label: 'Hồ sơ cá nhân' }];
+    return [{ label: 'Cổng Học Sinh', path: '/student' }];
+  };
 
   return (
     <div className="app-container">
-      {/* Mobile Sidebar Backdrop */}
+      {/* Mobile Backdrop */}
       {sidebarOpen && (
         <div
           onClick={() => setSidebarOpen(false)}
           style={{
             position: 'fixed',
             inset: 0,
-            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            backgroundColor: 'rgba(24, 32, 47, 0.6)',
+            backdropFilter: 'blur(3px)',
             zIndex: 45,
           }}
         />
       )}
 
       {/* Sidebar Navigation */}
-      <aside
-        className={`app-sidebar ${sidebarOpen ? 'app-sidebar-open' : ''}`}
-        style={{
-          backgroundColor: 'var(--bg-sidebar)',
-          color: '#FFFFFF',
-          display: 'flex',
-          flexDirection: 'column',
-          flexShrink: 0,
-          position: 'sticky',
-          top: 0,
-          height: '100vh',
-          zIndex: 50,
-          transition: 'transform var(--transition-normal)',
-          transform: sidebarOpen ? 'translateX(0)' : undefined,
-        }}
-      >
+      <aside className={`app-sidebar ${sidebarOpen ? 'app-sidebar-open' : ''}`}>
         {/* Brand */}
         <div
           style={{
@@ -66,22 +62,40 @@ export const StudentLayout: React.FC = () => {
             display: 'flex',
             alignItems: 'center',
             gap: '12px',
-            borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+            borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
           }}
         >
-          <div className="sidebar-brand-icon sidebar-brand-icon--student" aria-hidden="true">
-            <BookOpen size={22} color="#FFFFFF" />
+          <div className="sidebar-brand-icon">
+            <BookOpen size={20} />
           </div>
           <div>
-            <h2 style={{ fontSize: '1.125rem', fontWeight: 800, lineHeight: 1.2 }}>CourseManagement</h2>
-            <span style={{ fontSize: '0.75rem', color: 'rgba(255, 255, 255, 0.7)' }}>
+            <h2
+              style={{
+                fontSize: '1.0625rem',
+                fontWeight: 800,
+                lineHeight: 1.2,
+                letterSpacing: '-0.02em',
+                color: '#FFFFFF',
+              }}
+            >
+              CourseManagement
+            </h2>
+            <span style={{ fontSize: '0.75rem', color: 'rgba(255, 255, 255, 0.65)' }}>
               Cổng Học Sinh
             </span>
           </div>
         </div>
 
         {/* Menu Items */}
-        <nav style={{ flex: 1, padding: '20px 12px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+        <nav
+          style={{
+            flex: 1,
+            padding: '20px 12px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '4px',
+          }}
+        >
           {navItems.map((item) => (
             <NavLink
               key={item.path}
@@ -92,14 +106,14 @@ export const StudentLayout: React.FC = () => {
                 display: 'flex',
                 alignItems: 'center',
                 gap: '12px',
-                padding: '12px 16px',
+                padding: '11px 16px',
                 borderRadius: 'var(--border-radius-md)',
-                color: '#FFFFFF',
+                color: isActive ? '#FFFFFF' : 'rgba(255, 255, 255, 0.75)',
                 fontWeight: isActive ? 700 : 500,
                 fontSize: '0.9375rem',
-                backgroundColor: isActive ? 'var(--bg-sidebar-active)' : 'transparent',
+                backgroundColor: isActive ? 'var(--primary)' : 'transparent',
                 transition: 'all var(--transition-fast)',
-                borderLeft: isActive ? '4px solid var(--secondary)' : '4px solid transparent',
+                borderLeft: isActive ? '3px solid var(--accent)' : '3px solid transparent',
               })}
             >
               {item.icon}
@@ -111,9 +125,9 @@ export const StudentLayout: React.FC = () => {
         {/* User Mini Profile & Logout */}
         <div
           style={{
-            padding: '16px 20px',
-            borderTop: '1px solid rgba(255, 255, 255, 0.1)',
-            backgroundColor: 'rgba(0, 0, 0, 0.1)',
+            padding: '16px 18px',
+            borderTop: '1px solid rgba(255, 255, 255, 0.08)',
+            backgroundColor: 'rgba(0, 0, 0, 0.15)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
@@ -125,7 +139,7 @@ export const StudentLayout: React.FC = () => {
                 width: '36px',
                 height: '36px',
                 borderRadius: '50%',
-                backgroundColor: '#FFFFFF',
+                backgroundColor: '#FFFDF8',
                 color: 'var(--primary)',
                 fontWeight: 700,
                 display: 'flex',
@@ -133,6 +147,7 @@ export const StudentLayout: React.FC = () => {
                 justifyContent: 'center',
                 fontSize: '0.875rem',
                 flexShrink: 0,
+                border: '1px solid var(--border-color)',
               }}
             >
               {user?.fullName?.charAt(0) || 'H'}
@@ -145,20 +160,22 @@ export const StudentLayout: React.FC = () => {
                   whiteSpace: 'nowrap',
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
+                  color: '#FFFFFF',
                 }}
               >
                 {user?.fullName || 'Học sinh'}
               </div>
-              <div style={{ fontSize: '0.75rem', color: 'rgba(255, 255, 255, 0.7)' }}>
-                {isProActive(user) ? '⭐ Gói PRO' : user?.tier === 'PRO' ? 'PRO đã hết hạn' : 'Gói Miễn phí'}
+              <div style={{ fontSize: '0.75rem', color: 'rgba(255, 255, 255, 0.65)' }}>
+                {isProActive(user) ? '⭐ Gói PRO' : user?.tier === 'PRO' ? 'PRO hết hạn' : 'Gói Miễn phí'}
               </div>
             </div>
           </div>
           <button
             onClick={logout}
             title="Đăng xuất"
+            aria-label="Đăng xuất"
             style={{
-              color: 'rgba(255, 255, 255, 0.7)',
+              color: 'rgba(255, 255, 255, 0.65)',
               padding: '6px',
               borderRadius: '6px',
               display: 'flex',
@@ -166,6 +183,8 @@ export const StudentLayout: React.FC = () => {
               justifyContent: 'center',
               transition: 'all var(--transition-fast)',
             }}
+            onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.color = '#FFFFFF')}
+            onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.color = 'rgba(255, 255, 255, 0.65)')}
           >
             <LogOut size={18} />
           </button>
@@ -175,47 +194,31 @@ export const StudentLayout: React.FC = () => {
       {/* Main Content Area */}
       <div className="main-content">
         {/* Topbar */}
-        <header className="topbar student-topbar">
-          <div className="topbar-leading" style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+        <header className="topbar">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
             <button
               onClick={() => setSidebarOpen(!sidebarOpen)}
               aria-label={sidebarOpen ? 'Đóng menu' : 'Mở menu'}
               aria-expanded={sidebarOpen}
-              style={{
-                color: 'var(--text-primary)',
-                padding: '6px',
-              }}
               className="mobile-menu-btn"
             >
-              {sidebarOpen ? <X size={24} /> : <Menu size={24} />}
+              {sidebarOpen ? <X size={20} /> : <Menu size={20} />}
             </button>
-            <div className="topbar-greeting" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>Xin chào,</span>
-              <strong style={{ color: 'var(--text-primary)', fontSize: '1rem' }}>{user?.fullName}</strong>
-            </div>
+            <Breadcrumbs items={getBreadcrumbs()} />
           </div>
 
-          <div className="topbar-actions" style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
             {isProActive(user) && (
               <span
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '4px',
-                  backgroundColor: 'var(--secondary-light)',
-                  color: 'var(--secondary)',
-                  fontWeight: 700,
-                  fontSize: '0.8125rem',
-                  padding: '4px 10px',
-                  borderRadius: 'var(--border-radius-full)',
-                  border: '1px solid var(--secondary-accent)',
-                }}
+                className="badge badge-premium"
+                style={{ fontSize: '0.75rem', padding: '4px 10px' }}
               >
-                <Sparkles size={14} /> PRO
+                <Sparkles size={13} /> PRO
               </span>
             )}
             <button
               onClick={() => navigate('/student/profile')}
+              title="Hồ sơ cá nhân"
               style={{
                 width: '38px',
                 height: '38px',
@@ -226,9 +229,12 @@ export const StudentLayout: React.FC = () => {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                border: '2px solid #FFFFFF',
-                boxShadow: 'var(--shadow-sm)',
+                border: '1.5px solid var(--border-color)',
+                boxShadow: 'var(--shadow-xs)',
+                transition: 'transform var(--transition-fast)',
               }}
+              onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.transform = 'scale(1.04)')}
+              onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.transform = 'scale(1)')}
             >
               {user?.fullName?.charAt(0) || 'U'}
             </button>

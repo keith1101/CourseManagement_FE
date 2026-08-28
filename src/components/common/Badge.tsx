@@ -1,7 +1,7 @@
 import React, { ReactNode } from 'react';
 
-interface BadgeProps {
-  variant?: 'primary' | 'success' | 'warning' | 'error' | 'info';
+export interface BadgeProps {
+  variant?: 'primary' | 'success' | 'warning' | 'error' | 'info' | 'neutral' | 'premium';
   children: ReactNode;
   icon?: ReactNode;
   className?: string;
@@ -15,8 +15,8 @@ export const Badge: React.FC<BadgeProps> = ({
 }) => {
   return (
     <span className={`badge badge-${variant} ${className}`}>
-      {icon}
-      {children}
+      {icon && <span style={{ display: 'inline-flex', alignItems: 'center' }}>{icon}</span>}
+      <span>{children}</span>
     </span>
   );
 };

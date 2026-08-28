@@ -26,11 +26,11 @@ export const ExamProgress: React.FC<ExamProgressProps> = ({
         justifyContent: 'center',
         flexWrap: 'wrap',
         gap: '8px',
-        padding: '12px 24px',
-        backgroundColor: '#FFFFFF',
+        padding: '10px 20px',
+        backgroundColor: 'var(--bg-card)',
         borderRadius: 'var(--border-radius-lg)',
         border: '1px solid var(--border-color)',
-        boxShadow: 'var(--shadow-sm)',
+        boxShadow: 'var(--shadow-card)',
         width: '100%',
       }}
     >
@@ -46,7 +46,7 @@ export const ExamProgress: React.FC<ExamProgressProps> = ({
                 display: 'flex',
                 alignItems: 'center',
                 gap: '8px',
-                padding: '8px 16px',
+                padding: '6px 14px',
                 borderRadius: 'var(--border-radius-full)',
                 backgroundColor: isCurrent
                   ? 'var(--primary)'
@@ -59,21 +59,21 @@ export const ExamProgress: React.FC<ExamProgressProps> = ({
                   ? 'var(--primary)'
                   : 'var(--text-secondary)',
                 fontWeight: isCurrent ? 700 : 500,
-                fontSize: '0.875rem',
+                fontSize: '0.8125rem',
                 transition: 'all var(--transition-fast)',
                 cursor: onSelectSection ? 'pointer' : 'default',
               }}
             >
               <span
                 style={{
-                  width: '22px',
-                  height: '22px',
+                  width: '20px',
+                  height: '20px',
                   borderRadius: '50%',
                   backgroundColor: isCurrent
                     ? 'rgba(255, 255, 255, 0.25)'
                     : isPassed
                     ? 'var(--primary)'
-                    : '#CBD5E1',
+                    : 'var(--border-color)',
                   color: '#FFFFFF',
                   display: 'flex',
                   alignItems: 'center',
@@ -82,7 +82,7 @@ export const ExamProgress: React.FC<ExamProgressProps> = ({
                   fontWeight: 700,
                 }}
               >
-                {isPassed ? <Check size={12} strokeWidth={3} /> : idx + 1}
+                {isPassed ? <Check size={11} strokeWidth={3} /> : idx + 1}
               </span>
               <span>{sec.title}</span>
             </button>
@@ -91,13 +91,13 @@ export const ExamProgress: React.FC<ExamProgressProps> = ({
               <span
                 style={{
                   color: 'var(--border-color)',
-                  fontSize: '0.875rem',
+                  fontSize: '0.8125rem',
                   fontWeight: 600,
                   margin: '0 4px',
                   userSelect: 'none',
                 }}
               >
-                ─▶
+                →
               </span>
             )}
           </React.Fragment>

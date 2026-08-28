@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Plus, Edit2, Trash2, BookOpen, Library, Search } from 'lucide-react';
+import { Plus, Edit2, Trash2, Library, Search } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '../../components/common/Button';
 import { Input } from '../../components/common/Input';
 import { Badge } from '../../components/common/Badge';
 import { Modal } from '../../components/common/Modal';
 import { LoadingSpinner } from '../../components/common/LoadingSpinner';
+import { PageHeader } from '../../components/common/PageHeader';
+import { EmptyState } from '../../components/common/EmptyState';
 import { subjectsApi } from '../../api/subjects';
 import { Subject } from '../../types';
 import { useToast } from '../../contexts/ToastContext';
@@ -33,10 +35,12 @@ export const SubjectsManagementPage: React.FC = () => {
     try {
       const data = await subjectsApi.getSubjects();
       setSubjects(data);
+    } catch (err) {
+      error('Không thể tải danh sách môn học.');
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [error]);
 
   useEffect(() => {
     fetchSubjects();
@@ -76,7 +80,9 @@ export const SubjectsManagementPage: React.FC = () => {
           description,
           order,
         });
-        setSubjects((prev) => prev.map((s) => (s.id === editingSubject.id ? { ...s, ...updated } : s)));
+        setSubjects((prev) =>
+          prev.map((s) => (s.id === editingSubject.id ? { ...s, ...updated } : s))
+        );
         success('Cập nhật môn học thành công!');
       } else {
         const created = await subjectsApi.createSubject({
@@ -101,9 +107,9 @@ export const SubjectsManagementPage: React.FC = () => {
     try {
       await subjectsApi.deleteSubject(id);
       setSubjects((prev) => prev.filter((s) => s.id !== id));
-      success('Đã xóa môn học');
+      success('Đã xóa môn học thành công.');
     } catch (err) {
-      error('Không thể xóa môn học');
+      error('Không thể xóa môn học.');
     }
   };
 
@@ -119,27 +125,32 @@ export const SubjectsManagementPage: React.FC = () => {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-      {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px' }}>
-        <div>
-          <h1 style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--text-primary)' }}>
-            Quản Lý Môn Học
-          </h1>
-          <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', marginTop: '2px' }}>
-            Danh mục các bộ môn trong hệ thống ôn tập & luyện thi
-          </p>
-        </div>
-
-        <Button variant="primary" onClick={handleOpenCreateModal} leftIcon={<Plus size={18} />}>
-          Thêm Môn Học Mới
-        </Button>
-      </div>
+      <PageHeader
+        eyebrow="Danh mục học thuật"
+        title="Quản lý môn học"
+        description="Thiết lập danh mục các môn học trong chương trình ôn tập và luyện thi trắc nghiệm."
+        actions={
+          <Button
+            variant="primary"
+            onClick={handleOpenCreateModal}
+            leftIcon={<Plus size={18} />}
+          >
+            Thêm Môn Học Mới
+          </Button>
+        }
+      />
 
       {/* Search Input */}
-      <div className="page-search" style={{ position: 'relative', width: '280px' }}>
+      <div style={{ position: 'relative', width: '280px' }}>
         <Search
           size={16}
-          style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }}
+          style={{
+            position: 'absolute',
+            left: '12px',
+            top: '50%',
+            transform: 'translateY(-50%)',
+            color: 'var(--text-muted)',
+          }}
         />
         <input
           type="text"
@@ -147,7 +158,7 @@ export const SubjectsManagementPage: React.FC = () => {
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           className="input-field"
-          style={{ paddingLeft: '36px', height: '40px' }}
+          style={{ paddingLeft: '36px', height: '40px', minHeight: '40px' }}
         />
       </div>
 
@@ -167,8 +178,11 @@ export const SubjectsManagementPage: React.FC = () => {
           <tbody>
             {filtered.length === 0 ? (
               <tr>
-                <td colSpan={6} style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>
-                  Chưa có môn học nào
+                <td colSpan={6} style={{ textAlign: 'center', padding: '40px' }}>
+                  <EmptyState
+                    title="Chưa có môn học nào"
+                    description="Bấm 'Thêm Môn Học Mới' để bắt đầu thiết lập môn học."
+                  />
                 </td>
               </tr>
             ) : (
@@ -181,7 +195,9 @@ export const SubjectsManagementPage: React.FC = () => {
                     <Badge variant="primary">{sub.code}</Badge>
                   </td>
                   <td>
-                    <strong style={{ fontSize: '0.9375rem' }}>{sub.name}</strong>
+                    <strong style={{ fontSize: '0.9375rem', color: 'var(--text-primary)' }}>
+                      {sub.name}
+                    </strong>
                   </td>
                   <td>
                     <span style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)' }}>
@@ -197,37 +213,42 @@ export const SubjectsManagementPage: React.FC = () => {
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                       <button
                         onClick={() => navigate(`/admin/materials?subjectId=${sub.id}`)}
-                        title="Quản lý tài liệu"
+                        title="Quản lý tài liệu môn này"
                         style={{
                           padding: '6px',
                           borderRadius: '6px',
                           color: 'var(--primary)',
                           border: '1px solid var(--border-color)',
+                          display: 'flex',
                         }}
                       >
-                        <Library size={16} />
+                        <Library size={15} />
                       </button>
                       <button
                         onClick={() => handleOpenEditModal(sub)}
+                        title="Chỉnh sửa môn học"
                         style={{
                           padding: '6px',
                           borderRadius: '6px',
                           color: 'var(--text-secondary)',
                           border: '1px solid var(--border-color)',
+                          display: 'flex',
                         }}
                       >
-                        <Edit2 size={16} />
+                        <Edit2 size={15} />
                       </button>
                       <button
                         onClick={() => handleDeleteSubject(sub.id)}
+                        title="Xóa môn học"
                         style={{
                           padding: '6px',
                           borderRadius: '6px',
                           color: 'var(--error)',
                           border: '1px solid var(--border-color)',
+                          display: 'flex',
                         }}
                       >
-                        <Trash2 size={16} />
+                        <Trash2 size={15} />
                       </button>
                     </div>
                   </td>

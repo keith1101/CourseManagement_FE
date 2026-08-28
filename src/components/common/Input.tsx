@@ -1,6 +1,6 @@
 import { InputHTMLAttributes, ReactNode, forwardRef } from 'react';
 
-interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
+export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   label?: string;
   error?: string;
   required?: boolean;
@@ -23,7 +23,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
             <span
               style={{
                 position: 'absolute',
-                left: '12px',
+                left: '14px',
                 color: 'var(--text-muted)',
                 display: 'flex',
                 alignItems: 'center',
@@ -37,8 +37,8 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
             ref={ref}
             className={`input-field ${error ? 'input-error' : ''} ${className}`}
             style={{
-              paddingLeft: leftIcon ? '40px' : '14px',
-              paddingRight: rightIcon ? '40px' : '14px',
+              paddingLeft: leftIcon ? '42px' : '14px',
+              paddingRight: rightIcon ? '42px' : '14px',
             }}
             {...props}
           />
@@ -46,7 +46,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
             <span
               style={{
                 position: 'absolute',
-                right: '12px',
+                right: '14px',
                 color: 'var(--text-muted)',
                 display: 'flex',
                 alignItems: 'center',

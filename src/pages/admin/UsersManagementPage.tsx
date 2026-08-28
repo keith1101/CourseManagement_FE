@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Search, Lock, Unlock, Shield, Sparkles, User as UserIcon, Trash2 } from 'lucide-react';
+import { Search, Lock, Unlock, Shield, Sparkles, User as UserIcon, Edit2 } from 'lucide-react';
 import { Button } from '../../components/common/Button';
 import { Badge } from '../../components/common/Badge';
 import { Modal } from '../../components/common/Modal';
 import { LoadingSpinner } from '../../components/common/LoadingSpinner';
+import { PageHeader } from '../../components/common/PageHeader';
+import { EmptyState } from '../../components/common/EmptyState';
 import { usersApi } from '../../api/users';
 import { User, UserRole, UserStatus, UserTier } from '../../types';
 import { useToast } from '../../contexts/ToastContext';
@@ -30,10 +32,12 @@ export const UsersManagementPage: React.FC = () => {
     try {
       const data = await usersApi.getUsers();
       setUsers(data);
+    } catch (err) {
+      error('Không thể tải danh sách người dùng.');
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [error]);
 
   useEffect(() => {
     fetchUsers();
@@ -51,9 +55,13 @@ export const UsersManagementPage: React.FC = () => {
       setUsers((prev) =>
         prev.map((user) => (user.id === u.id ? { ...user, status: nextStatus } : user))
       );
-      success(nextStatus === 'ACTIVE' ? `Đã mở khóa tài khoản ${u.fullName}` : `Đã khóa tài khoản ${u.fullName}`);
+      success(
+        nextStatus === 'ACTIVE'
+          ? `Đã mở khóa tài khoản ${u.fullName}`
+          : `Đã khóa tài khoản ${u.fullName}`
+      );
     } catch (err) {
-      error('Không thể thay đổi trạng thái tài khoản');
+      error('Không thể thay đổi trạng thái tài khoản.');
     }
   };
 
@@ -75,14 +83,19 @@ export const UsersManagementPage: React.FC = () => {
 
     setIsSaving(true);
     try {
-      const updated = await usersApi.setUserRoleTier(selectedUser.id, targetRole, targetTier, targetProExpiresAt ? new Date(`${targetProExpiresAt}T23:59:59`).toISOString() : null);
+      const updated = await usersApi.setUserRoleTier(
+        selectedUser.id,
+        targetRole,
+        targetTier,
+        targetProExpiresAt ? new Date(`${targetProExpiresAt}T23:59:59`).toISOString() : null
+      );
       setUsers((prev) =>
         prev.map((user) => (user.id === selectedUser.id ? updated : user))
       );
       success(`Đã cập nhật quyền hạn cho ${selectedUser.fullName}`);
       setSelectedUser(null);
     } catch (err) {
-      error('Không thể cập nhật quyền hạn');
+      error('Không thể cập nhật quyền hạn.');
     } finally {
       setIsSaving(false);
     }
@@ -103,30 +116,32 @@ export const UsersManagementPage: React.FC = () => {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-      {/* Header */}
-      <div>
-        <h1 style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--text-primary)' }}>
-          Quản Lý Người Dùng & Học Sinh
-        </h1>
-        <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', marginTop: '2px' }}>
-          Xem danh sách tài khoản, phân quyền quản trị và nâng cấp gói PRO
-        </p>
-      </div>
+      <PageHeader
+        eyebrow="Quản trị người dùng"
+        title="Quản lý thành viên & Học sinh"
+        description="Theo dõi danh sách người dùng, kích hoạt gói thành viên PRO và quản lý trạng thái tài khoản."
+      />
 
       {/* Filter Toolbar */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
-        <div style={{ position: 'relative', width: '280px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+        <div style={{ position: 'relative', width: '300px' }}>
           <Search
             size={16}
-            style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }}
+            style={{
+              position: 'absolute',
+              left: '12px',
+              top: '50%',
+              transform: 'translateY(-50%)',
+              color: 'var(--text-muted)',
+            }}
           />
           <input
             type="text"
-            placeholder="Tìm theo tên hoặc email..."
+            placeholder="Tìm theo họ tên, email hoặc số điện thoại..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="input-field"
-            style={{ paddingLeft: '36px', height: '40px' }}
+            style={{ paddingLeft: '36px', height: '40px', minHeight: '40px' }}
           />
         </div>
 
@@ -134,33 +149,36 @@ export const UsersManagementPage: React.FC = () => {
           value={roleFilter}
           onChange={(e) => setRoleFilter(e.target.value)}
           className="input-field"
-          style={{ width: '180px', height: '40px', cursor: 'pointer' }}
+          style={{ width: '180px', height: '40px', minHeight: '40px', cursor: 'pointer' }}
         >
           <option value="ALL">Tất cả vai trò</option>
-          <option value="STUDENT">Học sinh (Student)</option>
-          <option value="ADMIN">Quản trị viên (Admin)</option>
+          <option value="STUDENT">Học sinh</option>
+          <option value="ADMIN">Quản trị viên</option>
         </select>
       </div>
 
       {/* Users Table */}
-      <div className="table-container users-table-container">
+      <div className="table-container">
         <table className="data-table users-table">
           <thead>
             <tr>
-              <th>Họ Và Tên</th>
+              <th>Họ và tên</th>
               <th>Email</th>
-              <th>Số Điện Thoại</th>
-              <th>Vai Trò</th>
-              <th>Gói Dịch Vụ</th>
-              <th>Trạng Thái</th>
-              <th>Hành Động</th>
+              <th>Số điện thoại</th>
+              <th>Vai trò</th>
+              <th>Gói thành viên</th>
+              <th>Trạng thái</th>
+              <th>Thao tác</th>
             </tr>
           </thead>
           <tbody>
             {filtered.length === 0 ? (
               <tr>
-                <td colSpan={7} style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>
-                  Không tìm thấy người dùng nào
+                <td colSpan={7} style={{ textAlign: 'center', padding: '40px' }}>
+                  <EmptyState
+                    title="Không tìm thấy người dùng"
+                    description="Không có tài khoản nào phù hợp với từ khóa tìm kiếm."
+                  />
                 </td>
               </tr>
             ) : (
@@ -170,76 +188,84 @@ export const UsersManagementPage: React.FC = () => {
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                       <div
                         style={{
-                          width: '32px',
-                          height: '32px',
+                          width: '34px',
+                          height: '34px',
                           borderRadius: '50%',
-                          backgroundColor: u.role === 'ADMIN' ? 'var(--primary-light)' : 'var(--bg-subtle)',
-                          color: u.role === 'ADMIN' ? 'var(--primary)' : 'var(--text-secondary)',
+                          backgroundColor:
+                            u.role === 'ADMIN' ? 'var(--primary-light)' : 'var(--bg-subtle)',
+                          color: u.role === 'ADMIN' ? 'var(--primary)' : 'var(--text-primary)',
+                          fontWeight: 700,
+                          fontSize: '0.875rem',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
-                          fontWeight: 700,
-                          fontSize: '0.8125rem',
+                          border: '1px solid var(--border-color)',
+                          flexShrink: 0,
                         }}
                       >
-                        {u.fullName?.charAt(0) || 'U'}
+                        {u.fullName.charAt(0)}
                       </div>
-                      <strong>{u.fullName}</strong>
+                      <strong style={{ fontSize: '0.9375rem', color: 'var(--text-primary)' }}>
+                        {u.fullName}
+                      </strong>
                     </div>
                   </td>
-                  <td>{u.email}</td>
-                  <td>{u.phoneNumber || '-'}</td>
                   <td>
-                    <Badge variant={u.role === 'ADMIN' ? 'primary' : 'info'}>
-                      {u.role === 'ADMIN' ? 'Quản trị viên' : 'Học sinh'}
+                    <span style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
+                      {u.email}
+                    </span>
+                  </td>
+                  <td>
+                    <span style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
+                      {u.phoneNumber || '-'}
+                    </span>
+                  </td>
+                  <td>
+                    <Badge variant={u.role === 'ADMIN' ? 'primary' : 'neutral'}>
+                      {u.role === 'ADMIN' ? 'Quản trị' : 'Học sinh'}
                     </Badge>
                   </td>
                   <td>
-                    {u.tier === 'PRO' ? (
-                      <Badge variant="warning">
-                        <Sparkles size={12} /> PRO
-                      </Badge>
-                    ) : (
-                      <Badge variant="info">Miễn phí</Badge>
-                    )}
+                    <Badge variant={u.tier === 'PRO' ? 'premium' : 'neutral'}>
+                      {u.tier === 'PRO' ? '⭐ Gói PRO' : 'Miễn phí'}
+                    </Badge>
                   </td>
                   <td>
                     <Badge variant={u.status === 'ACTIVE' ? 'success' : 'error'}>
-                      {u.status === 'ACTIVE' ? 'Hoạt động' : 'Bị khóa'}
+                      {u.status === 'ACTIVE' ? 'Hoạt động' : 'Đã khóa'}
                     </Badge>
                   </td>
                   <td>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <Button
-                        size="sm"
-                        variant="outline"
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <button
                         onClick={() => handleOpenEditUser(u)}
-                        disabled={u.id === currentUser?.id}
-                        title={u.id === currentUser?.id ? 'Không thể tự phân quyền' : 'Phân quyền tài khoản'}
+                        title="Phân quyền vai trò & gói PRO"
                         style={{
-                          opacity: u.id === currentUser?.id ? 0.55 : 1,
-                          cursor: u.id === currentUser?.id ? 'not-allowed' : 'pointer',
+                          padding: '6px 10px',
+                          borderRadius: '6px',
+                          color: 'var(--primary)',
+                          border: '1px solid var(--border-color)',
+                          fontSize: '0.8125rem',
+                          fontWeight: 600,
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '4px',
                         }}
                       >
-                        Phân quyền
-                      </Button>
+                        <Edit2 size={14} /> Phân quyền
+                      </button>
                       <button
-                        type="button"
                         onClick={() => handleToggleLock(u)}
-                        disabled={u.id === currentUser?.id && u.status === 'ACTIVE'}
-                        title={u.id === currentUser?.id && u.status === 'ACTIVE'
-                          ? 'Không thể tự khóa tài khoản đang đăng nhập'
-                          : u.status === 'ACTIVE' ? 'Khóa tài khoản' : 'Mở khóa tài khoản'}
+                        title={u.status === 'ACTIVE' ? 'Khóa tài khoản' : 'Mở khóa'}
                         style={{
                           padding: '6px',
                           borderRadius: '6px',
                           color: u.status === 'ACTIVE' ? 'var(--error)' : 'var(--success)',
                           border: '1px solid var(--border-color)',
-                          opacity: u.id === currentUser?.id && u.status === 'ACTIVE' ? 0.45 : 1,
-                          cursor: u.id === currentUser?.id && u.status === 'ACTIVE' ? 'not-allowed' : 'pointer',
+                          display: 'flex',
                         }}
                       >
-                        {u.status === 'ACTIVE' ? <Lock size={16} /> : <Unlock size={16} />}
+                        {u.status === 'ACTIVE' ? <Lock size={15} /> : <Unlock size={15} />}
                       </button>
                     </div>
                   </td>
@@ -254,48 +280,55 @@ export const UsersManagementPage: React.FC = () => {
       <Modal
         isOpen={!!selectedUser}
         onClose={() => setSelectedUser(null)}
-        title={`Phân Quyền: ${selectedUser?.fullName}`}
-        maxWidth="460px"
+        title={`Phân quyền tài khoản: ${selectedUser?.fullName}`}
+        maxWidth="500px"
       >
         <form onSubmit={handleSaveRoleTier} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <div className="form-group">
             <label className="form-label">Vai trò trong hệ thống</label>
             <select
+              className="input-field"
               value={targetRole}
               onChange={(e) => setTargetRole(e.target.value as UserRole)}
-              className="input-field"
             >
-              <option value="STUDENT">Học sinh (Student)</option>
-              <option value="ADMIN">Quản trị viên (Admin)</option>
+              <option value="STUDENT">Học sinh (STUDENT)</option>
+              <option value="ADMIN">Quản trị viên (ADMIN)</option>
             </select>
           </div>
 
           <div className="form-group">
-            <label className="form-label">Gói dịch vụ học tập</label>
+            <label className="form-label">Gói thành viên</label>
             <select
+              className="input-field"
               value={targetTier}
               onChange={(e) => setTargetTier(e.target.value as UserTier)}
-              className="input-field"
             >
-              <option value="FREE">Gói Miễn phí (Free)</option>
-              <option value="PRO">Gói Chuyên sâu (PRO - Không giới hạn)</option>
+              <option value="FREE">Gói Miễn phí (FREE)</option>
+              <option value="PRO">Gói Cao cấp (PRO)</option>
             </select>
           </div>
 
           {targetTier === 'PRO' && (
             <div className="form-group">
-              <label className="form-label">Ngày hết hạn PRO</label>
-              <input type="date" value={targetProExpiresAt} onChange={(e) => setTargetProExpiresAt(e.target.value)} className="input-field" min={new Date().toISOString().slice(0, 10)} />
-              <small style={{ color: 'var(--text-secondary)' }}>Để trống nếu PRO không có thời hạn.</small>
+              <label className="form-label">Hạn dùng PRO (Tùy chọn)</label>
+              <input
+                type="date"
+                className="input-field"
+                value={targetProExpiresAt}
+                onChange={(e) => setTargetProExpiresAt(e.target.value)}
+              />
+              <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                Để trống nếu muốn cấp gói PRO không thời hạn.
+              </span>
             </div>
           )}
 
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '12px' }}>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '8px' }}>
             <Button variant="outline" type="button" onClick={() => setSelectedUser(null)}>
               Hủy
             </Button>
             <Button variant="primary" type="submit" isLoading={isSaving}>
-              Cập nhật quyền
+              Lưu thay đổi
             </Button>
           </div>
         </form>

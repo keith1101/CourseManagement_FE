@@ -17,29 +17,29 @@ export const CountdownTimer: React.FC<CountdownTimerProps> = ({
       style={{
         display: 'inline-flex',
         alignItems: 'center',
-        gap: '10px',
+        gap: '8px',
         background: isUrgent
           ? 'var(--error)'
           : isWarning
-          ? 'var(--secondary-gradient)'
+          ? 'var(--accent)'
           : 'var(--primary)',
         color: '#FFFFFF',
-        padding: '8px 20px',
+        padding: '6px 16px',
         borderRadius: 'var(--border-radius-full)',
         boxShadow: isUrgent
-          ? '0 0 15px rgba(192, 86, 64, 0.45)'
-          : 'var(--shadow-secondary)',
+          ? '0 0 14px rgba(201, 59, 59, 0.4)'
+          : 'var(--shadow-xs)',
         animation: isUrgent ? 'pulseGlow 1.5s infinite' : 'none',
         transition: 'all var(--transition-normal)',
       }}
     >
-      {isUrgent ? <AlertTriangle size={20} /> : <Clock size={20} />}
+      {isUrgent ? <AlertTriangle size={17} /> : <Clock size={17} />}
       <span
         style={{
           fontFamily: 'var(--font-mono)',
-          fontSize: '1.25rem',
+          fontSize: '1.125rem',
           fontWeight: 700,
-          letterSpacing: '0.05em',
+          letterSpacing: '0.04em',
         }}
       >
         {formattedTime}

@@ -5,16 +5,15 @@ import {
   FileQuestion,
   BookOpen,
   Send,
-  BarChart3,
   PlusCircle,
   ArrowRight,
-  TrendingUp,
   Award,
 } from 'lucide-react';
 import { Card } from '../../components/common/Card';
 import { Button } from '../../components/common/Button';
 import { Badge } from '../../components/common/Badge';
 import { LoadingSpinner } from '../../components/common/LoadingSpinner';
+import { PageHeader } from '../../components/common/PageHeader';
 import { examsApi } from '../../api/exams';
 import { usersApi } from '../../api/users';
 import { subjectsApi } from '../../api/subjects';
@@ -35,7 +34,7 @@ export const AdminDashboardPage: React.FC = () => {
 
   useEffect(() => {
     const fetchData = async () => {
-        setIsLoading(true);
+      setIsLoading(true);
       try {
         const [examsData, usersData, subjectsData, attemptsData] = await Promise.all([
           examsApi.getExams(),
@@ -54,7 +53,7 @@ export const AdminDashboardPage: React.FC = () => {
       }
     };
     fetchData();
-  }, []);
+  }, [error]);
 
   if (isLoading) {
     return <LoadingSpinner text="Đang tải dữ liệu tổng quan quản trị..." />;
@@ -65,58 +64,35 @@ export const AdminDashboardPage: React.FC = () => {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
-      {/* 1. Header Banner */}
-      <div
-        className="dashboard-banner admin-dashboard-banner animate-slide-up"
-        style={{
-          background: 'var(--primary-gradient)',
-          borderRadius: 'var(--border-radius-xl)',
-          padding: '32px 36px',
-          color: '#FFFFFF',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          flexWrap: 'wrap',
-          gap: '20px',
-          boxShadow: 'var(--shadow-md)',
-        }}
-      >
-        <div>
-          <h1 style={{ fontSize: '1.75rem', fontWeight: 800 }}>
-            Hệ Thống Quản Trị Khóa Học & Đề Thi
-          </h1>
-          <p style={{ marginTop: '6px', opacity: 0.9, fontSize: '0.9375rem' }}>
-            Quản lý câu hỏi trắc nghiệm Kahoot, tổ chức thi và theo dõi kết quả học sinh
-          </p>
-        </div>
+      <PageHeader
+        eyebrow="Trung tâm điều hành"
+        title="Tổng quan hệ thống quản trị"
+        description="Theo dõi số lượng học sinh, quản lý đề thi trắc nghiệm và thống kê kết quả kiểm tra toàn trường."
+        actions={
+          <>
+            <Button
+              variant="outline"
+              onClick={() => navigate('/admin/assignments')}
+              leftIcon={<Send size={16} />}
+            >
+              Giao Đề Thi
+            </Button>
+            <Button
+              variant="primary"
+              onClick={() => navigate('/admin/exams')}
+              leftIcon={<PlusCircle size={16} />}
+            >
+              Tạo Đề Thi Mới
+            </Button>
+          </>
+        }
+      />
 
-        <div style={{ display: 'flex', gap: '12px' }}>
-          <Button
-            variant="secondary"
-            size="lg"
-            onClick={() => navigate('/admin/exams')}
-            leftIcon={<PlusCircle size={18} />}
-            style={{ backgroundColor: 'var(--secondary)', fontWeight: 700 }}
-          >
-            Tạo Đề Thi Mới
-          </Button>
-          <Button
-            variant="outline"
-            size="lg"
-            onClick={() => navigate('/admin/assignments')}
-            leftIcon={<Send size={18} />}
-            style={{ backgroundColor: 'rgba(255, 255, 255, 0.2)', color: '#FFFFFF', borderColor: 'transparent' }}
-          >
-            Giao Đề Thi
-          </Button>
-        </div>
-      </div>
-
-      {/* 2. Stat Cards Grid */}
+      {/* 1. Stat Cards Grid */}
       <div className="stat-grid">
         <div className="stat-card">
           <div className="stat-icon-wrapper" style={{ backgroundColor: 'var(--primary-light)', color: 'var(--primary)' }}>
-            <FileQuestion size={26} />
+            <FileQuestion size={24} />
           </div>
           <div className="stat-info">
             <span className="stat-value">{exams.length}</span>
@@ -126,7 +102,7 @@ export const AdminDashboardPage: React.FC = () => {
 
         <div className="stat-card">
           <div className="stat-icon-wrapper" style={{ backgroundColor: 'var(--info-bg)', color: 'var(--info)' }}>
-            <Users size={26} />
+            <Users size={24} />
           </div>
           <div className="stat-info">
             <span className="stat-value">{studentCount}</span>
@@ -136,7 +112,7 @@ export const AdminDashboardPage: React.FC = () => {
 
         <div className="stat-card">
           <div className="stat-icon-wrapper" style={{ backgroundColor: 'var(--secondary-light)', color: 'var(--secondary)' }}>
-            <BookOpen size={26} />
+            <BookOpen size={24} />
           </div>
           <div className="stat-info">
             <span className="stat-value">{subjects.length}</span>
@@ -146,25 +122,36 @@ export const AdminDashboardPage: React.FC = () => {
 
         <div className="stat-card">
           <div className="stat-icon-wrapper" style={{ backgroundColor: 'var(--success-bg)', color: 'var(--success)' }}>
-            <Award size={26} />
+            <Award size={24} />
           </div>
           <div className="stat-info">
             <span className="stat-value">{attempts.length}</span>
-            <span className="stat-label">Lượt thi đã làm</span>
+            <span className="stat-label">Lượt thi đã thực hiện</span>
           </div>
         </div>
       </div>
 
-      {/* 3. Recent Exams & Attempts Section */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(450px, 100%), 1fr))', gap: '24px' }}>
+      {/* 2. Recent Exams & Attempts Section */}
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(min(450px, 100%), 1fr))',
+          gap: '24px',
+        }}
+      >
         {/* Recent Exams */}
         <Card style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <h3 style={{ fontSize: '1.125rem', fontWeight: 700, color: 'var(--text-primary)' }}>
               Đề Thi Mới Tạo
             </h3>
-            <Button size="sm" variant="ghost" onClick={() => navigate('/admin/exams')} rightIcon={<ArrowRight size={14} />}>
-              Quản lý
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => navigate('/admin/exams')}
+              rightIcon={<ArrowRight size={14} />}
+            >
+              Quản lý đề
             </Button>
           </div>
 
@@ -179,10 +166,13 @@ export const AdminDashboardPage: React.FC = () => {
                   padding: '12px 16px',
                   backgroundColor: 'var(--bg-subtle)',
                   borderRadius: 'var(--border-radius-md)',
+                  border: '1px solid var(--border-color)',
                 }}
               >
                 <div>
-                  <strong style={{ fontSize: '0.9375rem', color: 'var(--text-primary)' }}>{ex.title}</strong>
+                  <strong style={{ fontSize: '0.9375rem', color: 'var(--text-primary)' }}>
+                    {ex.title}
+                  </strong>
                   <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '2px' }}>
                     {ex.durationMinutes} phút • {ex.questionsCount || 0} câu hỏi
                   </div>
@@ -210,8 +200,13 @@ export const AdminDashboardPage: React.FC = () => {
             <h3 style={{ fontSize: '1.125rem', fontWeight: 700, color: 'var(--text-primary)' }}>
               Lượt Nộp Bài Gần Đây
             </h3>
-            <Button size="sm" variant="ghost" onClick={() => navigate('/admin/results')} rightIcon={<ArrowRight size={14} />}>
-              Báo cáo
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => navigate('/admin/results')}
+              rightIcon={<ArrowRight size={14} />}
+            >
+              Xem báo cáo
             </Button>
           </div>
 
@@ -226,6 +221,7 @@ export const AdminDashboardPage: React.FC = () => {
                   padding: '12px 16px',
                   backgroundColor: 'var(--bg-subtle)',
                   borderRadius: 'var(--border-radius-md)',
+                  border: '1px solid var(--border-color)',
                 }}
               >
                 <div>
@@ -236,11 +232,23 @@ export const AdminDashboardPage: React.FC = () => {
                     {att.exam?.title || 'Đề thi trắc nghiệm'}
                   </div>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <span style={{ fontWeight: 800, color: (att.score || 0) >= 5 ? 'var(--success)' : 'var(--error)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <span
+                    style={{
+                      fontWeight: 800,
+                      color: (att.score || 0) >= 5 ? 'var(--success)' : 'var(--error)',
+                      fontSize: '0.9375rem',
+                    }}
+                  >
                     {att.score !== undefined ? `${att.score}/10` : '-'}
                   </span>
-                  <Badge variant={att.status === 'SUBMITTED' || att.status === 'SCORED' ? 'success' : 'warning'}>
+                  <Badge
+                    variant={
+                      att.status === 'SUBMITTED' || att.status === 'SCORED' || att.status === 'COMPLETED'
+                        ? 'success'
+                        : 'warning'
+                    }
+                  >
                     {att.status}
                   </Badge>
                 </div>

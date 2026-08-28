@@ -3,7 +3,7 @@ import { ArrowLeft, Clock, Award, Save, X, Layers } from 'lucide-react';
 import { QuestionType } from '../../types';
 import { Button } from '../common/Button';
 
-interface EditorHeaderProps {
+export interface EditorHeaderProps {
   examTitle: string;
   timeLimit: number;
   points: number;
@@ -29,24 +29,9 @@ export const EditorHeader: React.FC<EditorHeaderProps> = ({
   onCancel,
 }) => {
   return (
-    <header
-      className="editor-header"
-      style={{
-        height: '64px',
-        backgroundColor: 'var(--primary)',
-        color: '#FFFFFF',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        padding: '0 24px',
-        position: 'sticky',
-        top: 0,
-        zIndex: 50,
-        boxShadow: 'var(--shadow-primary-strong)',
-      }}
-    >
+    <header className="editor-header">
       {/* Left: Back & Exam Title */}
-      <div className="editor-header-leading" style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '16px', minWidth: 0 }}>
         <button
           onClick={onCancel}
           style={{
@@ -56,37 +41,60 @@ export const EditorHeader: React.FC<EditorHeaderProps> = ({
             color: '#FFFFFF',
             padding: '6px 12px',
             borderRadius: 'var(--border-radius-md)',
-            backgroundColor: 'rgba(255, 255, 255, 0.15)',
-            fontSize: '0.875rem',
+            backgroundColor: 'rgba(255, 255, 255, 0.12)',
+            fontSize: '0.8125rem',
             fontWeight: 600,
             transition: 'background var(--transition-fast)',
+            whiteSpace: 'nowrap',
+          }}
+          onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.backgroundColor = 'rgba(255, 255, 255, 0.2)')}
+          onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.backgroundColor = 'rgba(255, 255, 255, 0.12)')}
+        >
+          <ArrowLeft size={15} /> Quay lại
+        </button>
+        <div
+          style={{
+            borderLeft: '1px solid rgba(255, 255, 255, 0.15)',
+            paddingLeft: '16px',
+            minWidth: 0,
           }}
         >
-          <ArrowLeft size={16} /> Quay lại Đề thi
-        </button>
-        <div style={{ borderLeft: '1px solid rgba(255, 255, 255, 0.2)', paddingLeft: '16px' }}>
-          <h2 style={{ fontSize: '1rem', fontWeight: 700, lineHeight: 1.2 }}>{examTitle}</h2>
-          <span style={{ fontSize: '0.75rem', color: 'rgba(255, 255, 255, 0.8)' }}>
-            Trình soạn thảo câu hỏi Kahoot-Style
+          <h2
+            style={{
+              fontSize: '0.9375rem',
+              fontWeight: 700,
+              lineHeight: 1.2,
+              color: '#FFFFFF',
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+            }}
+          >
+            {examTitle}
+          </h2>
+          <span style={{ fontSize: '0.75rem', color: 'rgba(255, 255, 255, 0.65)' }}>
+            Soạn thảo câu hỏi trắc nghiệm
           </span>
         </div>
       </div>
 
       {/* Center: Controls (Time, Points, Type) */}
-      <div className="editor-header-controls" style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
         {/* Time Limit */}
         <div
           style={{
             display: 'flex',
             alignItems: 'center',
-            gap: '8px',
-            backgroundColor: 'rgba(255, 255, 255, 0.15)',
-            padding: '6px 12px',
+            gap: '6px',
+            backgroundColor: 'rgba(255, 255, 255, 0.1)',
+            padding: '4px 10px',
             borderRadius: 'var(--border-radius-md)',
           }}
         >
-          <Clock size={16} />
-          <span style={{ fontSize: '0.8125rem', fontWeight: 600 }}>Thời gian:</span>
+          <Clock size={15} color="rgba(255, 255, 255, 0.8)" />
+          <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'rgba(255, 255, 255, 0.8)' }}>
+            Thời gian:
+          </span>
           <input
             type="number"
             min={5}
@@ -95,19 +103,19 @@ export const EditorHeader: React.FC<EditorHeaderProps> = ({
             value={timeLimit}
             onChange={(e) => onTimeLimitChange(Number(e.target.value))}
             style={{
-              width: '56px',
-              backgroundColor: 'rgba(255, 255, 255, 0.25)',
+              width: '52px',
+              backgroundColor: 'rgba(255, 255, 255, 0.2)',
               border: 'none',
               borderRadius: '4px',
               color: '#FFFFFF',
               textAlign: 'center',
               fontWeight: 700,
-              fontSize: '0.875rem',
+              fontSize: '0.8125rem',
               outline: 'none',
               padding: '2px 4px',
             }}
           />
-          <span style={{ fontSize: '0.75rem' }}>giây</span>
+          <span style={{ fontSize: '0.75rem', color: 'rgba(255, 255, 255, 0.7)' }}>s</span>
         </div>
 
         {/* Points */}
@@ -115,14 +123,16 @@ export const EditorHeader: React.FC<EditorHeaderProps> = ({
           style={{
             display: 'flex',
             alignItems: 'center',
-            gap: '8px',
-            backgroundColor: 'rgba(255, 255, 255, 0.15)',
-            padding: '6px 12px',
+            gap: '6px',
+            backgroundColor: 'rgba(255, 255, 255, 0.1)',
+            padding: '4px 10px',
             borderRadius: 'var(--border-radius-md)',
           }}
         >
-          <Award size={16} />
-          <span style={{ fontSize: '0.8125rem', fontWeight: 600 }}>Điểm số:</span>
+          <Award size={15} color="rgba(255, 255, 255, 0.8)" />
+          <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'rgba(255, 255, 255, 0.8)' }}>
+            Điểm:
+          </span>
           <input
             type="number"
             min={0.5}
@@ -131,14 +141,14 @@ export const EditorHeader: React.FC<EditorHeaderProps> = ({
             value={points}
             onChange={(e) => onPointsChange(Number(e.target.value))}
             style={{
-              width: '50px',
-              backgroundColor: 'rgba(255, 255, 255, 0.25)',
+              width: '46px',
+              backgroundColor: 'rgba(255, 255, 255, 0.2)',
               border: 'none',
               borderRadius: '4px',
               color: '#FFFFFF',
               textAlign: 'center',
               fontWeight: 700,
-              fontSize: '0.875rem',
+              fontSize: '0.8125rem',
               outline: 'none',
               padding: '2px 4px',
             }}
@@ -150,13 +160,13 @@ export const EditorHeader: React.FC<EditorHeaderProps> = ({
           style={{
             display: 'flex',
             alignItems: 'center',
-            gap: '8px',
-            backgroundColor: 'rgba(255, 255, 255, 0.15)',
-            padding: '6px 12px',
+            gap: '6px',
+            backgroundColor: 'rgba(255, 255, 255, 0.1)',
+            padding: '4px 10px',
             borderRadius: 'var(--border-radius-md)',
           }}
         >
-          <Layers size={16} />
+          <Layers size={15} color="rgba(255, 255, 255, 0.8)" />
           <select
             value={questionType}
             onChange={(e) => onQuestionTypeChange(e.target.value as QuestionType)}
@@ -165,44 +175,49 @@ export const EditorHeader: React.FC<EditorHeaderProps> = ({
               border: 'none',
               color: '#FFFFFF',
               fontWeight: 600,
-              fontSize: '0.875rem',
+              fontSize: '0.8125rem',
               outline: 'none',
               cursor: 'pointer',
             }}
           >
-            <option value="SINGLE_CHOICE" style={{ color: 'var(--text-primary)' }}>Trắc nghiệm (1 đáp án)</option>
-            <option value="MULTIPLE_CHOICE" style={{ color: 'var(--text-primary)' }}>Trắc nghiệm (Nhiều đáp án)</option>
-            <option value="ESSAY" style={{ color: 'var(--text-primary)' }}>Tự luận</option>
-            <option value="FILL_BLANK" style={{ color: 'var(--text-primary)' }}>Điền vào chỗ trống</option>
+            <option value="SINGLE_CHOICE" style={{ color: '#202938' }}>
+              Trắc nghiệm (1 đáp án)
+            </option>
+            <option value="MULTIPLE_CHOICE" style={{ color: '#202938' }}>
+              Trắc nghiệm (Nhiều đáp án)
+            </option>
+            <option value="ESSAY" style={{ color: '#202938' }}>
+              Tự luận
+            </option>
+            <option value="FILL_BLANK" style={{ color: '#202938' }}>
+              Điền vào chỗ trống
+            </option>
           </select>
         </div>
       </div>
 
       {/* Right: Actions */}
-      <div className="editor-header-actions" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
         <button
           onClick={onCancel}
           style={{
-            color: 'rgba(255, 255, 255, 0.8)',
+            color: 'rgba(255, 255, 255, 0.75)',
             display: 'flex',
             alignItems: 'center',
             gap: '4px',
-            padding: '8px 14px',
-            fontSize: '0.875rem',
+            padding: '6px 12px',
+            fontSize: '0.8125rem',
             fontWeight: 600,
           }}
         >
-          <X size={16} /> Hủy
+          <X size={15} /> Hủy
         </button>
         <Button
           onClick={onSave}
           variant="secondary"
+          size="sm"
           isLoading={isSaving}
-          leftIcon={<Save size={16} />}
-          style={{
-            backgroundColor: 'var(--secondary)',
-            fontWeight: 700,
-          }}
+          leftIcon={<Save size={15} />}
         >
           Lưu Câu Hỏi
         </Button>

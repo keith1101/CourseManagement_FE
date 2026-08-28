@@ -27,7 +27,12 @@ export const RegisterPage: React.FC = () => {
     if (password !== confirmPassword) return error('Mật khẩu xác nhận không khớp.');
     setIsLoading(true);
     try {
-      const user = await register({ fullName: fullName.trim(), email: email.trim(), password, phoneNumber: phoneNumber.trim() || undefined });
+      const user = await register({
+        fullName: fullName.trim(),
+        email: email.trim(),
+        password,
+        phoneNumber: phoneNumber.trim() || undefined,
+      });
       success(`Đăng ký thành công cho ${user.fullName}. Vui lòng đăng nhập.`);
       navigate('/login');
     } catch (err) {
@@ -38,15 +43,94 @@ export const RegisterPage: React.FC = () => {
   };
 
   return (
-    <AuthLayout title="Tạo Tài Khoản Mới" subtitle="Tham gia cùng cộng đồng học tập CourseManagement">
+    <AuthLayout
+      title="Tạo tài khoản học viên"
+      subtitle="Tham gia cùng cộng đồng học tập và kiểm tra trực tuyến"
+    >
       <form onSubmit={handleSubmit}>
-        <Input label="Họ và tên" placeholder="Nguyễn Văn A" required value={fullName} onChange={(e) => setFullName(e.target.value)} leftIcon={<UserIcon size={18} />} disabled={isLoading} />
-        <Input label="Email" type="email" placeholder="name@example.com" required value={email} onChange={(e) => setEmail(e.target.value)} leftIcon={<Mail size={18} />} disabled={isLoading} />
-        <Input label="Số điện thoại" type="tel" placeholder="0987654321" value={phoneNumber} onChange={(e) => setPhoneNumber(e.target.value)} leftIcon={<Phone size={18} />} disabled={isLoading} />
-        <Input label="Mật khẩu" type={showPassword ? 'text' : 'password'} placeholder="Ít nhất 8 ký tự" required value={password} onChange={(e) => setPassword(e.target.value)} leftIcon={<Lock size={18} />} rightIcon={<button type="button" onClick={() => setShowPassword((value) => !value)} style={{ display: 'flex', color: 'var(--text-muted)' }}>{showPassword ? <EyeOff size={18} /> : <Eye size={18} />}</button>} disabled={isLoading} />
-        <Input label="Xác nhận mật khẩu" type={showPassword ? 'text' : 'password'} placeholder="Nhập lại mật khẩu" required value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} leftIcon={<Lock size={18} />} disabled={isLoading} />
-        <Button type="submit" variant="primary" size="lg" isLoading={isLoading} leftIcon={<UserPlus size={18} />} style={{ width: '100%', marginTop: '8px', background: 'var(--primary-gradient)', boxShadow: 'var(--shadow-primary-strong)' }}>Đăng Ký Tài Khoản</Button>
-        <div style={{ textAlign: 'center', marginTop: '24px', fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Đã có tài khoản? <Link to="/login" style={{ color: 'var(--primary)', fontWeight: 700 }}>Đăng nhập</Link></div>
+        <Input
+          label="Họ và tên"
+          placeholder="Nguyễn Văn A"
+          required
+          value={fullName}
+          onChange={(e) => setFullName(e.target.value)}
+          leftIcon={<UserIcon size={18} />}
+          disabled={isLoading}
+        />
+        <Input
+          label="Email"
+          type="email"
+          placeholder="name@example.com"
+          required
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          leftIcon={<Mail size={18} />}
+          disabled={isLoading}
+        />
+        <Input
+          label="Số điện thoại"
+          type="tel"
+          placeholder="0987654321"
+          value={phoneNumber}
+          onChange={(e) => setPhoneNumber(e.target.value)}
+          leftIcon={<Phone size={18} />}
+          disabled={isLoading}
+        />
+        <Input
+          label="Mật khẩu"
+          type={showPassword ? 'text' : 'password'}
+          placeholder="Ít nhất 8 ký tự"
+          required
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          leftIcon={<Lock size={18} />}
+          rightIcon={
+            <button
+              type="button"
+              onClick={() => setShowPassword((value) => !value)}
+              style={{ display: 'flex', color: 'var(--text-muted)' }}
+              aria-label={showPassword ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
+            >
+              {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+            </button>
+          }
+          disabled={isLoading}
+        />
+        <Input
+          label="Xác nhận mật khẩu"
+          type={showPassword ? 'text' : 'password'}
+          placeholder="Nhập lại mật khẩu"
+          required
+          value={confirmPassword}
+          onChange={(e) => setConfirmPassword(e.target.value)}
+          leftIcon={<Lock size={18} />}
+          disabled={isLoading}
+        />
+
+        <Button
+          type="submit"
+          variant="primary"
+          size="lg"
+          isLoading={isLoading}
+          leftIcon={<UserPlus size={18} />}
+          style={{ width: '100%', marginTop: '6px' }}
+        >
+          Đăng Ký Tài Khoản
+        </Button>
+
+        <div
+          style={{
+            textAlign: 'center',
+            marginTop: '24px',
+            fontSize: '0.875rem',
+            color: 'var(--text-secondary)',
+          }}
+        >
+          Đã có tài khoản?{' '}
+          <Link to="/login" style={{ color: 'var(--primary)', fontWeight: 700 }}>
+            Đăng nhập
+          </Link>
+        </div>
       </form>
     </AuthLayout>
   );

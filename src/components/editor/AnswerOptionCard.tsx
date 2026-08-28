@@ -2,7 +2,7 @@ import React from 'react';
 import { Check, Circle } from 'lucide-react';
 import { AnswerOption } from '../../types';
 
-interface AnswerOptionCardProps {
+export interface AnswerOptionCardProps {
   option: AnswerOption;
   index: number;
   isMultiChoice?: boolean;
@@ -28,9 +28,9 @@ export const AnswerOptionCard: React.FC<AnswerOptionCardProps> = ({
     <div
       style={{
         borderRadius: 'var(--border-radius-lg)',
-        backgroundColor: '#FFFFFF',
+        backgroundColor: 'var(--bg-card)',
         border: `2px solid ${option.isCorrect ? config.border : 'var(--border-color)'}`,
-        boxShadow: option.isCorrect ? 'var(--shadow-md)' : 'var(--shadow-sm)',
+        boxShadow: option.isCorrect ? 'var(--shadow-sm)' : 'none',
         display: 'flex',
         flexDirection: 'column',
         overflow: 'hidden',
@@ -40,31 +40,34 @@ export const AnswerOptionCard: React.FC<AnswerOptionCardProps> = ({
       {/* Top Banner with Label & Correct Answer Toggle */}
       <div
         style={{
-          backgroundColor: config.bg,
+          backgroundColor: option.isCorrect ? config.bg : 'var(--bg-subtle)',
           padding: '10px 16px',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          color: '#FFFFFF',
+          color: option.isCorrect ? '#FFFFFF' : 'var(--text-primary)',
+          borderBottom: `1px solid ${option.isCorrect ? config.border : 'var(--border-color)'}`,
+          transition: 'all var(--transition-fast)',
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <span
             style={{
-              width: '28px',
-              height: '28px',
-              borderRadius: '8px',
-              backgroundColor: 'rgba(255, 255, 255, 0.25)',
+              width: '26px',
+              height: '26px',
+              borderRadius: '6px',
+              backgroundColor: option.isCorrect ? 'rgba(255, 255, 255, 0.25)' : config.bg,
+              color: '#FFFFFF',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               fontWeight: 800,
-              fontSize: '1rem',
+              fontSize: '0.875rem',
             }}
           >
             {option.label}
           </span>
-          <span style={{ fontWeight: 600, fontSize: '0.875rem' }}>Đáp án {option.label}</span>
+          <span style={{ fontWeight: 700, fontSize: '0.875rem' }}>Đáp án {option.label}</span>
         </div>
 
         {/* Checkbox / Toggle for Correct Answer */}
@@ -75,8 +78,9 @@ export const AnswerOptionCard: React.FC<AnswerOptionCardProps> = ({
             display: 'flex',
             alignItems: 'center',
             gap: '6px',
-            backgroundColor: option.isCorrect ? '#FFFFFF' : 'rgba(255, 255, 255, 0.2)',
-            color: option.isCorrect ? config.bg : '#FFFFFF',
+            backgroundColor: option.isCorrect ? '#FFFFFF' : 'var(--bg-card)',
+            color: option.isCorrect ? config.bg : 'var(--text-secondary)',
+            border: `1px solid ${option.isCorrect ? '#FFFFFF' : 'var(--border-color)'}`,
             padding: '4px 12px',
             borderRadius: 'var(--border-radius-full)',
             fontWeight: 700,
@@ -86,11 +90,11 @@ export const AnswerOptionCard: React.FC<AnswerOptionCardProps> = ({
         >
           {option.isCorrect ? (
             <>
-              <Check size={14} strokeWidth={3} /> ĐÁP ÁN ĐÚNG
+              <Check size={13} strokeWidth={3} /> ĐÁP ÁN ĐÚNG
             </>
           ) : (
             <>
-              <Circle size={14} /> Chọn đáp án đúng
+              <Circle size={13} /> Đặt làm đáp án đúng
             </>
           )}
         </button>
@@ -112,6 +116,7 @@ export const AnswerOptionCard: React.FC<AnswerOptionCardProps> = ({
             resize: 'none',
             color: 'var(--text-primary)',
             lineHeight: 1.5,
+            backgroundColor: 'transparent',
           }}
         />
       </div>

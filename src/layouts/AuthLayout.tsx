@@ -10,92 +10,90 @@ interface AuthLayoutProps {
 export const AuthLayout: React.FC<AuthLayoutProps> = ({ children, title, subtitle }) => {
   return (
     <div
-      className="auth-shell"
       style={{
         minHeight: '100vh',
         width: '100%',
-        background: 'var(--login-gradient)',
+        backgroundColor: 'var(--bg-app)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        padding: '24px 16px',
-        position: 'relative',
-        overflow: 'hidden',
+        padding: '32px 16px',
       }}
     >
-      {/* Decorative background circles */}
       <div
-        style={{
-          position: 'absolute',
-          width: '500px',
-          height: '500px',
-          borderRadius: '50%',
-          background: 'rgba(255, 255, 255, 0.15)',
-          top: '-150px',
-          right: '-100px',
-          pointerEvents: 'none',
-        }}
-      />
-      <div
-        style={{
-          position: 'absolute',
-          width: '350px',
-          height: '350px',
-          borderRadius: '50%',
-          background: 'rgba(255, 255, 255, 0.12)',
-          bottom: '-100px',
-          left: '-80px',
-          pointerEvents: 'none',
-        }}
-      />
-
-      {/* Main Card (Mẫu 3 Style) */}
-      <div
-        className="auth-card animate-slide-up"
         style={{
           width: '100%',
-          maxWidth: '460px',
-          backgroundColor: '#FFFFFF',
+          maxWidth: '480px',
+          backgroundColor: 'var(--bg-card)',
           borderRadius: 'var(--border-radius-xl)',
+          border: '1px solid var(--border-color)',
+          boxShadow: 'var(--shadow-xl)',
           padding: '40px 36px',
-          boxShadow: 'var(--login-card-shadow)',
-          position: 'relative',
-          zIndex: 10,
+          display: 'flex',
+          flexDirection: 'column',
         }}
       >
         {/* Brand Header */}
-        <div style={{ textAlign: 'center', marginBottom: '32px' }}>
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            textAlign: 'center',
+            marginBottom: '28px',
+          }}
+        >
           <div
             style={{
-              width: '64px',
-              height: '64px',
-              borderRadius: '18px',
-              background: 'var(--primary-gradient)',
-              color: '#FFFFFF',
-              display: 'inline-flex',
+              width: '48px',
+              height: '48px',
+              borderRadius: 'var(--border-radius-md)',
+              backgroundColor: 'var(--primary)',
+              display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
+              color: '#FFFFFF',
               boxShadow: 'var(--shadow-primary)',
-              marginBottom: '16px',
+              marginBottom: '14px',
             }}
           >
-            <BookOpen size={32} />
+            <BookOpen size={24} />
           </div>
+          <span
+            style={{
+              fontSize: '1.25rem',
+              fontWeight: 800,
+              letterSpacing: '-0.02em',
+              color: 'var(--primary)',
+              lineHeight: 1.1,
+            }}
+          >
+            CourseManagement
+          </span>
+          <span style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)', marginTop: '4px' }}>
+            Hệ thống Ôn tập & Luyện thi
+          </span>
+        </div>
+
+        {/* Form Title & Subtitle */}
+        <div style={{ marginBottom: '24px', textAlign: 'center' }}>
           <h1
             style={{
               fontSize: '1.5rem',
               fontWeight: 800,
               color: 'var(--text-primary)',
               letterSpacing: '-0.02em',
+              lineHeight: 1.25,
               marginBottom: '6px',
             }}
           >
             {title}
           </h1>
-          <p style={{ fontSize: '0.9375rem', color: 'var(--text-secondary)' }}>{subtitle}</p>
+          <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
+            {subtitle}
+          </p>
         </div>
 
-        {/* Content / Form */}
         {children}
       </div>
     </div>

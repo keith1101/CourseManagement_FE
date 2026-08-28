@@ -1,11 +1,13 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Edit2, ExternalLink, FileText, Library, PlayCircle, Plus, Trash2 } from 'lucide-react';
+import { Edit2, ExternalLink, FileText, Library, PlayCircle, Plus, Trash2, Search } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import { Badge } from '../../components/common/Badge';
 import { Button } from '../../components/common/Button';
 import { Input } from '../../components/common/Input';
 import { LoadingSpinner } from '../../components/common/LoadingSpinner';
 import { Modal } from '../../components/common/Modal';
+import { PageHeader } from '../../components/common/PageHeader';
+import { EmptyState } from '../../components/common/EmptyState';
 import { materialsApi } from '../../api/materials';
 import { subjectsApi } from '../../api/subjects';
 import { AccessLevel, Material, MaterialType, Subject } from '../../types';
@@ -31,9 +33,9 @@ const createEmptyForm = (subjectId = ''): MaterialFormState => ({
 });
 
 const materialTypeLabel: Record<MaterialType, string> = {
-  PDF: 'PDF',
-  DOCX: 'DOCX',
-  EMBEDDED_VIDEO: 'Video nhúng',
+  PDF: 'Tài liệu PDF',
+  DOCX: 'Văn bản DOCX',
+  EMBEDDED_VIDEO: 'Video bài giảng',
 };
 
 const materialSource = (material: Material) =>
@@ -53,6 +55,7 @@ export const MaterialsManagementPage: React.FC = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [actionId, setActionId] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
 
   const selectedSubjectId = searchParams.get('subjectId') || '';
 
@@ -81,10 +84,14 @@ export const MaterialsManagementPage: React.FC = () => {
       selectedSubjectId
         ? materials.filter((material) => material.subjectId === selectedSubjectId)
         : materials,
-    [materials, selectedSubjectId],
+    [materials, selectedSubjectId]
   );
 
-  const selectedSubject = subjects.find((subject) => subject.id === selectedSubjectId);
+  const filtered = useMemo(() => {
+    return visibleMaterials.filter((m) =>
+      m.title.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }, [visibleMaterials, searchTerm]);
 
   const selectSubject = (subjectId: string) => {
     const nextParams = new URLSearchParams(searchParams);
@@ -104,7 +111,7 @@ export const MaterialsManagementPage: React.FC = () => {
     setEditingMaterial(material);
     setSelectedFile(null);
     setForm({
-      subjectId: material.subjectId,
+      subjectId: material.subjectId || '',
       title: material.title,
       materialType: material.materialType,
       storageUrl: material.storageUrl || '',
@@ -114,93 +121,59 @@ export const MaterialsManagementPage: React.FC = () => {
     setIsModalOpen(true);
   };
 
-  const closeModal = () => {
-    if (isSaving) return;
-    setIsModalOpen(false);
-    setSelectedFile(null);
-  };
-
-  const updateForm = <K extends keyof MaterialFormState>(key: K, value: MaterialFormState[K]) => {
-    setForm((previous) => ({ ...previous, [key]: value }));
-  };
-
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0] || null;
-    setSelectedFile(file);
-    if (file) updateForm('storageUrl', '');
-  };
-
-  const handleStorageUrlChange = (value: string) => {
-    updateForm('storageUrl', value);
-    if (value.trim()) setSelectedFile(null);
-  };
-
-  const handleTypeChange = (materialType: MaterialType) => {
-    setSelectedFile(null);
-    setForm((previous) => ({
-      ...previous,
-      materialType,
-      storageUrl: materialType === 'EMBEDDED_VIDEO' ? '' : previous.storageUrl,
-      embedUrl: materialType === 'EMBEDDED_VIDEO' ? previous.embedUrl : '',
-    }));
-  };
-
-  const handleSave = async (event: React.FormEvent) => {
+  const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
-    const uploadFile = !editingMaterial && form.materialType !== 'EMBEDDED_VIDEO' ? selectedFile : null;
-    const source = form.materialType === 'EMBEDDED_VIDEO' ? form.embedUrl : form.storageUrl;
-    if (!form.subjectId) return error('Vui lòng chọn môn học.');
-    if (!form.title.trim()) return error('Tên tài liệu không được để trống.');
-    if (!uploadFile && !source.trim()) return error('Vui lòng chọn file hoặc nhập URL tài liệu.');
-
-    if (uploadFile) {
-      const fileName = uploadFile.name.toLowerCase();
-      const isPdf = uploadFile.type === 'application/pdf' || fileName.endsWith('.pdf');
-      const isDocx =
-        uploadFile.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
-        fileName.endsWith('.docx');
-      const isExpectedType = form.materialType === 'PDF' ? isPdf : isDocx;
-
-      if (!isExpectedType) {
-        return error(`Vui lòng chọn đúng file ${form.materialType}.`);
-      }
-      if (uploadFile.size > 25 * 1024 * 1024) {
-        return error('Dung lượng file không được vượt quá 25 MB.');
-      }
-    }
+    if (!form.title.trim()) return error('Tiêu đề tài liệu không được để trống.');
 
     setIsSaving(true);
     try {
-      const payload: Partial<Material> = {
-        subjectId: form.subjectId,
-        title: form.title.trim(),
-        materialType: form.materialType,
-        storageUrl:
-          form.materialType === 'EMBEDDED_VIDEO' ||
-          (editingMaterial && form.storageUrl.trim().startsWith('gs://'))
-            ? undefined
-            : form.storageUrl.trim(),
-        embedUrl: form.materialType === 'EMBEDDED_VIDEO' ? form.embedUrl.trim() : undefined,
-        accessLevel: form.accessLevel,
-      };
-      const saved = uploadFile
-        ? await materialsApi.uploadMaterial(uploadFile, {
-            subjectId: form.subjectId,
+      if (editingMaterial) {
+        const updated = await materialsApi.updateMaterial(editingMaterial.id, {
+          subjectId: form.subjectId || undefined,
+          title: form.title.trim(),
+          accessLevel: form.accessLevel,
+          embedUrl: form.materialType === 'EMBEDDED_VIDEO' ? form.embedUrl.trim() : undefined,
+          storageUrl: form.materialType !== 'EMBEDDED_VIDEO' ? form.storageUrl.trim() : undefined,
+        });
+        setMaterials((prev) =>
+          prev.map((item) => (item.id === editingMaterial.id ? updated : item))
+        );
+        success('Đã cập nhật tài liệu.');
+      } else {
+        let created: Material;
+        if (form.materialType === 'EMBEDDED_VIDEO') {
+          if (!form.embedUrl.trim()) throw new Error('Vui lòng nhập đường dẫn URL video nhúng.');
+          created = await materialsApi.createMaterial({
+            subjectId: form.subjectId || undefined,
             title: form.title.trim(),
+            materialType: 'EMBEDDED_VIDEO',
+            embedUrl: form.embedUrl.trim(),
             accessLevel: form.accessLevel,
-          })
-        : editingMaterial
-          ? await materialsApi.updateMaterial(editingMaterial.id, payload)
-          : await materialsApi.createMaterial(payload);
-
-      setMaterials((previous) =>
-        editingMaterial
-          ? previous.map((material) => (material.id === saved.id ? saved : material))
-          : [saved, ...previous],
-      );
+          });
+        } else {
+          if (!selectedFile && !form.storageUrl.trim()) {
+            throw new Error('Vui lòng chọn tệp tin tải lên hoặc nhập URL tệp.');
+          }
+          if (selectedFile) {
+            created = await materialsApi.uploadMaterial(selectedFile, {
+              subjectId: form.subjectId || '',
+              title: form.title.trim(),
+              accessLevel: form.accessLevel,
+            });
+          } else {
+            created = await materialsApi.createMaterial({
+              subjectId: form.subjectId || undefined,
+              title: form.title.trim(),
+              materialType: form.materialType,
+              storageUrl: form.storageUrl.trim(),
+              accessLevel: form.accessLevel,
+            });
+          }
+        }
+        setMaterials((prev) => [created, ...prev]);
+        success('Đã thêm tài liệu mới.');
+      }
       setIsModalOpen(false);
-      setSelectedFile(null);
-      success(editingMaterial ? 'Đã cập nhật tài liệu.' : 'Đã tải tài liệu lên ở trạng thái nháp.');
     } catch (err) {
       error(getApiErrorMessage(err, 'Không thể lưu tài liệu.'));
     } finally {
@@ -208,42 +181,27 @@ export const MaterialsManagementPage: React.FC = () => {
     }
   };
 
-  const handleOpenMaterial = async (material: Material) => {
-    const source = materialSource(material);
-    if (!source) return;
-
-    try {
-      const url =
-        material.materialType === 'EMBEDDED_VIDEO' || !source.startsWith('gs://')
-          ? source
-          : (await materialsApi.getMaterialDownloadUrl(material.id)).url;
-      window.open(url, '_blank', 'noopener,noreferrer');
-    } catch (err) {
-      error(getApiErrorMessage(err, 'Không thể mở tài liệu.'));
-    }
-  };
-
-  const togglePublished = async (material: Material) => {
+  const handleTogglePublish = async (material: Material) => {
     setActionId(material.id);
     try {
       const updated = material.isPublished
         ? await materialsApi.unpublishMaterial(material.id)
         : await materialsApi.publishMaterial(material.id);
-      setMaterials((previous) => previous.map((item) => (item.id === updated.id ? updated : item)));
-      success(updated.isPublished ? 'Đã công khai tài liệu.' : 'Đã chuyển tài liệu về bản nháp.');
+      setMaterials((prev) => prev.map((item) => (item.id === material.id ? updated : item)));
+      success(updated.isPublished ? 'Đã công khai tài liệu.' : 'Đã ẩn tài liệu.');
     } catch (err) {
-      error(getApiErrorMessage(err, 'Không thể đổi trạng thái tài liệu.'));
+      error(getApiErrorMessage(err, 'Không thể đổi trạng thái công khai.'));
     } finally {
       setActionId(null);
     }
   };
 
-  const removeMaterial = async (material: Material) => {
-    if (!window.confirm(`Bạn có chắc muốn xóa tài liệu “${material.title}”?`)) return;
+  const handleDelete = async (material: Material) => {
+    if (!window.confirm(`Bạn có chắc chắn muốn xóa tài liệu "${material.title}"?`)) return;
     setActionId(material.id);
     try {
       await materialsApi.deleteMaterial(material.id);
-      setMaterials((previous) => previous.filter((item) => item.id !== material.id));
+      setMaterials((prev) => prev.filter((item) => item.id !== material.id));
       success('Đã xóa tài liệu.');
     } catch (err) {
       error(getApiErrorMessage(err, 'Không thể xóa tài liệu.'));
@@ -252,185 +210,328 @@ export const MaterialsManagementPage: React.FC = () => {
     }
   };
 
+  const handleOpenSource = async (material: Material) => {
+    try {
+      const source = materialSource(material);
+      if (!source) throw new Error('Tài liệu chưa có đường dẫn.');
+      const resolvedUrl =
+        material.materialType === 'EMBEDDED_VIDEO' || !source.startsWith('gs://')
+          ? source
+          : (await materialsApi.getMaterialDownloadUrl(material.id)).url;
+      window.open(resolvedUrl, '_blank', 'noopener,noreferrer');
+    } catch (err) {
+      error(getApiErrorMessage(err, 'Không thể mở tài liệu.'));
+    }
+  };
+
   if (isLoading) return <LoadingSpinner text="Đang tải danh sách tài liệu..." />;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
-        <div>
-          <h1 style={{ fontSize: '1.5rem', fontWeight: 800 }}>Quản lý tài liệu</h1>
-          <p style={{ color: 'var(--text-secondary)', marginTop: '4px' }}>
-            Quản lý tài liệu PDF, DOCX và video theo từng môn học.
-          </p>
+      <PageHeader
+        eyebrow="Quản trị học liệu"
+        title="Quản lý tài liệu học tập"
+        description="Tải lên giáo trình PDF, văn bản DOCX hoặc video bài giảng và phân quyền PRO/FREE."
+        actions={
+          <Button variant="primary" onClick={openCreate} leftIcon={<Plus size={18} />}>
+            Thêm Tài Liệu Mới
+          </Button>
+        }
+      />
+
+      {/* Subject Filter Tabs & Search */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          flexWrap: 'wrap',
+          gap: '16px',
+        }}
+      >
+        <div className="segmented-tabs" style={{ flexWrap: 'wrap' }}>
+          <button
+            type="button"
+            className={`segmented-tab ${!selectedSubjectId ? 'active' : ''}`}
+            onClick={() => selectSubject('')}
+          >
+            Tất cả môn học ({materials.length})
+          </button>
+          {subjects.map((sub) => {
+            const count = materials.filter((m) => m.subjectId === sub.id).length;
+            return (
+              <button
+                key={sub.id}
+                type="button"
+                className={`segmented-tab ${selectedSubjectId === sub.id ? 'active' : ''}`}
+                onClick={() => selectSubject(sub.id)}
+              >
+                {sub.name} ({count})
+              </button>
+            );
+          })}
         </div>
-        <Button variant="primary" onClick={openCreate} leftIcon={<Plus size={18} />} disabled={subjects.length === 0}>
-          Thêm tài liệu
-        </Button>
+
+        <div style={{ position: 'relative', width: '260px' }}>
+          <Search
+            size={16}
+            style={{
+              position: 'absolute',
+              left: '12px',
+              top: '50%',
+              transform: 'translateY(-50%)',
+              color: 'var(--text-muted)',
+              pointerEvents: 'none',
+            }}
+          />
+          <input
+            placeholder="Tìm theo tiêu đề..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="input-field"
+            style={{ paddingLeft: '36px', height: '40px', minHeight: '40px' }}
+          />
+        </div>
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
-        <Library size={20} color="var(--primary)" />
-        <label htmlFor="material-subject" style={{ fontWeight: 700 }}>Môn học</label>
-        <select
-          id="material-subject"
-          className="input-field"
-          value={selectedSubjectId}
-          onChange={(event) => selectSubject(event.target.value)}
-          style={{ maxWidth: '360px' }}
-        >
-          <option value="">Tất cả môn học ({materials.length})</option>
-          {subjects.map((subject) => (
-            <option key={subject.id} value={subject.id}>
-              {subject.name} ({materials.filter((material) => material.subjectId === subject.id).length})
-            </option>
-          ))}
-        </select>
-        {selectedSubject && <Badge variant="info">{selectedSubject.code}</Badge>}
-      </div>
-
+      {/* Materials Table */}
       <div className="table-container">
         <table className="data-table">
           <thead>
             <tr>
               <th>Tài liệu</th>
               <th>Môn học</th>
-              <th>Loại</th>
-              <th>Gói</th>
+              <th>Định dạng</th>
+              <th>Quyền hạn</th>
               <th>Trạng thái</th>
-              <th>Cập nhật</th>
+              <th>Ngày tạo</th>
               <th>Thao tác</th>
             </tr>
           </thead>
           <tbody>
-            {visibleMaterials.length === 0 ? (
+            {filtered.length === 0 ? (
               <tr>
-                <td colSpan={7} style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>
-                  Chưa có tài liệu cho môn học này.
+                <td colSpan={7} style={{ textAlign: 'center', padding: '40px' }}>
+                  <EmptyState
+                    title="Chưa có tài liệu nào"
+                    description="Bấm 'Thêm Tài Liệu Mới' để tải lên tài liệu học tập."
+                  />
                 </td>
               </tr>
             ) : (
-              visibleMaterials.map((material) => (
-                <tr key={material.id}>
-                  <td>
-                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', minWidth: '220px' }}>
-                      {material.materialType === 'EMBEDDED_VIDEO' ? (
-                        <PlayCircle size={20} color="var(--error)" style={{ flexShrink: 0 }} />
-                      ) : (
-                        <FileText size={20} color="var(--primary)" style={{ flexShrink: 0 }} />
-                      )}
-                      <div style={{ minWidth: 0 }}>
-                        <strong className="material-card-title" title={material.title}>{material.title}</strong>
-                        {materialSource(material) && (
-                          <button
-                            type="button"
-                            onClick={() => void handleOpenMaterial(material)}
-                            style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', color: 'var(--text-secondary)', fontSize: '0.75rem', marginTop: '4px' }}
-                          >
-                            Mở nguồn <ExternalLink size={12} />
-                          </button>
-                        )}
+              filtered.map((mat) => {
+                const isBusy = actionId === mat.id;
+                return (
+                  <tr key={mat.id}>
+                    <td>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <div
+                          style={{
+                            width: '32px',
+                            height: '32px',
+                            borderRadius: 'var(--border-radius-sm)',
+                            backgroundColor:
+                              mat.materialType === 'EMBEDDED_VIDEO'
+                                ? 'var(--error-bg)'
+                                : 'var(--primary-light)',
+                            color:
+                              mat.materialType === 'EMBEDDED_VIDEO'
+                                ? 'var(--error)'
+                                : 'var(--primary)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            flexShrink: 0,
+                          }}
+                        >
+                          {mat.materialType === 'EMBEDDED_VIDEO' ? (
+                            <PlayCircle size={18} />
+                          ) : (
+                            <FileText size={18} />
+                          )}
+                        </div>
+                        <strong style={{ fontSize: '0.9375rem', color: 'var(--text-primary)' }}>
+                          {mat.title}
+                        </strong>
                       </div>
-                    </div>
-                  </td>
-                  <td>{material.subject?.name || subjects.find((subject) => subject.id === material.subjectId)?.name || '-'}</td>
-                  <td><Badge variant="primary">{materialTypeLabel[material.materialType]}</Badge></td>
-                  <td><Badge variant={material.accessLevel === 'PRO' ? 'warning' : 'info'}>{material.accessLevel}</Badge></td>
-                  <td>
-                    <button type="button" onClick={() => togglePublished(material)} disabled={actionId === material.id}>
-                      <Badge variant={material.isPublished ? 'success' : 'warning'}>
-                        {material.isPublished ? 'Đã công khai' : 'Bản nháp'}
+                    </td>
+                    <td>
+                      <span style={{ fontSize: '0.875rem' }}>
+                        {mat.subject?.name || 'Tài liệu chung'}
+                      </span>
+                    </td>
+                    <td>
+                      <Badge variant="neutral">{mat.materialType}</Badge>
+                    </td>
+                    <td>
+                      <Badge variant={mat.accessLevel === 'PRO' ? 'premium' : 'info'}>
+                        {mat.accessLevel}
                       </Badge>
-                    </button>
-                  </td>
-                  <td>{formatDate(material.updatedAt)}</td>
-                  <td>
-                    <div style={{ display: 'flex', gap: '8px' }}>
-                      <button type="button" onClick={() => openEdit(material)} title="Sửa" style={{ padding: '6px' }} disabled={actionId === material.id}>
-                        <Edit2 size={16} />
+                    </td>
+                    <td>
+                      <button
+                        type="button"
+                        onClick={() => handleTogglePublish(mat)}
+                        disabled={isBusy}
+                        title="Bấm để chuyển đổi trạng thái"
+                        style={{ cursor: 'pointer' }}
+                      >
+                        <Badge variant={mat.isPublished ? 'success' : 'warning'}>
+                          {mat.isPublished ? 'Công khai' : 'Bản nháp'}
+                        </Badge>
                       </button>
-                      <button type="button" onClick={() => removeMaterial(material)} title="Xóa" style={{ padding: '6px', color: 'var(--error)' }} disabled={actionId === material.id}>
-                        <Trash2 size={16} />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))
+                    </td>
+                    <td>
+                      <span style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)' }}>
+                        {formatDate(mat.createdAt)}
+                      </span>
+                    </td>
+                    <td>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <button
+                          onClick={() => handleOpenSource(mat)}
+                          title="Mở xem tài liệu"
+                          style={{
+                            padding: '6px',
+                            borderRadius: '6px',
+                            color: 'var(--primary)',
+                            border: '1px solid var(--border-color)',
+                            display: 'flex',
+                          }}
+                        >
+                          <ExternalLink size={15} />
+                        </button>
+                        <button
+                          onClick={() => openEdit(mat)}
+                          title="Chỉnh sửa"
+                          style={{
+                            padding: '6px',
+                            borderRadius: '6px',
+                            color: 'var(--text-secondary)',
+                            border: '1px solid var(--border-color)',
+                            display: 'flex',
+                          }}
+                        >
+                          <Edit2 size={15} />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(mat)}
+                          disabled={isBusy}
+                          title="Xóa tài liệu"
+                          style={{
+                            padding: '6px',
+                            borderRadius: '6px',
+                            color: 'var(--error)',
+                            border: '1px solid var(--border-color)',
+                            display: 'flex',
+                          }}
+                        >
+                          <Trash2 size={15} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })
             )}
           </tbody>
         </table>
       </div>
 
+      {/* Create / Edit Modal */}
       <Modal
         isOpen={isModalOpen}
-        onClose={closeModal}
+        onClose={() => setIsModalOpen(false)}
         title={editingMaterial ? 'Chỉnh sửa tài liệu' : 'Thêm tài liệu mới'}
-        maxWidth="620px"
+        maxWidth="540px"
       >
-        <form onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <Input
+            label="Tiêu đề tài liệu"
+            placeholder="Ví dụ: Giáo trình Đại số Tuyến tính"
+            value={form.title}
+            onChange={(e) => setForm({ ...form, title: e.target.value })}
+            required
+          />
+
           <div className="form-group">
-            <label className="form-label" htmlFor="material-form-subject">Môn học <span className="required">*</span></label>
-            <select id="material-form-subject" className="input-field" value={form.subjectId} onChange={(event) => updateForm('subjectId', event.target.value)} required>
-              <option value="">Chọn môn học</option>
-              {subjects.map((subject) => <option key={subject.id} value={subject.id}>{subject.name}</option>)}
+            <label className="form-label">Môn học</label>
+            <select
+              className="input-field"
+              value={form.subjectId}
+              onChange={(e) => setForm({ ...form, subjectId: e.target.value })}
+            >
+              <option value="">-- Tài liệu chung (Không phân môn) --</option>
+              {subjects.map((sub) => (
+                <option key={sub.id} value={sub.id}>
+                  {sub.name} ({sub.code})
+                </option>
+              ))}
             </select>
           </div>
 
-          <Input label="Tên tài liệu" value={form.title} onChange={(event) => updateForm('title', event.target.value)} required />
-
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
             <div className="form-group">
-              <label className="form-label" htmlFor="material-form-type">Loại tài liệu <span className="required">*</span></label>
-              <select id="material-form-type" className="input-field" value={form.materialType} onChange={(event) => handleTypeChange(event.target.value as MaterialType)} required>
+              <label className="form-label">Định dạng tài liệu</label>
+              <select
+                className="input-field"
+                value={form.materialType}
+                disabled={!!editingMaterial}
+                onChange={(e) =>
+                  setForm({ ...form, materialType: e.target.value as MaterialType })
+                }
+              >
                 <option value="PDF">PDF</option>
                 <option value="DOCX">DOCX</option>
-                <option value="EMBEDDED_VIDEO">Video nhúng</option>
+                <option value="EMBEDDED_VIDEO">Video bài giảng</option>
               </select>
             </div>
+
             <div className="form-group">
-              <label className="form-label" htmlFor="material-form-access">Gói truy cập <span className="required">*</span></label>
-              <select id="material-form-access" className="input-field" value={form.accessLevel} onChange={(event) => updateForm('accessLevel', event.target.value as AccessLevel)} required>
-                <option value="FREE">FREE</option>
-                <option value="PRO">PRO</option>
+              <label className="form-label">Quyền truy cập</label>
+              <select
+                className="input-field"
+                value={form.accessLevel}
+                onChange={(e) =>
+                  setForm({ ...form, accessLevel: e.target.value as AccessLevel })
+                }
+              >
+                <option value="FREE">FREE - Miễn phí</option>
+                <option value="PRO">PRO - Gói PRO</option>
               </select>
             </div>
           </div>
 
           {form.materialType === 'EMBEDDED_VIDEO' ? (
-            <Input label="Embed URL" type="url" placeholder="https://www.youtube.com/embed/..." value={form.embedUrl} onChange={(event) => updateForm('embedUrl', event.target.value)} required />
+            <Input
+              label="Đường dẫn Video nhúng (YouTube / Google Drive Embed URL)"
+              placeholder="https://www.youtube.com/embed/..."
+              value={form.embedUrl}
+              onChange={(e) => setForm({ ...form, embedUrl: e.target.value })}
+              required
+            />
           ) : (
-            <>
-              {!editingMaterial && (
-                <div className="form-group">
-                  <label className="form-label" htmlFor="material-form-file">Chọn file từ máy tính <span className="required">*</span></label>
-                  <input
-                    id="material-form-file"
-                    className="input-field"
-                    type="file"
-                    accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-                    onChange={handleFileChange}
-                    required={!form.storageUrl.trim()}
-                  />
-                  {selectedFile && (
-                    <small style={{ display: 'block', color: 'var(--text-secondary)', marginTop: '6px' }}>
-                      Đã chọn: {selectedFile.name} ({Math.ceil(selectedFile.size / 1024)} KB)
-                    </small>
-                  )}
-                  <small style={{ display: 'block', color: 'var(--text-secondary)', marginTop: '6px' }}>
-                    Chỉ hỗ trợ PDF/DOCX, tối đa 25 MB. Bắt buộc chọn file hoặc nhập Storage URL.
-                  </small>
-                </div>
-              )}
-              <Input label="Storage URL" type="text" placeholder="https://example.com/file.pdf" value={form.storageUrl} onChange={(event) => handleStorageUrlChange(event.target.value)} required={!selectedFile} />
-            </>
+            <div>
+              <label className="form-label" style={{ marginBottom: '6px' }}>
+                Chọn tệp tải lên
+              </label>
+              <input
+                type="file"
+                accept={form.materialType === 'PDF' ? '.pdf' : '.docx,.doc'}
+                onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
+                className="input-field"
+                style={{ padding: '8px', cursor: 'pointer' }}
+              />
+            </div>
           )}
 
-          <p style={{ color: 'var(--text-secondary)', fontSize: '0.8125rem', margin: 0 }}>
-            Tài liệu mới sẽ ở trạng thái bản nháp. Chỉ tài liệu đã công khai mới hiển thị cho học sinh.
-          </p>
-
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '4px' }}>
-            <Button variant="outline" type="button" onClick={closeModal}>Hủy</Button>
-            <Button variant="primary" type="submit" isLoading={isSaving}>{editingMaterial ? 'Lưu thay đổi' : 'Tạo tài liệu'}</Button>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '12px' }}>
+            <Button variant="outline" type="button" onClick={() => setIsModalOpen(false)}>
+              Hủy
+            </Button>
+            <Button variant="primary" type="submit" isLoading={isSaving}>
+              {editingMaterial ? 'Lưu cập nhật' : 'Tải lên tài liệu'}
+            </Button>
           </div>
         </form>
       </Modal>

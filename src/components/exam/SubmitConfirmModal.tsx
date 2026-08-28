@@ -31,7 +31,7 @@ export const SubmitConfirmModal: React.FC<SubmitConfirmModalProps> = ({
       isOpen={isOpen}
       onClose={onClose}
       title="Xác nhận nộp bài thi"
-      maxWidth="640px"
+      maxWidth="600px"
       footer={
         <div className="submit-confirm-actions">
           <Button variant="outline" onClick={onClose} disabled={isSubmitting}>
@@ -52,7 +52,6 @@ export const SubmitConfirmModal: React.FC<SubmitConfirmModalProps> = ({
             isLoading={submittingAction === 'exam'}
             disabled={isSubmitting}
             leftIcon={<Send size={16} />}
-            style={{ backgroundColor: 'var(--primary)' }}
           >
             Nộp cả đề thi
           </Button>
@@ -65,33 +64,33 @@ export const SubmitConfirmModal: React.FC<SubmitConfirmModalProps> = ({
             display: 'flex',
             alignItems: 'center',
             gap: '12px',
-            padding: '14px 16px',
+            padding: '14px 18px',
             borderRadius: 'var(--border-radius-md)',
             backgroundColor: unansweredCount > 0 ? 'var(--warning-bg)' : 'var(--success-bg)',
-            border: `1px solid ${unansweredCount > 0 ? 'var(--secondary-accent)' : 'var(--success)'}`,
+            border: `1px solid ${unansweredCount > 0 ? 'var(--warning-border)' : 'var(--success-border)'}`,
           }}
         >
           {unansweredCount > 0 ? (
-            <AlertCircle size={24} color="var(--secondary)" />
+            <AlertCircle size={22} color="var(--warning)" style={{ flexShrink: 0 }} />
           ) : (
-            <CheckCircle2 size={24} color="var(--success)" />
+            <CheckCircle2 size={22} color="var(--success)" style={{ flexShrink: 0 }} />
           )}
           <div style={{ fontSize: '0.875rem' }}>
             {unansweredCount > 0 ? (
-              <span style={{ color: 'var(--secondary-hover)', fontWeight: 500 }}>
-                Bạn vẫn còn <strong>{unansweredCount}</strong> câu hỏi chưa trả lời!
+              <span style={{ color: 'var(--warning)', fontWeight: 600 }}>
+                Bạn vẫn còn <strong>{unansweredCount}</strong> câu hỏi chưa hoàn thành.
               </span>
             ) : (
-              <span style={{ color: 'var(--primary-active)', fontWeight: 500 }}>
+              <span style={{ color: 'var(--success)', fontWeight: 600 }}>
                 Tuyệt vời! Bạn đã hoàn thành toàn bộ <strong>{totalQuestions}</strong> câu hỏi.
               </span>
             )}
           </div>
         </div>
 
-        <div style={{ fontSize: '0.9375rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
-          Chọn <strong>nộp câu hiện tại</strong> để chốt riêng câu đang xem, hoặc chọn <strong>nộp cả đề thi</strong> để kết thúc bài và chuyển sang trang kết quả.
-        </div>
+        <p style={{ fontSize: '0.9375rem', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+          Chọn <strong>nộp câu hiện tại</strong> để xác nhận riêng đáp án câu đang làm, hoặc chọn <strong>nộp cả đề thi</strong> để kết thúc bài làm và chuyển sang trang xem điểm và giải thích chi tiết.
+        </p>
 
         <div
           style={{
@@ -99,22 +98,33 @@ export const SubmitConfirmModal: React.FC<SubmitConfirmModalProps> = ({
             gridTemplateColumns: '1fr 1fr',
             gap: '12px',
             backgroundColor: 'var(--bg-subtle)',
-            padding: '12px 16px',
+            border: '1px solid var(--border-color)',
+            padding: '14px 18px',
             borderRadius: 'var(--border-radius-md)',
             textAlign: 'center',
           }}
         >
           <div>
-            <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--primary)' }}>
+            <div style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--primary)' }}>
               {answeredCount}
             </div>
-            <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Đã làm</div>
+            <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 600 }}>
+              Đã làm
+            </div>
           </div>
           <div>
-            <div style={{ fontSize: '1.25rem', fontWeight: 800, color: unansweredCount > 0 ? 'var(--error)' : 'var(--text-secondary)' }}>
+            <div
+              style={{
+                fontSize: '1.4rem',
+                fontWeight: 800,
+                color: unansweredCount > 0 ? 'var(--accent)' : 'var(--text-secondary)',
+              }}
+            >
               {unansweredCount}
             </div>
-            <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Chưa làm</div>
+            <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 600 }}>
+              Chưa làm
+            </div>
           </div>
         </div>
       </div>

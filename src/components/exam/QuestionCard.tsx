@@ -158,6 +158,21 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
                 }}
               >
                 {question.hint}
+                {question.hintImage && (
+                  <div style={{ marginTop: '8px' }}>
+                    <img
+                      src={question.hintImage}
+                      alt="Hình ảnh gợi ý"
+                      style={{
+                        maxWidth: '100%',
+                        maxHeight: '220px',
+                        objectFit: 'contain',
+                        borderRadius: 'var(--border-radius-sm)',
+                        border: '1px solid var(--border-color)',
+                      }}
+                    />
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -243,19 +258,36 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
                   ) : null}
                 </span>
 
-                <span style={{ display: 'flex', alignItems: 'baseline', gap: '8px', flex: 1 }}>
-                  <strong
-                    style={{
-                      color: selected ? 'var(--primary)' : 'var(--text-secondary)',
-                      fontSize: '0.9375rem',
-                    }}
-                  >
-                    {option.label}.
-                  </strong>
-                  <span style={{ fontSize: '0.9375rem', lineHeight: 1.5, color: 'var(--text-primary)' }}>
-                    {option.content}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', flex: 1 }}>
+                  <span style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
+                    <strong
+                      style={{
+                        color: selected ? 'var(--primary)' : 'var(--text-secondary)',
+                        fontSize: '0.9375rem',
+                      }}
+                    >
+                      {option.label}.
+                    </strong>
+                    <span style={{ fontSize: '0.9375rem', lineHeight: 1.5, color: 'var(--text-primary)' }}>
+                      {option.content}
+                    </span>
                   </span>
-                </span>
+                  {option.image && (
+                    <div style={{ marginTop: '4px' }}>
+                      <img
+                        src={option.image}
+                        alt={`Ảnh đáp án ${option.label}`}
+                        style={{
+                          maxHeight: '120px',
+                          maxWidth: '100%',
+                          objectFit: 'contain',
+                          borderRadius: 'var(--border-radius-sm)',
+                          border: '1px solid var(--border-color)',
+                        }}
+                      />
+                    </div>
+                  )}
+                </div>
               </button>
             );
           })}

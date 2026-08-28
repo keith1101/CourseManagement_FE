@@ -58,6 +58,7 @@ export interface AnswerOption {
   content: string;
   isCorrect: boolean;
   position?: number;
+  image?: string;
 }
 
 export interface Question {
@@ -73,7 +74,9 @@ export interface Question {
   instruction?: string;
   options: AnswerOption[];
   hint?: string;
+  hintImage?: string;
   explanation?: string;
+  explanationImage?: string;
   correctTextAnswer?: string;
   order: number;
 }

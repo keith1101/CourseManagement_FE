@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { Image as ImageIcon, ChevronDown, ChevronUp, Lightbulb, FileText, Trash, BookOpen } from 'lucide-react';
+import { Image as ImageIcon, ChevronDown, ChevronUp, Lightbulb, FileText, BookOpen } from 'lucide-react';
 import { Question, AnswerOption } from '../../types';
 import { AnswerOptionCard } from './AnswerOptionCard';
+import { ImageUploader } from '../common/ImageUploader';
 import { subjectsApi } from '../../api/subjects';
 
 export interface QuestionCanvasProps {
@@ -10,8 +11,8 @@ export interface QuestionCanvasProps {
 }
 
 export const QuestionCanvas: React.FC<QuestionCanvasProps> = ({ question, onChange }) => {
-  const [showHint, setShowHint] = useState(!!question.hint);
-  const [showExplanation, setShowExplanation] = useState(!!question.explanation);
+  const [showHint, setShowHint] = useState(!!(question.hint || question.hintImage));
+  const [showExplanation, setShowExplanation] = useState(!!(question.explanation || question.explanationImage));
   const [showImageInput, setShowImageInput] = useState(!!question.image);
   const [subjects, setSubjects] = useState<{ id: string; code: string; name: string }[]>([]);
 
@@ -51,22 +52,22 @@ export const QuestionCanvas: React.FC<QuestionCanvasProps> = ({ question, onChan
           htmlFor="question-subject"
           style={{
             fontWeight: 700,
-            fontSize: '0.875rem',
+            fontSize: '0.9375rem',
             color: 'var(--text-primary)',
             display: 'flex',
             alignItems: 'center',
-            gap: '6px',
+            gap: '8px',
             whiteSpace: 'nowrap',
           }}
         >
-          <BookOpen size={16} color="var(--primary)" /> Môn học của câu hỏi:
+          <BookOpen size={18} color="var(--primary)" /> Môn học của câu hỏi:
         </label>
         <select
           id="question-subject"
           className="input-field"
           value={question.subjectId}
           onChange={(event) => onChange({ ...question, subjectId: event.target.value })}
-          style={{ flex: 1, minWidth: '220px', height: '38px', minHeight: '38px' }}
+          style={{ flex: 1, minWidth: '240px', height: '46px', minHeight: '46px', cursor: 'pointer' }}
         >
           <option value="">-- Chọn môn học --</option>
           {subjects.map((subject) => (
@@ -79,7 +80,7 @@ export const QuestionCanvas: React.FC<QuestionCanvasProps> = ({ question, onChan
 
       {/* 2. Question Title & Content Box */}
       <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
           <label style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-primary)' }}>
             Nội dung câu hỏi <span style={{ color: 'var(--error)' }}>*</span>
           </label>
@@ -87,16 +88,21 @@ export const QuestionCanvas: React.FC<QuestionCanvasProps> = ({ question, onChan
             type="button"
             onClick={() => setShowImageInput((value) => !value)}
             style={{
-              display: 'flex',
+              display: 'inline-flex',
               alignItems: 'center',
               gap: '6px',
               color: 'var(--primary)',
-              fontSize: '0.8125rem',
+              fontSize: '0.875rem',
               fontWeight: 600,
+              padding: '6px 12px',
+              backgroundColor: 'var(--primary-light)',
+              borderRadius: 'var(--border-radius-md)',
+              border: 'none',
+              cursor: 'pointer',
             }}
           >
-            <ImageIcon size={15} />
-            {showImageInput ? 'Ẩn đường dẫn ảnh' : 'Thêm hình ảnh minh họa'}
+            <ImageIcon size={16} />
+            {showImageInput ? 'Ẩn phần hình ảnh' : 'Thêm hình ảnh minh họa câu hỏi'}
           </button>
         </div>
 
@@ -111,7 +117,7 @@ export const QuestionCanvas: React.FC<QuestionCanvasProps> = ({ question, onChan
             value={question.instruction || ''}
             onChange={(e) => onChange({ ...question, instruction: e.target.value })}
             placeholder="Ví dụ: Chọn câu trả lời đúng nhất, Điền số thích hợp..."
-            style={{ marginTop: '4px', height: '38px', minHeight: '38px' }}
+            style={{ marginTop: '6px', height: '46px', minHeight: '46px' }}
           />
         </div>
 
@@ -126,75 +132,24 @@ export const QuestionCanvas: React.FC<QuestionCanvasProps> = ({ question, onChan
             fontSize: '1rem',
             lineHeight: 1.6,
             padding: '14px 16px',
+            minHeight: '110px',
           }}
         />
 
-        {/* Image Input and Preview */}
+        {/* Full Image Upload Component */}
         {showImageInput && (
-          <div
-            style={{
-              padding: '14px',
-              backgroundColor: 'var(--bg-subtle)',
-              borderRadius: 'var(--border-radius-md)',
-              border: '1px solid var(--border-color)',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '10px',
-            }}
-          >
-            <div style={{ display: 'flex', gap: '8px' }}>
-              <input
-                type="url"
-                className="input-field"
-                value={question.image || ''}
-                onChange={(e) => onChange({ ...question, image: e.target.value })}
-                placeholder="Dán đường dẫn URL hình ảnh (https://...)"
-                style={{ flex: 1, height: '38px', minHeight: '38px' }}
-              />
-              {question.image && (
-                <button
-                  type="button"
-                  onClick={() => onChange({ ...question, image: '' })}
-                  style={{
-                    padding: '8px 12px',
-                    borderRadius: 'var(--border-radius-md)',
-                    border: '1px solid var(--border-color)',
-                    color: 'var(--error)',
-                    backgroundColor: 'var(--bg-card)',
-                    display: 'flex',
-                    alignItems: 'center',
-                  }}
-                  title="Xóa ảnh"
-                >
-                  <Trash size={16} />
-                </button>
-              )}
-            </div>
-            {question.image && (
-              <div style={{ textAlign: 'center', marginTop: '6px' }}>
-                <img
-                  src={question.image}
-                  alt="Xem trước hình ảnh"
-                  style={{
-                    maxHeight: '200px',
-                    objectFit: 'contain',
-                    borderRadius: 'var(--border-radius-sm)',
-                    border: '1px solid var(--border-color)',
-                  }}
-                  onError={(e) => {
-                    (e.target as HTMLElement).style.display = 'none';
-                  }}
-                />
-              </div>
-            )}
-          </div>
+          <ImageUploader
+            label="Hình ảnh minh họa cho câu hỏi"
+            value={question.image}
+            onChange={(imageUrl) => onChange({ ...question, image: imageUrl })}
+          />
         )}
       </div>
 
       {/* 3. Answers Grid / Form */}
       {isChoiceType ? (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
             <h3 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-primary)' }}>
               Các Lựa Chọn Đáp Án (A, B, C, D)
             </h3>
@@ -203,13 +158,7 @@ export const QuestionCanvas: React.FC<QuestionCanvasProps> = ({ question, onChan
             </span>
           </div>
 
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(min(320px, 100%), 1fr))',
-              gap: '16px',
-            }}
-          >
+          <div className="question-options-grid">
             {question.options.map((option, index) => (
               <AnswerOptionCard
                 key={option.label || index}
@@ -235,13 +184,13 @@ export const QuestionCanvas: React.FC<QuestionCanvasProps> = ({ question, onChan
               onChange({ ...question, options: opts });
             }}
             placeholder="Nhập nội dung đáp án chuẩn..."
-            style={{ padding: '14px 16px' }}
+            style={{ padding: '14px 16px', minHeight: '90px' }}
           />
         </div>
       )}
 
       {/* 4. Collapsible Hint & Explanation Section */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
         {/* Hint Accordion */}
         <div className="card" style={{ padding: '16px 20px' }}>
           <button
@@ -255,22 +204,30 @@ export const QuestionCanvas: React.FC<QuestionCanvasProps> = ({ question, onChan
               fontWeight: 700,
               fontSize: '0.9375rem',
               color: 'var(--text-primary)',
+              background: 'transparent',
+              border: 'none',
+              cursor: 'pointer',
             }}
           >
             <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Lightbulb size={17} color="var(--accent)" /> Gợi ý làm bài (Hint)
+              <Lightbulb size={18} color="var(--accent)" /> Gợi ý làm bài (Hint)
             </span>
-            {showHint ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+            {showHint ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
           </button>
           {showHint && (
-            <div style={{ marginTop: '12px' }}>
+            <div style={{ marginTop: '14px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
               <textarea
                 rows={2}
                 className="input-field"
                 value={question.hint || ''}
                 onChange={(e) => onChange({ ...question, hint: e.target.value })}
                 placeholder="Nhập gợi ý hướng dẫn học sinh suy luận..."
-                style={{ padding: '10px 14px' }}
+                style={{ padding: '12px 16px', minHeight: '80px' }}
+              />
+              <ImageUploader
+                label="Hình ảnh gợi ý (tùy chọn)"
+                value={question.hintImage}
+                onChange={(imageUrl) => onChange({ ...question, hintImage: imageUrl })}
               />
             </div>
           )}
@@ -289,22 +246,30 @@ export const QuestionCanvas: React.FC<QuestionCanvasProps> = ({ question, onChan
               fontWeight: 700,
               fontSize: '0.9375rem',
               color: 'var(--text-primary)',
+              background: 'transparent',
+              border: 'none',
+              cursor: 'pointer',
             }}
           >
             <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <FileText size={17} color="var(--primary)" /> Giải thích chi tiết đáp án (Explanation)
+              <FileText size={18} color="var(--primary)" /> Giải thích chi tiết đáp án (Explanation)
             </span>
-            {showExplanation ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+            {showExplanation ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
           </button>
           {showExplanation && (
-            <div style={{ marginTop: '12px' }}>
+            <div style={{ marginTop: '14px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
               <textarea
                 rows={3}
                 className="input-field"
                 value={question.explanation || ''}
                 onChange={(e) => onChange({ ...question, explanation: e.target.value })}
                 placeholder="Nhập phần giải thích chi tiết vì sao đáp án này là đúng..."
-                style={{ padding: '10px 14px' }}
+                style={{ padding: '12px 16px', minHeight: '90px' }}
+              />
+              <ImageUploader
+                label="Hình ảnh giải thích đáp án (tùy chọn)"
+                value={question.explanationImage}
+                onChange={(imageUrl) => onChange({ ...question, explanationImage: imageUrl })}
               />
             </div>
           )}
@@ -313,3 +278,4 @@ export const QuestionCanvas: React.FC<QuestionCanvasProps> = ({ question, onChan
     </div>
   );
 };
+

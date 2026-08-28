@@ -1,6 +1,7 @@
 import React from 'react';
 import { Check, Circle } from 'lucide-react';
 import { AnswerOption } from '../../types';
+import { ImageUploader } from '../common/ImageUploader';
 
 export interface AnswerOptionCardProps {
   option: AnswerOption;
@@ -19,7 +20,6 @@ const colorMap = [
 export const AnswerOptionCard: React.FC<AnswerOptionCardProps> = ({
   option,
   index,
-  isMultiChoice = false,
   onChange,
 }) => {
   const config = colorMap[index % colorMap.length];
@@ -45,16 +45,17 @@ export const AnswerOptionCard: React.FC<AnswerOptionCardProps> = ({
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
+          gap: '12px',
           color: option.isCorrect ? '#FFFFFF' : 'var(--text-primary)',
           borderBottom: `1px solid ${option.isCorrect ? config.border : 'var(--border-color)'}`,
           transition: 'all var(--transition-fast)',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
           <span
             style={{
-              width: '26px',
-              height: '26px',
+              width: '28px',
+              height: '28px',
               borderRadius: '6px',
               backgroundColor: option.isCorrect ? 'rgba(255, 255, 255, 0.25)' : config.bg,
               color: '#FFFFFF',
@@ -63,11 +64,14 @@ export const AnswerOptionCard: React.FC<AnswerOptionCardProps> = ({
               justifyContent: 'center',
               fontWeight: 800,
               fontSize: '0.875rem',
+              flexShrink: 0,
             }}
           >
             {option.label}
           </span>
-          <span style={{ fontWeight: 700, fontSize: '0.875rem' }}>Đáp án {option.label}</span>
+          <span style={{ fontWeight: 700, fontSize: '0.875rem', whiteSpace: 'nowrap' }}>
+            Đáp án {option.label}
+          </span>
         </div>
 
         {/* Checkbox / Toggle for Correct Answer */}
@@ -75,16 +79,19 @@ export const AnswerOptionCard: React.FC<AnswerOptionCardProps> = ({
           type="button"
           onClick={() => onChange({ ...option, isCorrect: !option.isCorrect })}
           style={{
-            display: 'flex',
+            display: 'inline-flex',
             alignItems: 'center',
             gap: '6px',
             backgroundColor: option.isCorrect ? '#FFFFFF' : 'var(--bg-card)',
             color: option.isCorrect ? config.bg : 'var(--text-secondary)',
             border: `1px solid ${option.isCorrect ? '#FFFFFF' : 'var(--border-color)'}`,
-            padding: '4px 12px',
+            padding: '6px 12px',
             borderRadius: 'var(--border-radius-full)',
             fontWeight: 700,
             fontSize: '0.75rem',
+            whiteSpace: 'nowrap',
+            flexShrink: 0,
+            cursor: 'pointer',
             transition: 'all var(--transition-fast)',
           }}
         >
@@ -101,7 +108,7 @@ export const AnswerOptionCard: React.FC<AnswerOptionCardProps> = ({
       </div>
 
       {/* Input Area */}
-      <div style={{ padding: '16px', flex: 1, display: 'flex', flexDirection: 'column' }}>
+      <div style={{ padding: '16px', flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
         <textarea
           rows={3}
           value={option.content}
@@ -110,6 +117,7 @@ export const AnswerOptionCard: React.FC<AnswerOptionCardProps> = ({
           style={{
             width: '100%',
             flex: 1,
+            minHeight: '72px',
             border: 'none',
             outline: 'none',
             fontSize: '0.9375rem',
@@ -118,6 +126,13 @@ export const AnswerOptionCard: React.FC<AnswerOptionCardProps> = ({
             lineHeight: 1.5,
             backgroundColor: 'transparent',
           }}
+        />
+
+        {/* Compact Image Uploader for Answer Option */}
+        <ImageUploader
+          compact
+          value={option.image}
+          onChange={(imageUrl) => onChange({ ...option, image: imageUrl })}
         />
       </div>
     </div>

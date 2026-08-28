@@ -1035,6 +1035,18 @@ select.input-field {
   width: 100%;
 }
 
+.question-options-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+@media (max-width: 768px) {
+  .question-options-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* ==========================================================================
    Responsive Breakpoints
    ========================================================================== */

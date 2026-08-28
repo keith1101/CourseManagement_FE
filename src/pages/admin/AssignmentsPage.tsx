@@ -135,7 +135,7 @@ export const AssignmentsPage: React.FC = () => {
       const created = await assignmentsApi.createAssignment({
         examId: selectedExamId,
         studentIds: eligibleStudentIds,
-        dueDate: dueDate ? new Date(dueDate).toISOString() : '',
+        dueDate: dueDate ? new Date(dueDate).toISOString() : undefined,
       });
       setAssignments((prev) => [...created, ...prev]);
       success(`Đã giao bài thi thành công cho ${created.length} học sinh!`);

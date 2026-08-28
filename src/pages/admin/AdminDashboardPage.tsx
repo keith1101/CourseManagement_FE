@@ -280,7 +280,7 @@ export const AdminDashboardPage: React.FC = () => {
                       {att.score !== undefined ? `${Number(att.score).toFixed(0)}/10` : '-'}
                     </span>
                   </div>
-                  <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                  <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
                     <Badge variant={isCompleted ? 'success' : 'warning'}>
                       {isCompleted ? 'ĐÃ HOÀN THÀNH' : 'ĐANG LÀM'}
                     </Badge>

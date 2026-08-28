@@ -113,10 +113,10 @@ export const AdminResultsPage: React.FC = () => {
               <th>Học sinh</th>
               <th>Đề thi</th>
               <th>Thời gian nộp</th>
-              <th>Thời lượng</th>
-              <th style={{ minWidth: '160px', width: '170px' }}>Điểm số</th>
-              <th>Kết quả</th>
-              <th>Thao tác</th>
+              <th style={{ textAlign: 'center', width: '130px' }}>Thời lượng</th>
+              <th style={{ textAlign: 'center', minWidth: '150px', width: '160px' }}>Điểm số</th>
+              <th style={{ textAlign: 'center', width: '130px' }}>Kết quả</th>
+              <th style={{ textAlign: 'center', width: '120px' }}>Thao tác</th>
             </tr>
           </thead>
           <tbody>
@@ -195,10 +195,10 @@ export const AdminResultsPage: React.FC = () => {
                           : '-'}
                       </span>
                     </td>
-                    <td>
+                    <td style={{ textAlign: 'center' }}>
                       <span
                         style={{
-                          display: 'flex',
+                          display: 'inline-flex',
                           alignItems: 'center',
                           gap: '4px',
                           fontSize: '0.8125rem',
@@ -211,8 +211,8 @@ export const AdminResultsPage: React.FC = () => {
                           : '-'}
                       </span>
                     </td>
-                    <td style={{ minWidth: '160px', whiteSpace: 'nowrap' }}>
-                      <div style={{ display: 'inline-flex', flexDirection: 'column' }}>
+                    <td style={{ textAlign: 'center', minWidth: '150px', whiteSpace: 'nowrap' }}>
+                      <div style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'center' }}>
                         <strong
                           style={{
                             color: isPassed ? 'var(--success)' : 'var(--error)',
@@ -228,12 +228,12 @@ export const AdminResultsPage: React.FC = () => {
                         </div>
                       </div>
                     </td>
-                    <td>
+                    <td style={{ textAlign: 'center' }}>
                       <Badge variant={isPassed ? 'success' : 'error'}>
                         {isPassed ? 'Đạt' : 'Chưa đạt'}
                       </Badge>
                     </td>
-                    <td>
+                    <td style={{ textAlign: 'center' }}>
                       <Button
                         size="sm"
                         variant="outline"

@@ -8,7 +8,7 @@ import { LoadingSpinner } from '../../components/common/LoadingSpinner';
 import { Modal } from '../../components/common/Modal';
 import { PageHeader } from '../../components/common/PageHeader';
 import { EmptyState } from '../../components/common/EmptyState';
-import { materialsApi } from '../../api/materials';
+import { materialsApi, transformVideoEmbedUrl } from '../../api/materials';
 import { subjectsApi } from '../../api/subjects';
 import { AccessLevel, Material, MaterialType, Subject } from '../../types';
 import { getApiErrorMessage } from '../../api/errors';
@@ -115,7 +115,7 @@ export const MaterialsManagementPage: React.FC = () => {
       title: material.title,
       materialType: material.materialType,
       storageUrl: material.storageUrl || '',
-      embedUrl: material.embedUrl || '',
+      embedUrl: transformVideoEmbedUrl(material.embedUrl) || '',
       accessLevel: material.accessLevel,
     });
     setIsModalOpen(true);
@@ -125,6 +125,11 @@ export const MaterialsManagementPage: React.FC = () => {
     event.preventDefault();
     if (!form.title.trim()) return error('Tiêu đề tài liệu không được để trống.');
 
+    const normalizedEmbedUrl =
+      form.materialType === 'EMBEDDED_VIDEO'
+        ? transformVideoEmbedUrl(form.embedUrl)
+        : undefined;
+
     setIsSaving(true);
     try {
       if (editingMaterial) {
@@ -132,7 +137,7 @@ export const MaterialsManagementPage: React.FC = () => {
           subjectId: form.subjectId || undefined,
           title: form.title.trim(),
           accessLevel: form.accessLevel,
-          embedUrl: form.materialType === 'EMBEDDED_VIDEO' ? form.embedUrl.trim() : undefined,
+          embedUrl: normalizedEmbedUrl,
           storageUrl: form.materialType !== 'EMBEDDED_VIDEO' ? form.storageUrl.trim() : undefined,
         });
         setMaterials((prev) =>
@@ -142,12 +147,12 @@ export const MaterialsManagementPage: React.FC = () => {
       } else {
         let created: Material;
         if (form.materialType === 'EMBEDDED_VIDEO') {
-          if (!form.embedUrl.trim()) throw new Error('Vui lòng nhập đường dẫn URL video nhúng.');
+          if (!normalizedEmbedUrl) throw new Error('Vui lòng nhập đường dẫn URL video nhúng.');
           created = await materialsApi.createMaterial({
             subjectId: form.subjectId || undefined,
             title: form.title.trim(),
             materialType: 'EMBEDDED_VIDEO',
-            embedUrl: form.embedUrl.trim(),
+            embedUrl: normalizedEmbedUrl,
             accessLevel: form.accessLevel,
           });
         } else {
@@ -215,10 +220,14 @@ export const MaterialsManagementPage: React.FC = () => {
       const source = materialSource(material);
       if (!source) throw new Error('Tài liệu chưa có đường dẫn.');
       const resolvedUrl =
-        material.materialType === 'EMBEDDED_VIDEO' || !source.startsWith('gs://')
-          ? source
-          : (await materialsApi.getMaterialDownloadUrl(material.id)).url;
-      window.open(resolvedUrl, '_blank', 'noopener,noreferrer');
+        material.materialType === 'EMBEDDED_VIDEO'
+          ? transformVideoEmbedUrl(source) || source
+          : !source.startsWith('gs://')
+            ? source
+            : (await materialsApi.getMaterialDownloadUrl(material.id)).url;
+      const windowFeatures =
+        material.materialType === 'EMBEDDED_VIDEO' ? 'noopener' : 'noopener,noreferrer';
+      window.open(resolvedUrl, '_blank', windowFeatures);
     } catch (err) {
       error(getApiErrorMessage(err, 'Không thể mở tài liệu.'));
     }
@@ -507,9 +516,16 @@ export const MaterialsManagementPage: React.FC = () => {
           {form.materialType === 'EMBEDDED_VIDEO' ? (
             <Input
               label="Đường dẫn Video nhúng (YouTube / Google Drive Embed URL)"
-              placeholder="https://www.youtube.com/embed/..."
+              placeholder="https://youtu.be/... hoặc https://www.youtube.com/watch?v=..."
               value={form.embedUrl}
               onChange={(e) => setForm({ ...form, embedUrl: e.target.value })}
+              onBlur={() =>
+                setForm((current) => ({
+                  ...current,
+                  embedUrl: transformVideoEmbedUrl(current.embedUrl) || '',
+                }))
+              }
+              helperText="URL YouTube sẽ tự động chuyển về dạng /embed/{videoId} trước khi lưu."
               required
             />
           ) : (

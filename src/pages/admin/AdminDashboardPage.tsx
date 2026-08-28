@@ -96,7 +96,12 @@ export const AdminDashboardPage: React.FC = () => {
           </div>
           <div className="stat-info">
             <span className="stat-value">{exams.length}</span>
-            <span className="stat-label">Tổng số đề thi ({publishedExamsCount} công khai)</span>
+            <span className="stat-label">
+              <span style={{ whiteSpace: 'nowrap' }}>Tổng số đề thi</span>
+              <span style={{ display: 'block', whiteSpace: 'nowrap', fontSize: '0.75rem', marginTop: '2px' }}>
+                ({publishedExamsCount} công khai)
+              </span>
+            </span>
           </div>
         </div>
 

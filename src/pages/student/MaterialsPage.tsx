@@ -13,6 +13,7 @@ import { canAccessMaterial } from '../../utils/access';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import { getApiErrorMessage } from '../../api/errors';
+import { normalizeYoutubeEmbedUrl } from '../../utils/youtube';
 
 export const MaterialsPage: React.FC = () => {
   const { user } = useAuth();
@@ -49,7 +50,9 @@ export const MaterialsPage: React.FC = () => {
     setOpeningMaterialId(material.id);
     try {
       const source =
-        material.materialType === 'EMBEDDED_VIDEO' ? material.embedUrl : material.storageUrl;
+        material.materialType === 'EMBEDDED_VIDEO'
+          ? normalizeYoutubeEmbedUrl(material.embedUrl)
+          : material.storageUrl;
       if (!source) throw new Error('Tài liệu chưa có địa chỉ mở.');
 
       const resolvedUrl =

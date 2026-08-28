@@ -158,7 +158,10 @@ export const StudentDashboardPage: React.FC = () => {
           </div>
           <div className="stat-info">
             <span className="stat-value">{averageScore}</span>
-            <span className="stat-label">Điểm trung bình (Thang 10)</span>
+            <span className="stat-label">
+              Điểm trung bình{' '}
+              <span style={{ display: 'inline-block', whiteSpace: 'nowrap' }}>(Thang 10)</span>
+            </span>
           </div>
         </div>
       </div>

@@ -854,33 +854,35 @@ select.input-field {
   gap: 12px;
 }
 
-/* Toast System */
+/* Toast System - Highest layer above all modals & overlays */
 .toast-container {
   position: fixed;
-  bottom: 24px;
+  top: 24px;
   right: 24px;
-  z-index: 100;
+  z-index: 999999;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
+  pointer-events: none;
 }
 
 .toast {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 14px 20px;
-  border-radius: var(--border-radius-md);
+  padding: 16px 22px;
+  border-radius: var(--border-radius-lg);
   background: var(--bg-card);
-  box-shadow: var(--shadow-lg);
-  border-left: 4px solid;
+  box-shadow: 0 20px 30px rgba(0, 34, 68, 0.2), 0 8px 12px rgba(0, 0, 0, 0.08);
+  border-left: 5px solid;
   border-top: 1px solid var(--border-color);
   border-right: 1px solid var(--border-color);
   border-bottom: 1px solid var(--border-color);
-  min-width: 320px;
-  max-width: 450px;
-  font-size: 0.875rem;
-  animation: slideUp 200ms ease-out;
+  min-width: 340px;
+  max-width: 480px;
+  font-size: 0.9375rem;
+  animation: slideDown 250ms cubic-bezier(0.16, 1, 0.3, 1);
+  pointer-events: auto;
 }
 
 .toast-success { border-left-color: var(--success); }

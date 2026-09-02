@@ -59,6 +59,7 @@ export interface AnswerOption {
   isCorrect: boolean;
   position?: number;
   image?: string;
+  imageStorageUri?: string;
 }
 
 export interface Question {
@@ -71,12 +72,15 @@ export interface Question {
   points: number;
   timeLimit?: number;
   image?: string;
+  imageStorageUri?: string;
   instruction?: string;
   options: AnswerOption[];
   hint?: string;
   hintImage?: string;
+  hintImageStorageUri?: string;
   explanation?: string;
   explanationImage?: string;
+  explanationImageStorageUri?: string;
   correctTextAnswer?: string;
   order: number;
 }
@@ -136,6 +140,7 @@ export interface StudentAnswer {
   correctOptionId?: string;
   correctTextAnswer?: string;
   explanation?: string;
+  explanationImage?: string;
 }
 
 export interface ExamAttempt {

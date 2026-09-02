@@ -4,6 +4,7 @@ import { Question, AnswerOption } from '../../types';
 import { AnswerOptionCard } from './AnswerOptionCard';
 import { ImageUploader } from '../common/ImageUploader';
 import { subjectsApi } from '../../api/subjects';
+import { questionsApi } from '../../api/questions';
 
 export interface QuestionCanvasProps {
   question: Question;
@@ -24,13 +25,12 @@ export const QuestionCanvas: React.FC<QuestionCanvasProps> = ({ question, onChan
 
   const handleOptionChange = (index: number, updatedOption: AnswerOption) => {
     let newOptions = [...question.options];
+    newOptions[index] = updatedOption;
     if (question.type === 'SINGLE_CHOICE' && updatedOption.isCorrect) {
       newOptions = newOptions.map((opt, i) => ({
         ...opt,
         isCorrect: i === index,
       }));
-    } else {
-      newOptions[index] = updatedOption;
     }
     onChange({ ...question, options: newOptions });
   };
@@ -141,7 +141,14 @@ export const QuestionCanvas: React.FC<QuestionCanvasProps> = ({ question, onChan
           <ImageUploader
             label="Hình ảnh minh họa cho câu hỏi"
             value={question.image}
-            onChange={(imageUrl) => onChange({ ...question, image: imageUrl })}
+            uploadImage={questionsApi.uploadImage}
+            onChange={(imageUrl, storageUri) =>
+              onChange({
+                ...question,
+                image: imageUrl,
+                imageStorageUri: storageUri,
+              })
+            }
           />
         )}
       </div>
@@ -164,7 +171,7 @@ export const QuestionCanvas: React.FC<QuestionCanvasProps> = ({ question, onChan
                 key={option.label || index}
                 option={option}
                 index={index}
-                isMultiChoice={question.type === 'MULTIPLE_CHOICE'}
+                uploadImage={questionsApi.uploadImage}
                 onChange={(updated) => handleOptionChange(index, updated)}
               />
             ))}
@@ -227,7 +234,14 @@ export const QuestionCanvas: React.FC<QuestionCanvasProps> = ({ question, onChan
               <ImageUploader
                 label="Hình ảnh gợi ý (tùy chọn)"
                 value={question.hintImage}
-                onChange={(imageUrl) => onChange({ ...question, hintImage: imageUrl })}
+                uploadImage={questionsApi.uploadImage}
+                onChange={(imageUrl, storageUri) =>
+                  onChange({
+                    ...question,
+                    hintImage: imageUrl,
+                    hintImageStorageUri: storageUri,
+                  })
+                }
               />
             </div>
           )}
@@ -269,7 +283,14 @@ export const QuestionCanvas: React.FC<QuestionCanvasProps> = ({ question, onChan
               <ImageUploader
                 label="Hình ảnh giải thích đáp án (tùy chọn)"
                 value={question.explanationImage}
-                onChange={(imageUrl) => onChange({ ...question, explanationImage: imageUrl })}
+                uploadImage={questionsApi.uploadImage}
+                onChange={(imageUrl, storageUri) =>
+                  onChange({
+                    ...question,
+                    explanationImage: imageUrl,
+                    explanationImageStorageUri: storageUri,
+                  })
+                }
               />
             </div>
           )}

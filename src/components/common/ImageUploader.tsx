@@ -1,9 +1,16 @@
-import React, { useRef, useState } from 'react';
-import { Upload, Link as LinkIcon, Image as ImageIcon, Trash2, X } from 'lucide-react';
+import React, { useEffect, useRef, useState } from 'react';
+import { Upload, Link as LinkIcon, Trash2, X } from 'lucide-react';
+
+export interface ImageUploadResult {
+  url: string;
+  storageUri: string;
+  expiresAt?: string;
+}
 
 export interface ImageUploaderProps {
   value?: string;
-  onChange: (imageUrl: string) => void;
+  onChange: (imageUrl: string, storageUri?: string) => void;
+  uploadImage: (file: File) => Promise<ImageUploadResult>;
   label?: string;
   compact?: boolean;
   maxHeight?: number;
@@ -12,6 +19,7 @@ export interface ImageUploaderProps {
 export const ImageUploader: React.FC<ImageUploaderProps> = ({
   value,
   onChange,
+  uploadImage,
   label,
   compact = false,
   maxHeight = 220,
@@ -19,23 +27,44 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
   const [activeTab, setActiveTab] = useState<'upload' | 'url'>('upload');
   const [urlInput, setUrlInput] = useState(value?.startsWith('http') ? value : '');
   const [isDragging, setIsDragging] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  useEffect(() => {
+    if (value?.startsWith('http')) setUrlInput(value);
+  }, [value]);
+
+  const uploadSelectedFile = async (file: File) => {
+    if (isUploading) return;
+
     if (!file.type.startsWith('image/')) {
       alert('Vui lòng chọn tệp hình ảnh hợp lệ (PNG, JPG, JPEG, GIF, WebP, SVG).');
       return;
     }
-    const reader = new FileReader();
-    reader.onload = (loadEvent) => {
-      const dataUrl = loadEvent.target?.result as string;
-      if (dataUrl) onChange(dataUrl);
-    };
-    reader.readAsDataURL(file);
-    // Reset file input value so the same file can be chosen again if needed
+
+    if (file.size > 5 * 1024 * 1024) {
+      alert('Kích thước hình ảnh không được vượt quá 5 MB.');
+      return;
+    }
+
+    setIsUploading(true);
+    try {
+      const uploaded = await uploadImage(file);
+      if (!uploaded?.url || !uploaded.storageUri) {
+        throw new Error('Invalid image upload response');
+      }
+      onChange(uploaded.url, uploaded.storageUri);
+    } catch {
+      alert('Không thể tải hình ảnh lên. Vui lòng thử lại.');
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
     e.target.value = '';
+    if (file) void uploadSelectedFile(file);
   };
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -51,23 +80,22 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
     e.preventDefault();
     setIsDragging(false);
     const file = e.dataTransfer.files?.[0];
-    if (!file) return;
-    if (!file.type.startsWith('image/')) {
-      alert('Vui lòng chọn tệp hình ảnh hợp lệ.');
-      return;
-    }
-    const reader = new FileReader();
-    reader.onload = (loadEvent) => {
-      const dataUrl = loadEvent.target?.result as string;
-      if (dataUrl) onChange(dataUrl);
-    };
-    reader.readAsDataURL(file);
+    if (file) void uploadSelectedFile(file);
   };
 
   const handleUrlSubmit = () => {
-    if (urlInput.trim()) {
-      onChange(urlInput.trim());
+    const valueToApply = urlInput.trim();
+    if (!valueToApply) return;
+
+    try {
+      const url = new URL(valueToApply);
+      if (url.protocol !== 'http:' && url.protocol !== 'https:') throw new Error();
+    } catch {
+      alert('Vui lòng nhập URL hình ảnh hợp lệ bắt đầu bằng http:// hoặc https://.');
+      return;
     }
+
+    onChange(valueToApply);
   };
 
   // Compact Mode (for Answer Option cards or small spaces)
@@ -79,6 +107,7 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
           ref={fileInputRef}
           accept="image/*"
           style={{ display: 'none' }}
+          disabled={isUploading}
           onChange={handleFileChange}
         />
         {value ? (
@@ -134,6 +163,7 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
+              disabled={isUploading}
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',
@@ -148,7 +178,7 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
                 cursor: 'pointer',
               }}
             >
-              <Upload size={13} /> Thêm ảnh đáp án
+              <Upload size={13} /> {isUploading ? 'Đang tải ảnh...' : 'Thêm ảnh đáp án'}
             </button>
           </div>
         )}
@@ -174,6 +204,7 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
         ref={fileInputRef}
         accept="image/*"
         style={{ display: 'none' }}
+        disabled={isUploading}
         onChange={handleFileChange}
       />
 
@@ -240,7 +271,9 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
-          onClick={() => fileInputRef.current?.click()}
+          onClick={() => {
+            if (!isUploading) fileInputRef.current?.click();
+          }}
           style={{
             padding: '20px 16px',
             borderRadius: 'var(--border-radius-md)',
@@ -248,6 +281,8 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
             backgroundColor: isDragging ? 'var(--primary-light)' : 'var(--bg-card)',
             textAlign: 'center',
             cursor: 'pointer',
+            opacity: isUploading ? 0.65 : 1,
+            pointerEvents: isUploading ? 'none' : 'auto',
             transition: 'all var(--transition-fast)',
             display: 'flex',
             flexDirection: 'column',
@@ -271,7 +306,7 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
           </div>
           <div>
             <strong style={{ fontSize: '0.875rem', color: 'var(--primary)' }}>
-              Nhấn để tải ảnh lên
+              {isUploading ? 'Đang tải ảnh lên...' : 'Nhấn để tải ảnh lên'}
             </strong>{' '}
             <span style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)' }}>
               hoặc kéo và thả tệp vào đây
@@ -301,6 +336,7 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
             type="button"
             className="btn btn-primary"
             onClick={handleUrlSubmit}
+            disabled={isUploading}
             style={{ height: '42px', minHeight: '42px', padding: '0 16px', whiteSpace: 'nowrap' }}
           >
             Áp dụng
@@ -354,7 +390,10 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <button
               type="button"
-              onClick={() => fileInputRef.current?.click()}
+              onClick={() => {
+                if (!isUploading) fileInputRef.current?.click();
+              }}
+              disabled={isUploading}
               className="btn btn-sm btn-outline"
               style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
             >

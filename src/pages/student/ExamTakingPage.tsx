@@ -16,26 +16,11 @@ import { AttemptFeedback, Exam, ExamAttempt, Question } from '../../types';
 import { useToast } from '../../contexts/ToastContext';
 import { getApiErrorMessage } from '../../api/errors';
 
-const playSuccessTone = () => {
-  const AudioContextCtor = window.AudioContext || (window as any).webkitAudioContext;
-  if (!AudioContextCtor) return;
-  const context = new AudioContextCtor();
-  const oscillator = context.createOscillator();
-  const gain = context.createGain();
-  oscillator.type = 'sine';
-  oscillator.frequency.setValueAtTime(660, context.currentTime);
-  oscillator.frequency.exponentialRampToValueAtTime(880, context.currentTime + 0.12);
-  gain.gain.setValueAtTime(0.0001, context.currentTime);
-  gain.gain.exponentialRampToValueAtTime(0.16, context.currentTime + 0.02);
-  gain.gain.exponentialRampToValueAtTime(0.0001, context.currentTime + 0.22);
-  oscillator.connect(gain);
-  gain.connect(context.destination);
-  oscillator.start();
-  oscillator.stop(context.currentTime + 0.24);
-  window.setTimeout(() => {
-    void context.close();
-  }, 300);
-};
+interface PersistAnswerOptions {
+  timedOut?: boolean;
+  finalize?: boolean;
+  revealFeedback?: boolean;
+}
 
 export const ExamTakingPage: React.FC = () => {
   const { examId, attemptId } = useParams<{ examId?: string; attemptId?: string }>();
@@ -147,7 +132,15 @@ export const ExamTakingPage: React.FC = () => {
   }, [attempt?.id, deadlines]);
 
   const persistAnswer = useCallback(
-    async (question: Question, value: string, timedOut = false, revealFeedback = true) => {
+    async (
+      question: Question,
+      value: string,
+      {
+        timedOut = false,
+        finalize = false,
+        revealFeedback = finalize || timedOut,
+      }: PersistAnswerOptions = {},
+    ) => {
       if (!attempt?.id || (!value && !timedOut)) return null;
       const payload: SaveAnswerPayload = {
         questionId: question.id,
@@ -169,10 +162,14 @@ export const ExamTakingPage: React.FC = () => {
             ? Number(value)
             : undefined,
         timedOut,
+        finalize,
       };
       const result = await attemptsApi.saveAnswer(attempt.id, payload);
-      if (revealFeedback)
-        setFeedback((previous) => ({ ...previous, [question.id]: result }));
+      if (revealFeedback && result.isCorrect !== undefined)
+        setFeedback((previous) => ({
+          ...previous,
+          [question.id]: result as AttemptFeedback,
+        }));
       return result;
     },
     [attempt?.id]
@@ -181,7 +178,11 @@ export const ExamTakingPage: React.FC = () => {
   useEffect(() => {
     if (!currentQuestion || currentFeedback || !currentDeadline || secondsLeft > 0) return;
     warning(`Câu ${currentIndex + 1} đã hết thời gian.`);
-    void persistAnswer(currentQuestion, answers[currentQuestion.id] || '', true).catch(() => {
+    void persistAnswer(currentQuestion, answers[currentQuestion.id] || '', {
+      timedOut: true,
+      finalize: true,
+      revealFeedback: true,
+    }).catch(() => {
       setFeedback((previous) => ({
         ...previous,
         [currentQuestion.id]: {
@@ -203,22 +204,14 @@ export const ExamTakingPage: React.FC = () => {
     warning,
   ]);
 
-  const handleSelectOption = async (optionId: string) => {
+  const handleSelectOption = (optionId: string) => {
     if (!currentQuestion || currentLocked) return;
     setAnswers((previous) => ({ ...previous, [currentQuestion.id]: optionId }));
-    try {
-      const result = await persistAnswer(currentQuestion, optionId);
-      if (result?.isCorrect) {
-        playSuccessTone();
-        if (currentIndex < questions.length - 1)
-          window.setTimeout(
-            () => setCurrentIndex((index) => Math.min(questions.length - 1, index + 1)),
-            800
-          );
-      }
-    } catch (err) {
+    // Save the selection as a draft. Grading is only requested by an
+    // explicit per-question submit, timeout, or final exam submission.
+    void persistAnswer(currentQuestion, optionId, { revealFeedback: false }).catch((err) => {
       error(getApiErrorMessage(err, 'Không thể lưu đáp án.'));
-    }
+    });
   };
 
   const handleTextAnswerChange = (value: string) => {
@@ -238,7 +231,7 @@ export const ExamTakingPage: React.FC = () => {
     const value = answers[currentQuestion.id];
     if (!value) return;
     const timer = window.setTimeout(() => {
-      void persistAnswer(currentQuestion, value, false, false).catch(() => undefined);
+      void persistAnswer(currentQuestion, value, { revealFeedback: false }).catch(() => undefined);
     }, 500);
     return () => window.clearTimeout(timer);
   }, [answers, attempt?.id, currentFeedback, currentQuestion, persistAnswer]);
@@ -256,7 +249,10 @@ export const ExamTakingPage: React.FC = () => {
     setIsSubmitting(true);
     setSubmittingAction('question');
     try {
-      await persistAnswer(currentQuestion, value);
+      await persistAnswer(currentQuestion, value, {
+        finalize: true,
+        revealFeedback: true,
+      });
       setShowSubmitModal(false);
       success(`Đã nộp câu ${currentIndex + 1}.`);
     } catch (err) {
@@ -272,9 +268,18 @@ export const ExamTakingPage: React.FC = () => {
     setIsSubmitting(true);
     setSubmittingAction('exam');
     try {
-      if (currentQuestion && !currentFeedback && answers[currentQuestion.id]) {
-        await persistAnswer(currentQuestion, answers[currentQuestion.id]);
-      }
+      const pendingAnswers = questions
+        .map((question) => ({
+          question,
+          value: answers[question.id]?.trim(),
+        }))
+        .filter(({ question, value }) => value && !feedback[question.id]);
+
+      await Promise.all(
+        pendingAnswers.map(({ question, value }) =>
+          persistAnswer(question, value, { revealFeedback: false }),
+        ),
+      );
       await attemptsApi.submitAttempt(attempt.id);
       success('Nộp bài thi thành công!');
       navigate(`/student/attempts/${attempt.id}/result`);
@@ -291,11 +296,9 @@ export const ExamTakingPage: React.FC = () => {
     if (
       currentQuestion &&
       answers[currentQuestion.id] &&
-      currentQuestion.type !== 'SINGLE_CHOICE' &&
-      currentQuestion.type !== 'MULTIPLE_CHOICE' &&
       !currentFeedback
     ) {
-      await persistAnswer(currentQuestion, answers[currentQuestion.id], false, false).catch(
+      await persistAnswer(currentQuestion, answers[currentQuestion.id], { revealFeedback: false }).catch(
         () => undefined
       );
     }
@@ -426,10 +429,7 @@ export const ExamTakingPage: React.FC = () => {
             <Button
               variant="primary"
               disabled={
-                currentIndex === questions.length - 1 ||
-                ((currentQuestion.type === 'SINGLE_CHOICE' ||
-                  currentQuestion.type === 'MULTIPLE_CHOICE') &&
-                  !currentFeedback)
+                currentIndex === questions.length - 1
               }
               onClick={handleNextQuestion}
               rightIcon={<ChevronRight size={18} />}

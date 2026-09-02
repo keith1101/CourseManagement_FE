@@ -183,9 +183,6 @@ export const EditorHeader: React.FC<EditorHeaderProps> = ({
             <option value="SINGLE_CHOICE" style={{ color: '#202938' }}>
               Trắc nghiệm (1 đáp án)
             </option>
-            <option value="MULTIPLE_CHOICE" style={{ color: '#202938' }}>
-              Trắc nghiệm (Nhiều đáp án)
-            </option>
             <option value="ESSAY" style={{ color: '#202938' }}>
               Tự luận
             </option>

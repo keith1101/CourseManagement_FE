@@ -43,6 +43,8 @@ export const mapOption = (raw: any, index: number): AnswerOption => ({
   content: raw.contentText ?? raw.content ?? '',
   isCorrect: raw.isCorrect === true,
   position: raw.position ?? index,
+  image: raw.imageUrl ?? raw.image,
+  imageStorageUri: raw.imageStorageUri,
 });
 
 export const mapQuestion = (raw: any): Question => {
@@ -53,14 +55,28 @@ export const mapQuestion = (raw: any): Question => {
     subjectId: raw.subjectId || '',
     title: raw.title,
     content: raw.contentText ?? raw.content ?? '',
-    type: type === 'SHORT_ANSWER' ? 'FILL_BLANK' : type === 'ESSAY' ? 'ESSAY' : type || 'SINGLE_CHOICE',
+    // The backend stores every choice question as MULTIPLE_CHOICE, but its
+    // answer-key contract requires exactly one correct option. Keep the UI
+    // in single-select mode after a question is reloaded.
+    type: type === 'SHORT_ANSWER'
+      ? 'FILL_BLANK'
+      : type === 'ESSAY'
+      ? 'ESSAY'
+      : type === 'MULTIPLE_CHOICE'
+      ? 'SINGLE_CHOICE'
+      : type || 'SINGLE_CHOICE',
     points: raw.points ?? 1,
     timeLimit: raw.timeLimitSeconds ?? raw.timeLimit ?? 30,
     image: raw.imageUrl ?? raw.image,
+    imageStorageUri: raw.imageStorageUri,
     instruction: raw.instruction,
     options: (raw.questionOptions ?? raw.options ?? []).map(mapOption),
     hint: raw.hint,
+    hintImage: raw.hintImageUrl ?? raw.hintImage,
+    hintImageStorageUri: raw.hintImageStorageUri,
     explanation: raw.explaination ?? raw.explanation,
+    explanationImage: raw.explanationImageUrl ?? raw.explanationImage,
+    explanationImageStorageUri: raw.explanationImageStorageUri,
     correctTextAnswer: raw.correctTextAnswer ?? raw.questionAcceptedAnswers?.find((a: any) => a.isPrimary)?.rawValue,
     order: raw.position ?? raw.order ?? 0,
   };
@@ -114,6 +130,7 @@ export const mapAnswer = (raw: any): any => ({
   correctOptionId: raw.correctOptionId,
   correctTextAnswer: raw.correctTextAnswer,
   explanation: raw.explanation,
+  explanationImage: raw.explanationImageUrl ?? raw.explanationImage,
 });
 
 export const mapAttempt = (raw: any): ExamAttempt => {

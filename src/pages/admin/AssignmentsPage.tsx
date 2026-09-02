@@ -346,7 +346,7 @@ export const AssignmentsPage: React.FC = () => {
             >
               {exams.map((ex) => (
                 <option key={ex.id} value={ex.id}>
-                  {ex.title} ({ex.subject?.name || 'Môn học'})
+                  {ex.title}{ex.subject?.name ? ` (${ex.subject.name})` : ''}
                 </option>
               ))}
             </select>

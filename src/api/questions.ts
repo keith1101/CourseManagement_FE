@@ -2,21 +2,46 @@ import { apiClient } from './client';
 import { Question } from '../types';
 import { mapQuestion } from './mappers';
 
-const toPayload = (data: Partial<Question>) => ({
+export interface QuestionImageUploadResponse {
+  url: string;
+  imageUrl?: string;
+  storageUri: string;
+  expiresAt?: string;
+}
+
+const imageReference = (imageUrl?: string, storageUri?: string) =>
+  storageUri || imageUrl || undefined;
+
+const toPayload = (data: Partial<Question>) => {
+  const isShortAnswer = data.type === 'FILL_BLANK' || data.type === 'ESSAY';
+
+  return {
   subjectId: data.subjectId,
-  questionType: data.type === 'FILL_BLANK' || data.type === 'ESSAY' ? 'SHORT_ANSWER' : 'MULTIPLE_CHOICE',
+  questionType: isShortAnswer ? 'SHORT_ANSWER' : 'MULTIPLE_CHOICE',
   contentText: data.content,
-  imageUrl: data.image || undefined,
+  imageUrl: imageReference(data.image, data.imageStorageUri),
+  hintImageUrl: imageReference(data.hintImage, data.hintImageStorageUri),
+  hint: data.hint,
   instruction: data.instruction,
   explaination: data.explanation,
+  explanationImageUrl: imageReference(
+    data.explanationImage,
+    data.explanationImageStorageUri,
+  ),
   timeLimitSeconds: data.timeLimit || 30,
-  correctTextAnswer: data.correctTextAnswer || (data.options?.[0]?.content || undefined),
-  options: (data.options || []).map((option, index) => ({
-    contentText: option.content,
-    isCorrect: option.isCorrect,
-    position: option.position ?? index,
-  })),
-});
+  correctTextAnswer: isShortAnswer
+    ? data.correctTextAnswer || data.options?.[0]?.content || undefined
+    : undefined,
+  options: isShortAnswer
+    ? []
+    : (data.options || []).map((option, index) => ({
+        contentText: option.content,
+        imageUrl: imageReference(option.image, option.imageStorageUri),
+        isCorrect: option.isCorrect,
+        position: option.position ?? index,
+      })),
+  };
+};
 
 export const questionsApi = {
   getQuestionsByExam: async (examId: string): Promise<Question[]> => {
@@ -27,6 +52,16 @@ export const questionsApi = {
   getQuestionById: async (id: string): Promise<Question> => {
     const res = await apiClient.get<any>(`/questions/${id}`);
     return mapQuestion(res.data);
+  },
+
+  uploadImage: async (file: File): Promise<QuestionImageUploadResponse> => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const res = await apiClient.post<QuestionImageUploadResponse>(
+      '/questions/images',
+      formData,
+    );
+    return res.data;
   },
 
   createQuestion: async (examId: string, data: Partial<Question>): Promise<Question> => {

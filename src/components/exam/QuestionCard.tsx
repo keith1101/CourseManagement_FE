@@ -127,7 +127,7 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
           </div>
         )}
 
-        {question.hint && (
+        {(question.hint || question.hintImage) && (
           <div>
             <button
               type="button"
@@ -355,7 +355,7 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
             </div>
           )}
 
-          {feedback.explanation && (
+          {(feedback.explanation || feedback.explanationImage) && (
             <div
               style={{
                 marginTop: '8px',
@@ -370,7 +370,26 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
             >
               <FileText size={16} color="var(--primary)" style={{ flexShrink: 0, marginTop: '2px' }} />
               <div>
-                <strong>Giải thích:</strong> {feedback.explanation}
+                {feedback.explanation && (
+                  <div>
+                    <strong>Giải thích:</strong> {feedback.explanation}
+                  </div>
+                )}
+                {feedback.explanationImage && (
+                  <img
+                    src={feedback.explanationImage}
+                    alt="Hình ảnh giải thích đáp án"
+                    style={{
+                      display: 'block',
+                      maxWidth: '100%',
+                      maxHeight: '220px',
+                      objectFit: 'contain',
+                      marginTop: '8px',
+                      borderRadius: 'var(--border-radius-sm)',
+                      border: '1px solid var(--border-color)',
+                    }}
+                  />
+                )}
               </div>
             </div>
           )}

@@ -4,7 +4,12 @@ import { mapAnswer, mapAttempt } from './mappers';
 
 export interface SaveAnswerPayload extends StudentAnswer {
   timedOut?: boolean;
+  finalize?: boolean;
 }
+
+export type SaveAnswerResponse = Omit<AttemptFeedback, 'isCorrect'> & {
+  isCorrect?: boolean;
+};
 
 export const attemptsApi = {
   startAttempt: async (examId: string, assignmentId?: string): Promise<ExamAttempt> => {
@@ -17,18 +22,19 @@ export const attemptsApi = {
     return mapAttempt(res.data);
   },
 
-  saveAnswer: async (attemptId: string, answer: SaveAnswerPayload): Promise<AttemptFeedback> => {
+  saveAnswer: async (attemptId: string, answer: SaveAnswerPayload): Promise<SaveAnswerResponse> => {
     const res = await apiClient.post<any>(`/attempts/${attemptId}/answers`, {
       questionId: answer.questionId,
-      selectedOptionId: answer.selectedOptionId,
+      selectedOptionId: answer.selectedOptionId || undefined,
       answerType: answer.answerType,
       rawValue: answer.rawValue ?? answer.textAnswer,
       normalizedText: answer.textAnswer?.trim().toLowerCase(),
       content: answer.content,
       numericValue: answer.numericValue,
       timedOut: answer.timedOut,
+      finalize: answer.finalize,
     });
-    return mapAnswer(res.data) as AttemptFeedback;
+    return mapAnswer(res.data) as SaveAnswerResponse;
   },
 
   submitAttempt: async (attemptId: string): Promise<ExamAttempt> => {

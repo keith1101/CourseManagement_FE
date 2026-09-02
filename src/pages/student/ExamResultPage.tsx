@@ -261,6 +261,20 @@ export const ExamResultPage: React.FC = () => {
                   {q.content}
                 </p>
 
+                {q.image && (
+                  <img
+                    src={q.image}
+                    alt="Hình ảnh minh họa câu hỏi"
+                    style={{
+                      maxWidth: '100%',
+                      maxHeight: '300px',
+                      objectFit: 'contain',
+                      borderRadius: 'var(--border-radius-md)',
+                      border: '1px solid var(--border-color)',
+                    }}
+                  />
+                )}
+
                 {/* Options List */}
                 {q.type === 'SINGLE_CHOICE' || q.type === 'MULTIPLE_CHOICE' ? (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -300,9 +314,26 @@ export const ExamResultPage: React.FC = () => {
                             fontSize: '0.875rem',
                           }}
                         >
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0, flex: 1 }}>
                             <strong style={{ color: 'var(--primary)' }}>{opt.label}.</strong>
-                            <span style={{ color: 'var(--text-primary)' }}>{opt.content}</span>
+                            <div>
+                              <span style={{ color: 'var(--text-primary)' }}>{opt.content}</span>
+                              {opt.image && (
+                                <img
+                                  src={opt.image}
+                                  alt={`Ảnh đáp án ${opt.label}`}
+                                  style={{
+                                    display: 'block',
+                                    maxWidth: '100%',
+                                    maxHeight: '140px',
+                                    objectFit: 'contain',
+                                    marginTop: '6px',
+                                    borderRadius: 'var(--border-radius-sm)',
+                                    border: '1px solid var(--border-color)',
+                                  }}
+                                />
+                              )}
+                            </div>
                           </div>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                             {isThisSelected && (
@@ -333,7 +364,7 @@ export const ExamResultPage: React.FC = () => {
                 )}
 
                 {/* Explanation Box */}
-                {q.explanation && (
+                {(q.explanation || q.explanationImage) && (
                   <div
                     style={{
                       padding: '14px 16px',
@@ -351,7 +382,24 @@ export const ExamResultPage: React.FC = () => {
                     <FileText size={18} color="var(--primary)" style={{ flexShrink: 0, marginTop: '2px' }} />
                     <div>
                       <strong style={{ color: 'var(--primary)' }}>Giải thích chi tiết: </strong>
-                      <span>{q.explanation}</span>
+                      <div>
+                        {q.explanation && <span>{q.explanation}</span>}
+                        {q.explanationImage && (
+                          <img
+                            src={q.explanationImage}
+                            alt="Hình ảnh giải thích đáp án"
+                            style={{
+                              display: 'block',
+                              maxWidth: '100%',
+                              maxHeight: '240px',
+                              objectFit: 'contain',
+                              marginTop: '8px',
+                              borderRadius: 'var(--border-radius-sm)',
+                              border: '1px solid var(--border-color)',
+                            }}
+                          />
+                        )}
+                      </div>
                     </div>
                   </div>
                 )}

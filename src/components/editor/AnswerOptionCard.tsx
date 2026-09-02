@@ -6,7 +6,11 @@ import { ImageUploader } from '../common/ImageUploader';
 export interface AnswerOptionCardProps {
   option: AnswerOption;
   index: number;
-  isMultiChoice?: boolean;
+  uploadImage: (file: File) => Promise<{
+    url: string;
+    storageUri: string;
+    expiresAt?: string;
+  }>;
   onChange: (updated: AnswerOption) => void;
 }
 
@@ -20,6 +24,7 @@ const colorMap = [
 export const AnswerOptionCard: React.FC<AnswerOptionCardProps> = ({
   option,
   index,
+  uploadImage,
   onChange,
 }) => {
   const config = colorMap[index % colorMap.length];
@@ -132,7 +137,14 @@ export const AnswerOptionCard: React.FC<AnswerOptionCardProps> = ({
         <ImageUploader
           compact
           value={option.image}
-          onChange={(imageUrl) => onChange({ ...option, image: imageUrl })}
+          uploadImage={uploadImage}
+          onChange={(imageUrl, storageUri) =>
+            onChange({
+              ...option,
+              image: imageUrl,
+              imageStorageUri: storageUri,
+            })
+          }
         />
       </div>
     </div>

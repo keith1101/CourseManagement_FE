@@ -258,7 +258,7 @@ export const MaterialsManagementPage: React.FC = () => {
           gap: '16px',
         }}
       >
-        <div className="segmented-tabs" style={{ flexWrap: 'wrap' }}>
+        <div className="segmented-tabs segmented-tabs--scrollable">
           <button
             type="button"
             className={`segmented-tab ${!selectedSubjectId ? 'active' : ''}`}

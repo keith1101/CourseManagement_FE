@@ -31,7 +31,7 @@ export const EditorHeader: React.FC<EditorHeaderProps> = ({
   return (
     <header className="editor-header">
       {/* Left: Back & Exam Title */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '16px', minWidth: 0 }}>
+      <div className="editor-header-leading" style={{ display: 'flex', alignItems: 'center', gap: '16px', minWidth: 0 }}>
         <button
           onClick={onCancel}
           style={{
@@ -79,7 +79,7 @@ export const EditorHeader: React.FC<EditorHeaderProps> = ({
       </div>
 
       {/* Center: Controls (Time, Points, Type) */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+      <div className="editor-header-controls" style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
         {/* Time Limit */}
         <div
           style={{
@@ -194,7 +194,7 @@ export const EditorHeader: React.FC<EditorHeaderProps> = ({
       </div>
 
       {/* Right: Actions */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+      <div className="editor-header-actions" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
         <button
           onClick={onCancel}
           style={{

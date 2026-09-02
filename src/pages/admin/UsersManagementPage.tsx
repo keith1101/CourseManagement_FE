@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Search, Lock, Unlock, Shield, Sparkles, User as UserIcon, Edit2 } from 'lucide-react';
+import { Search, Lock, Unlock, Shield, Sparkles, User as UserIcon, Edit2, KeyRound, Eye, EyeOff } from 'lucide-react';
 import { Button } from '../../components/common/Button';
 import { Badge } from '../../components/common/Badge';
 import { Modal } from '../../components/common/Modal';
@@ -10,6 +10,7 @@ import { usersApi } from '../../api/users';
 import { User, UserRole, UserStatus, UserTier } from '../../types';
 import { useToast } from '../../contexts/ToastContext';
 import { useAuth } from '../../contexts/AuthContext';
+import { getApiErrorMessage } from '../../api/errors';
 
 export const UsersManagementPage: React.FC = () => {
   const { success, error } = useToast();
@@ -26,6 +27,14 @@ export const UsersManagementPage: React.FC = () => {
   const [targetTier, setTargetTier] = useState<UserTier>('FREE');
   const [targetProExpiresAt, setTargetProExpiresAt] = useState('');
   const [isSaving, setIsSaving] = useState<boolean>(false);
+
+  // Reset student password modal
+  const [resetPasswordUser, setResetPasswordUser] = useState<User | null>(null);
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmNewPassword, setConfirmNewPassword] = useState('');
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmNewPassword, setShowConfirmNewPassword] = useState(false);
+  const [isResettingPassword, setIsResettingPassword] = useState(false);
 
   const fetchUsers = useCallback(async () => {
     setIsLoading(true);
@@ -101,6 +110,52 @@ export const UsersManagementPage: React.FC = () => {
     }
   };
 
+  const handleOpenResetPassword = (u: User) => {
+    if (u.role !== 'STUDENT') return;
+    setResetPasswordUser(u);
+    setNewPassword('');
+    setConfirmNewPassword('');
+    setShowNewPassword(false);
+    setShowConfirmNewPassword(false);
+  };
+
+  const handleCloseResetPassword = () => {
+    if (isResettingPassword) return;
+    setResetPasswordUser(null);
+    setNewPassword('');
+    setConfirmNewPassword('');
+    setShowNewPassword(false);
+    setShowConfirmNewPassword(false);
+  };
+
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!resetPasswordUser) return;
+    if (newPassword.length < 8) {
+      error('Mật khẩu mới phải có ít nhất 8 ký tự.');
+      return;
+    }
+    if (newPassword !== confirmNewPassword) {
+      error('Mật khẩu xác nhận không khớp.');
+      return;
+    }
+
+    setIsResettingPassword(true);
+    try {
+      await usersApi.resetPassword(resetPasswordUser.id, newPassword);
+      success(`Đã đổi mật khẩu cho ${resetPasswordUser.fullName}. Các phiên đăng nhập cũ đã bị thu hồi.`);
+      setResetPasswordUser(null);
+      setNewPassword('');
+      setConfirmNewPassword('');
+      setShowNewPassword(false);
+      setShowConfirmNewPassword(false);
+    } catch (err) {
+      error(getApiErrorMessage(err, 'Không thể đổi mật khẩu cho học sinh.'));
+    } finally {
+      setIsResettingPassword(false);
+    }
+  };
+
   const filtered = users.filter((u) => {
     const matchSearch =
       u.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -171,7 +226,7 @@ export const UsersManagementPage: React.FC = () => {
               <th style={{ textAlign: 'center', width: '120px', minWidth: '110px' }}>Vai trò</th>
               <th style={{ textAlign: 'center', width: '130px', minWidth: '120px' }}>Gói thành viên</th>
               <th style={{ textAlign: 'center', width: '120px', minWidth: '110px' }}>Trạng thái</th>
-              <th style={{ textAlign: 'center', width: '180px', minWidth: '180px' }}>Thao tác</th>
+              <th style={{ textAlign: 'center', width: '260px', minWidth: '220px' }}>Thao tác</th>
             </tr>
           </thead>
           <tbody>
@@ -238,7 +293,7 @@ export const UsersManagementPage: React.FC = () => {
                       {u.status === 'ACTIVE' ? 'Hoạt động' : 'Đã khóa'}
                     </Badge>
                   </td>
-                  <td style={{ textAlign: 'center', width: '180px', minWidth: '180px', whiteSpace: 'nowrap' }}>
+                  <td style={{ textAlign: 'center', width: '260px', minWidth: '220px', whiteSpace: 'nowrap' }}>
                     <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
                       <button
                         onClick={() => handleOpenEditUser(u)}
@@ -261,6 +316,29 @@ export const UsersManagementPage: React.FC = () => {
                       >
                         <Edit2 size={14} /> Phân quyền
                       </button>
+                      {u.role === 'STUDENT' && (
+                        <button
+                          onClick={() => handleOpenResetPassword(u)}
+                          title="Đổi mật khẩu cho học sinh"
+                          style={{
+                            padding: '6px 12px',
+                            borderRadius: '6px',
+                            backgroundColor: 'rgba(59, 130, 246, 0.08)',
+                            color: 'var(--primary)',
+                            border: '1px solid rgba(59, 130, 246, 0.25)',
+                            fontSize: '0.8125rem',
+                            fontWeight: 600,
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            cursor: 'pointer',
+                            whiteSpace: 'nowrap',
+                            transition: 'all var(--transition-fast)',
+                          }}
+                        >
+                          <KeyRound size={14} /> Đổi mật khẩu
+                        </button>
+                      )}
                       <button
                         onClick={() => handleToggleLock(u)}
                         title={u.status === 'ACTIVE' ? 'Khóa tài khoản' : 'Mở khóa tài khoản'}
@@ -347,6 +425,76 @@ export const UsersManagementPage: React.FC = () => {
             </Button>
             <Button variant="primary" type="submit" isLoading={isSaving}>
               Lưu thay đổi
+            </Button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Reset Student Password Modal */}
+      <Modal
+        isOpen={!!resetPasswordUser}
+        onClose={handleCloseResetPassword}
+        title={`Đổi mật khẩu: ${resetPasswordUser?.fullName}`}
+        maxWidth="500px"
+      >
+        <form onSubmit={handleResetPassword} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <div style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', lineHeight: 1.5 }}>
+            Mật khẩu mới sẽ được áp dụng ngay. Các phiên đăng nhập hiện tại của học sinh sẽ bị đăng xuất.
+          </div>
+          <div className="form-group">
+            <label className="form-label">Mật khẩu mới</label>
+            <div style={{ position: 'relative' }}>
+              <input
+                type={showNewPassword ? 'text' : 'password'}
+                className="input-field"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                placeholder="Ít nhất 8 ký tự"
+                minLength={8}
+                required
+                autoComplete="new-password"
+                style={{ paddingRight: '46px' }}
+              />
+              <button
+                type="button"
+                aria-label={showNewPassword ? 'Ẩn mật khẩu mới' : 'Hiện mật khẩu mới'}
+                onClick={() => setShowNewPassword((visible) => !visible)}
+                style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', display: 'flex' }}
+              >
+                {showNewPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
+          </div>
+          <div className="form-group">
+            <label className="form-label">Xác nhận mật khẩu mới</label>
+            <div style={{ position: 'relative' }}>
+              <input
+                type={showConfirmNewPassword ? 'text' : 'password'}
+                className="input-field"
+                value={confirmNewPassword}
+                onChange={(e) => setConfirmNewPassword(e.target.value)}
+                placeholder="Nhập lại mật khẩu mới"
+                minLength={8}
+                required
+                autoComplete="new-password"
+                style={{ paddingRight: '46px' }}
+              />
+              <button
+                type="button"
+                aria-label={showConfirmNewPassword ? 'Ẩn mật khẩu xác nhận' : 'Hiện mật khẩu xác nhận'}
+                onClick={() => setShowConfirmNewPassword((visible) => !visible)}
+                style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', display: 'flex' }}
+              >
+                {showConfirmNewPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '8px' }}>
+            <Button variant="outline" type="button" onClick={handleCloseResetPassword} disabled={isResettingPassword}>
+              Hủy
+            </Button>
+            <Button variant="primary" type="submit" isLoading={isResettingPassword} leftIcon={<KeyRound size={16} />}>
+              Đổi mật khẩu
             </Button>
           </div>
         </form>

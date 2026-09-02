@@ -42,6 +42,9 @@ apiClient.interceptors.response.use(
       localStorage.setItem('auth_message', 'Tài khoản đã bị khóa. Vui lòng liên hệ quản trị viên.');
     }
     if (error.response?.status === 401) {
+      if (typeof apiMessage === 'string' && apiMessage.toLowerCase().includes('session revoked')) {
+        localStorage.setItem('auth_message', 'Mật khẩu đã được quản trị viên thay đổi. Vui lòng đăng nhập lại.');
+      }
       // Token is invalid/expired - clear storage if not on auth page
       const isAuthRoute = error.config?.url?.includes('/auth/login') || error.config?.url?.includes('/auth/register');
       if (!isAuthRoute && !window.location.pathname.startsWith('/login') && !window.location.pathname.startsWith('/register')) {

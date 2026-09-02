@@ -44,4 +44,11 @@ export const usersApi = {
     });
     return mapUser(res.data);
   },
+
+  resetPassword: async (id: string, newPassword: string): Promise<{ message: string }> => {
+    const res = await apiClient.patch<{ message: string }>(`/users/${id}/reset-password`, {
+      newPassword,
+    });
+    return res.data;
+  },
 };

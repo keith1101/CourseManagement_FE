@@ -393,6 +393,10 @@ export const setupMockAdapter = (client: AxiosInstance) => {
       return Promise.reject({ isMock: true, mockResponse: mockResponse(usersState) });
     }
 
+    if (url.startsWith('/users/') && url.endsWith('/reset-password') && method === 'patch') {
+      return Promise.reject({ isMock: true, mockResponse: mockResponse({ message: 'Password reset successfully' }) });
+    }
+
     if (url.startsWith('/users/') && method === 'patch') {
       const id = url.split('/')[2];
       usersState = usersState.map((u) => (u.id === id ? { ...u, ...data, updatedAt: nowIso() } : u));

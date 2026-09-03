@@ -116,7 +116,7 @@ export const QuestionCanvas: React.FC<QuestionCanvasProps> = ({ question, onChan
             className="input-field"
             value={question.instruction || ''}
             onChange={(e) => onChange({ ...question, instruction: e.target.value })}
-            placeholder="Ví dụ: Chọn câu trả lời đúng nhất, Điền số thích hợp..."
+            placeholder="Ví dụ: Chọn câu trả lời đúng nhất, Trình bày chi tiết..."
             style={{ marginTop: '6px', height: '46px', minHeight: '46px' }}
           />
         </div>
@@ -180,7 +180,7 @@ export const QuestionCanvas: React.FC<QuestionCanvasProps> = ({ question, onChan
       ) : (
         <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
           <h3 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-primary)' }}>
-            Đáp án chuẩn mẫu (Dành cho tự luận / điền từ)
+            Đáp án chuẩn mẫu (Dành cho tự luận)
           </h3>
           <textarea
             rows={3}

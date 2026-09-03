@@ -50,7 +50,7 @@ export interface Subject {
   updatedAt: string;
 }
 
-export type QuestionType = 'MULTIPLE_CHOICE' | 'SINGLE_CHOICE' | 'ESSAY' | 'FILL_BLANK';
+export type QuestionType = 'MULTIPLE_CHOICE' | 'SINGLE_CHOICE' | 'ESSAY';
 
 export interface AnswerOption {
   id?: string;

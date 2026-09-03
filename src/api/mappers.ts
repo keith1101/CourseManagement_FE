@@ -58,9 +58,7 @@ export const mapQuestion = (raw: any): Question => {
     // The backend stores every choice question as MULTIPLE_CHOICE, but its
     // answer-key contract requires exactly one correct option. Keep the UI
     // in single-select mode after a question is reloaded.
-    type: type === 'SHORT_ANSWER'
-      ? 'FILL_BLANK'
-      : type === 'ESSAY'
+    type: type === 'SHORT_ANSWER' || type === 'ESSAY' || type === 'FILL_BLANK'
       ? 'ESSAY'
       : type === 'MULTIPLE_CHOICE'
       ? 'SINGLE_CHOICE'

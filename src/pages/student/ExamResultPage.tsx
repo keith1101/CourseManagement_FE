@@ -134,6 +134,7 @@ export const ExamResultPage: React.FC = () => {
           style={{
             width: '120px',
             height: '120px',
+            aspectRatio: '1 / 1',
             borderRadius: '50%',
             backgroundColor: isPassed ? 'var(--success-bg)' : 'var(--error-bg)',
             border: `3px solid ${isPassed ? 'var(--success)' : 'var(--error)'}`,
@@ -142,24 +143,34 @@ export const ExamResultPage: React.FC = () => {
             alignItems: 'center',
             justifyContent: 'center',
             flexShrink: 0,
+            padding: '8px',
+            boxSizing: 'border-box',
+            textAlign: 'center',
           }}
         >
           <span
             style={{
-              fontSize: '2.5rem',
+              fontSize: '2rem',
               fontWeight: 800,
               lineHeight: 1,
               color: isPassed ? 'var(--success)' : 'var(--error)',
+              letterSpacing: '-0.02em',
+              textAlign: 'center',
             }}
           >
             {score}
           </span>
           <span
             style={{
-              fontSize: '0.75rem',
+              fontSize: '0.5625rem',
               fontWeight: 700,
               color: isPassed ? 'var(--success)' : 'var(--error)',
-              marginTop: '4px',
+              marginTop: '6px',
+              letterSpacing: '0.04em',
+              textTransform: 'uppercase',
+              whiteSpace: 'nowrap',
+              lineHeight: 1.2,
+              textAlign: 'center',
             }}
           >
             THANG ĐIỂM 10

@@ -186,15 +186,15 @@ const StudentExamHistoryModal: React.FC<StudentExamHistoryModalProps> = ({
 
           {historyAttempts.length > 0 ? (
             <div style={{ overflowX: 'auto', border: '1px solid var(--border-color)', borderRadius: 'var(--border-radius-md)' }}>
-              <table className="data-table" style={{ minWidth: '720px' }}>
+              <table className="data-table" style={{ minWidth: '860px' }}>
                 <thead>
                   <tr>
-                    <th>Đề thi</th>
-                    <th>Thời gian nộp</th>
-                    <th style={{ textAlign: 'center' }}>Thời lượng</th>
-                    <th style={{ textAlign: 'center' }}>Điểm</th>
-                    <th style={{ textAlign: 'center' }}>Kết quả</th>
-                    <th style={{ textAlign: 'center', width: '150px' }}>Thao tác</th>
+                    <th style={{ minWidth: '260px' }}>Đề thi</th>
+                    <th style={{ minWidth: '180px', whiteSpace: 'nowrap' }}>Thời gian nộp</th>
+                    <th style={{ textAlign: 'center', minWidth: '110px' }}>Thời lượng</th>
+                    <th style={{ textAlign: 'center', minWidth: '110px' }}>Điểm</th>
+                    <th style={{ textAlign: 'center', minWidth: '110px' }}>Kết quả</th>
+                    <th style={{ textAlign: 'center', minWidth: '130px', width: '130px' }}>Thao tác</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -218,10 +218,10 @@ const StudentExamHistoryModal: React.FC<StudentExamHistoryModalProps> = ({
                             {getAttemptCorrectAnswers(attempt)}/{getAttemptTotalQuestions(attempt)} câu đúng
                           </div>
                         </td>
-                        <td style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)' }}>
+                        <td style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
                           {formatAttemptDate(attempt.submittedAt)}
                         </td>
-                        <td style={{ textAlign: 'center', fontSize: '0.8125rem', color: 'var(--text-secondary)' }}>
+                        <td style={{ textAlign: 'center', fontSize: '0.8125rem', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
                           {formatDuration(attempt.durationSeconds)}
                         </td>
                         <td style={{ textAlign: 'center', whiteSpace: 'nowrap' }}>
@@ -229,12 +229,12 @@ const StudentExamHistoryModal: React.FC<StudentExamHistoryModalProps> = ({
                             {score.toFixed(1)} / 10
                           </strong>
                         </td>
-                        <td style={{ textAlign: 'center' }}>
+                        <td style={{ textAlign: 'center', whiteSpace: 'nowrap' }}>
                           <Badge variant={isPassed ? 'success' : 'error'}>
                             {isPassed ? 'Đạt' : 'Chưa đạt'}
                           </Badge>
                         </td>
-                        <td style={{ textAlign: 'center' }}>
+                        <td style={{ textAlign: 'center', whiteSpace: 'nowrap' }}>
                           <Button
                             size="sm"
                             variant={isSelected ? 'primary' : 'outline'}
@@ -581,16 +581,16 @@ export const AdminResultsPage: React.FC = () => {
 
       {/* Results Table */}
       <div className="table-container">
-        <table className="data-table">
+        <table className="data-table" style={{ minWidth: '1220px' }}>
           <thead>
             <tr>
-              <th>Học sinh</th>
-              <th>Đề thi</th>
-              <th>Thời gian nộp</th>
-              <th style={{ textAlign: 'center', width: '130px' }}>Thời lượng</th>
-              <th style={{ textAlign: 'center', minWidth: '150px', width: '160px' }}>Điểm số</th>
-              <th style={{ textAlign: 'center', width: '130px' }}>Kết quả</th>
-              <th style={{ textAlign: 'center', width: '120px' }}>Thao tác</th>
+              <th style={{ minWidth: '250px' }}>Học sinh</th>
+              <th style={{ minWidth: '280px' }}>Đề thi</th>
+              <th style={{ minWidth: '180px', whiteSpace: 'nowrap' }}>Thời gian nộp</th>
+              <th style={{ textAlign: 'center', minWidth: '120px' }}>Thời lượng</th>
+              <th style={{ textAlign: 'center', minWidth: '150px' }}>Điểm số</th>
+              <th style={{ textAlign: 'center', minWidth: '120px' }}>Kết quả</th>
+              <th style={{ textAlign: 'center', minWidth: '120px' }}>Thao tác</th>
             </tr>
           </thead>
           <tbody>
@@ -613,11 +613,11 @@ export const AdminResultsPage: React.FC = () => {
                 return (
                   <tr key={att.id}>
                     <td>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                         <div
                           style={{
-                            width: '32px',
-                            height: '32px',
+                            width: '36px',
+                            height: '36px',
                             borderRadius: '50%',
                             backgroundColor: 'var(--primary-light)',
                             color: 'var(--primary)',
@@ -626,45 +626,47 @@ export const AdminResultsPage: React.FC = () => {
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
+                            flexShrink: 0,
                           }}
                         >
                           {att.student?.fullName?.charAt(0) || 'H'}
                         </div>
-                        <div>
-                          <strong style={{ fontSize: '0.9375rem', color: 'var(--text-primary)' }}>
+                        <div style={{ minWidth: 0 }}>
+                          <strong style={{ fontSize: '0.9375rem', color: 'var(--text-primary)', display: 'block' }}>
                             {att.student?.fullName || 'Học sinh'}
                           </strong>
-                          <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                          <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '2px' }}>
                             {att.student?.email}
                           </div>
                         </div>
                       </div>
                     </td>
                     <td>
-                      <strong style={{ color: 'var(--text-primary)' }}>
+                      <strong style={{ color: 'var(--text-primary)', display: 'block', lineHeight: 1.4 }}>
                         {att.exam?.title || 'Đề thi trắc nghiệm'}
                       </strong>
-                      <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '2px' }}>
                         Môn: {att.exam?.subject?.name || 'Chung'}
                       </div>
                     </td>
-                    <td>
+                    <td style={{ whiteSpace: 'nowrap' }}>
                       <span
                         style={{
-                          display: 'flex',
+                          display: 'inline-flex',
                           alignItems: 'center',
-                          gap: '4px',
+                          gap: '6px',
                           fontSize: '0.8125rem',
                           color: 'var(--text-secondary)',
+                          whiteSpace: 'nowrap',
                         }}
                       >
-                        <Calendar size={13} />
+                        <Calendar size={14} />
                         {att.submittedAt
                           ? new Date(att.submittedAt).toLocaleString('vi-VN')
                           : '-'}
                       </span>
                     </td>
-                    <td style={{ textAlign: 'center' }}>
+                    <td style={{ textAlign: 'center', whiteSpace: 'nowrap' }}>
                       <span
                         style={{
                           display: 'inline-flex',
@@ -680,7 +682,7 @@ export const AdminResultsPage: React.FC = () => {
                           : '-'}
                       </span>
                     </td>
-                    <td style={{ textAlign: 'center', minWidth: '150px', whiteSpace: 'nowrap' }}>
+                    <td style={{ textAlign: 'center', whiteSpace: 'nowrap' }}>
                       <div style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'center' }}>
                         <strong
                           style={{
@@ -697,12 +699,12 @@ export const AdminResultsPage: React.FC = () => {
                         </div>
                       </div>
                     </td>
-                    <td style={{ textAlign: 'center' }}>
+                    <td style={{ textAlign: 'center', whiteSpace: 'nowrap' }}>
                       <Badge variant={isPassed ? 'success' : 'error'}>
                         {isPassed ? 'Đạt' : 'Chưa đạt'}
                       </Badge>
                     </td>
-                    <td style={{ textAlign: 'center' }}>
+                    <td style={{ textAlign: 'center', whiteSpace: 'nowrap' }}>
                       <Button
                         size="sm"
                         variant="outline"

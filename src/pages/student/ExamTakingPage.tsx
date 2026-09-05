@@ -83,12 +83,14 @@ export const ExamTakingPage: React.FC = () => {
       setAnswers(prefilled);
     } catch (err: any) {
       const apiMessage = getApiErrorMessage(err, 'Không thể bắt đầu làm bài.');
-      if (
-        err?.response?.status === 403 &&
-        !apiMessage.toLowerCase().includes('overdue') &&
-        !apiMessage.toLowerCase().includes('quá hạn')
-      ) {
+      const apiCode = err?.response?.data?.code;
+      if (err?.response?.status === 403 && apiCode === 'EXAM_REQUIRES_PRO') {
         setShowUpgrade(true);
+        return;
+      }
+      if (err?.response?.status === 403 && apiCode === 'ASSIGNMENT_REQUIRED') {
+        error(apiMessage);
+        navigate('/student/assignments');
         return;
       }
       error(apiMessage);

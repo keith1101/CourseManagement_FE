@@ -14,6 +14,7 @@ import { usersApi } from '../../api/users';
 import { Assignment, Exam, User as UserType } from '../../types';
 import { useToast } from '../../contexts/ToastContext';
 import { getApiErrorMessage } from '../../api/errors';
+import { isProActive } from '../../utils/access';
 
 const statusToneMap: Record<Assignment['status'], StatusTone> = {
   PENDING: 'info',
@@ -81,9 +82,37 @@ export const AssignmentsPage: React.FC = () => {
     [assignments, selectedExamId]
   );
 
+  const activeFreeExamIdsByStudent = useMemo(() => {
+    const byStudent = new Map<string, Set<string>>();
+    assignments.forEach((assignment) => {
+      if (
+        assignment.deletedAt ||
+        assignment.exam?.status !== 'PUBLISHED' ||
+        assignment.exam.accessLevel !== 'FREE'
+      ) {
+        return;
+      }
+      const examIds = byStudent.get(assignment.studentId) || new Set<string>();
+      examIds.add(assignment.examId);
+      byStudent.set(assignment.studentId, examIds);
+    });
+    return byStudent;
+  }, [assignments]);
+
+  const selectedExam = exams.find((exam) => exam.id === selectedExamId);
+
   const availableStudents = useMemo(
-    () => students.filter((student) => !assignedStudentIdsForExam.has(student.id)),
-    [assignedStudentIdsForExam, students]
+    () =>
+      students.filter((student) => {
+        if (student.status !== 'ACTIVE' || assignedStudentIdsForExam.has(student.id)) {
+          return false;
+        }
+        if (!selectedExam) return true;
+        if (selectedExam.accessLevel === 'PRO') return isProActive(student);
+        if (isProActive(student)) return true;
+        return (activeFreeExamIdsByStudent.get(student.id)?.size || 0) < 2;
+      }),
+    [activeFreeExamIdsByStudent, assignedStudentIdsForExam, selectedExam, students]
   );
 
   const filteredModalStudents = useMemo(() => {
@@ -95,14 +124,15 @@ export const AssignmentsPage: React.FC = () => {
   }, [availableStudents, studentSearch]);
 
   useEffect(() => {
+    const availableStudentIds = new Set(availableStudents.map((student) => student.id));
     setSelectedStudentIds((previous) => {
-      const next = previous.filter((id) => !assignedStudentIdsForExam.has(id));
+      const next = previous.filter((id) => availableStudentIds.has(id));
       return next.length === previous.length ? previous : next;
     });
-  }, [assignedStudentIdsForExam]);
+  }, [availableStudents]);
 
   const handleToggleSelectStudent = (id: string) => {
-    if (assignedStudentIdsForExam.has(id)) return;
+    if (!availableStudents.some((student) => student.id === id)) return;
     setSelectedStudentIds((prev) =>
       prev.includes(id) ? prev.filter((sId) => sId !== id) : [...prev, id]
     );
@@ -132,13 +162,24 @@ export const AssignmentsPage: React.FC = () => {
 
     setIsSubmitting(true);
     try {
-      const created = await assignmentsApi.createAssignment({
+      const result = await assignmentsApi.createAssignment({
         examId: selectedExamId,
         studentIds: eligibleStudentIds,
         dueDate: dueDate ? new Date(dueDate).toISOString() : undefined,
       });
-      setAssignments((prev) => [...created, ...prev]);
-      success(`Đã giao bài thi thành công cho ${created.length} học sinh!`);
+      setAssignments((prev) => [...result.created, ...prev]);
+      if (result.failed.length > 0) {
+        const failedNames = result.failed
+          .map((failure) => students.find((student) => student.id === failure.studentId)?.fullName || failure.studentId)
+          .join(', ');
+        error(
+          result.created.length > 0
+            ? `Đã giao cho ${result.created.length} học sinh. Không thể giao cho: ${failedNames}.`
+            : `Không thể giao bài cho: ${failedNames}.`,
+        );
+      } else {
+        success(`Đã giao bài thi thành công cho ${result.created.length} học sinh!`);
+      }
       setIsModalOpen(false);
       setSelectedStudentIds([]);
       setDueDate('');

@@ -1,5 +1,5 @@
 import { apiClient } from './client';
-import { User, UserRole, UserStatus, UserTier } from '../types';
+import { AccessLevel, User, UserRole, UserStatus } from '../types';
 import { mapUser } from './mappers';
 
 const toPayload = (data: Partial<User>) => ({
@@ -9,7 +9,7 @@ const toPayload = (data: Partial<User>) => ({
   dateOfBirth: data.dateOfBirth,
   role: data.role,
   isActive: data.status ? data.status === 'ACTIVE' : undefined,
-  accessLevel: data.tier,
+  accessLevel: data.accessLevel,
   proExpiresAt: data.proExpiresAt,
 });
 
@@ -36,11 +36,11 @@ export const usersApi = {
     return mapUser(res.data);
   },
 
-  setUserRoleTier: async (id: string, role: UserRole, tier: UserTier, proExpiresAt?: string | null): Promise<User> => {
+  setUserAccessLevel: async (id: string, role: UserRole, accessLevel: AccessLevel, proExpiresAt?: string | null): Promise<User> => {
     const res = await apiClient.patch<any>(`/users/${id}`, {
       role,
-      accessLevel: tier,
-      proExpiresAt: tier === 'PRO' ? proExpiresAt || null : null,
+      accessLevel,
+      proExpiresAt: accessLevel === 'PRO' ? proExpiresAt || null : null,
     });
     return mapUser(res.data);
   },

@@ -9,6 +9,7 @@ import {
   MOCK_ATTEMPTS,
 } from './mockData';
 import { Exam, Question, Subject, Material, Assignment, User, ExamAttempt } from '../types';
+import { isProActive } from '../utils/access';
 
 const nowIso = () => new Date().toISOString();
 
@@ -87,7 +88,7 @@ export const setupMockAdapter = (client: AxiosInstance) => {
         email,
         fullName: email.includes('admin') ? 'Quản Trị Viên (Mock)' : 'Học Sinh (Mock)',
         role: email.includes('admin') ? ('ADMIN' as const) : ('STUDENT' as const),
-        tier: 'PRO' as const,
+        accessLevel: 'PRO' as const,
         status: 'ACTIVE' as const,
         createdAt: nowIso(),
         updatedAt: nowIso(),
@@ -108,7 +109,7 @@ export const setupMockAdapter = (client: AxiosInstance) => {
         fullName: data.fullName,
         phoneNumber: data.phone,
         role: 'STUDENT',
-        tier: 'FREE',
+        accessLevel: 'FREE',
         status: 'ACTIVE',
         createdAt: nowIso(),
         updatedAt: nowIso(),
@@ -184,7 +185,27 @@ export const setupMockAdapter = (client: AxiosInstance) => {
     // 3. Exams routes
     if (url === '/exams' || url.startsWith('/exams?')) {
       if (method === 'get') {
-        return Promise.reject({ isMock: true, mockResponse: mockResponse(examsState) });
+        const savedUser = localStorage.getItem('user_info');
+        const currentUser = savedUser
+          ? usersState.find((user) => user.id === JSON.parse(savedUser).id)
+          : undefined;
+        const visibleExams =
+          currentUser?.role === 'ADMIN'
+            ? examsState
+            : examsState.filter((exam) => {
+                if (exam.status !== 'PUBLISHED') return false;
+                if (isProActive(currentUser)) return true;
+                return (
+                  exam.accessLevel === 'FREE' &&
+                  assignmentsState.some(
+                    (assignment) =>
+                      assignment.studentId === currentUser?.id &&
+                      assignment.examId === exam.id &&
+                      !assignment.deletedAt,
+                  )
+                );
+              });
+        return Promise.reject({ isMock: true, mockResponse: mockResponse(visibleExams) });
       }
       if (method === 'post') {
         const newExam: Exam = {
@@ -211,6 +232,26 @@ export const setupMockAdapter = (client: AxiosInstance) => {
     if (url.startsWith('/exams/') && method === 'get' && !url.includes('/questions')) {
       const id = url.split('/')[2];
       const exam = examsState.find((e) => e.id === id) || examsState[0];
+      const savedUser = localStorage.getItem('user_info');
+      const currentUser = savedUser
+        ? usersState.find((user) => user.id === JSON.parse(savedUser).id)
+        : undefined;
+      const hasAssignment = assignmentsState.some(
+        (assignment) =>
+          assignment.studentId === currentUser?.id &&
+          assignment.examId === id &&
+          !assignment.deletedAt,
+      );
+      if (
+        currentUser?.role === 'STUDENT' &&
+        (!exam || exam.status !== 'PUBLISHED' ||
+          (!isProActive(currentUser) && (exam.accessLevel !== 'FREE' || !hasAssignment)))
+      ) {
+        return Promise.reject({
+          isMock: true,
+          mockResponse: mockResponse({ message: 'Exam not found' }, 404),
+        });
+      }
       return Promise.reject({ isMock: true, mockResponse: mockResponse(exam) });
     }
 
@@ -290,11 +331,62 @@ export const setupMockAdapter = (client: AxiosInstance) => {
     // 5. Assignments routes
     if (url === '/assignments' || url.startsWith('/assignments?')) {
       if (method === 'get') {
-        return Promise.reject({ isMock: true, mockResponse: mockResponse(assignmentsState) });
+        const activeAssignments = assignmentsState.filter(
+          (assignment) =>
+            !assignment.deletedAt &&
+            examsState.some(
+              (exam) => exam.id === assignment.examId && exam.status === 'PUBLISHED',
+            ),
+        );
+        return Promise.reject({ isMock: true, mockResponse: mockResponse(activeAssignments) });
       }
       if (method === 'post') {
         const exam = examsState.find((e) => e.id === data.examId) || examsState[0];
         const student = usersState.find((u) => u.id === data.userId) || usersState[1];
+        if (!exam || exam.status !== 'PUBLISHED') {
+          return Promise.reject({
+            isMock: true,
+            mockResponse: mockResponse({ message: 'Published exam not found' }, 404),
+          });
+        }
+        if (!isProActive(student) && exam.accessLevel !== 'FREE') {
+          return Promise.reject({
+            isMock: true,
+            mockResponse: mockResponse({ message: 'Tài khoản miễn phí chỉ được nhận đề thi FREE.' }, 403),
+          });
+        }
+        const activeExamIds = new Set(
+          assignmentsState
+            .filter(
+              (assignment) =>
+                assignment.studentId === data.userId &&
+                !assignment.deletedAt &&
+                examsState.find((exam) => exam.id === assignment.examId)?.status === 'PUBLISHED' &&
+                examsState.find((exam) => exam.id === assignment.examId)?.accessLevel === 'FREE',
+            )
+            .map((assignment) => assignment.examId),
+        );
+        if (activeExamIds.has(data.examId)) {
+          return Promise.reject({
+            isMock: true,
+            mockResponse: mockResponse(
+              { message: 'Assignment already exists for this student and exam' },
+              409,
+            ),
+          });
+        }
+        if (!isProActive(student) && activeExamIds.size >= 2) {
+          return Promise.reject({
+            isMock: true,
+            mockResponse: mockResponse(
+              {
+                code: 'FREE_EXAM_LIMIT_REACHED',
+                message: 'Tài khoản miễn phí chỉ được nhận tối đa 2 đề thi đang hoạt động.',
+              },
+              409,
+            ),
+          });
+        }
         const newAssignment: Assignment = {
           id: `assign-${Date.now()}-${Math.random().toString(36).substring(7)}`,
           examId: data.examId,
@@ -313,7 +405,9 @@ export const setupMockAdapter = (client: AxiosInstance) => {
 
     if (url.startsWith('/assignments/') && method === 'delete') {
       const id = url.split('/')[2];
-      assignmentsState = assignmentsState.filter((a) => a.id !== id);
+      assignmentsState = assignmentsState.map((assignment) =>
+        assignment.id === id ? { ...assignment, deletedAt: nowIso() } : assignment,
+      );
       return Promise.reject({ isMock: true, mockResponse: mockResponse({ success: true }) });
     }
 
@@ -407,13 +501,57 @@ export const setupMockAdapter = (client: AxiosInstance) => {
     // 8. Exam Attempts routes
     if (url === '/exam-attempts/my-attempts' || url === '/attempts/my-attempts' || url.includes('/attempts')) {
       if (url.includes('/start') || (url.includes('/exam-attempts') && method === 'post')) {
-        const examId = data.examId || 'exam-1';
+        const examId = data.examId || url.match(/^\/exams\/([^/]+)\/attempts/)?.[1] || 'exam-1';
         const exam = examsState.find((e) => e.id === examId) || examsState[0];
+        const savedUser = localStorage.getItem('user_info');
+        const currentUser = savedUser
+          ? usersState.find((user) => user.id === JSON.parse(savedUser).id) || usersState[1]
+          : usersState[1];
+        const activeAssignment = assignmentsState.find(
+          (assignment) =>
+            assignment.id === data.assignmentId &&
+            !assignment.deletedAt &&
+            assignment.studentId === currentUser?.id &&
+            assignment.examId === examId,
+        );
+        if (!exam || exam.status !== 'PUBLISHED') {
+          return Promise.reject({
+            isMock: true,
+            mockResponse: mockResponse({ message: 'Exam not found' }, 404),
+          });
+        }
+        if (exam.accessLevel === 'PRO' && !isProActive(currentUser)) {
+          return Promise.reject({
+            isMock: true,
+            mockResponse: mockResponse(
+              { code: 'EXAM_REQUIRES_PRO', message: 'Nội dung này yêu cầu tài khoản PRO.' },
+              403,
+            ),
+          });
+        }
+        if (!isProActive(currentUser) && !activeAssignment) {
+          return Promise.reject({
+            isMock: true,
+            mockResponse: mockResponse(
+              {
+                code: 'ASSIGNMENT_REQUIRED',
+                message: 'Tài khoản miễn phí chỉ được làm đề thi đã được giao.',
+              },
+              403,
+            ),
+          });
+        }
+        if (activeAssignment && new Date(activeAssignment.dueDate).getTime() < Date.now()) {
+          return Promise.reject({
+            isMock: true,
+            mockResponse: mockResponse({ message: 'Assignment is overdue' }, 403),
+          });
+        }
         const questions = questionsState[examId] || questionsState['exam-1'] || [];
         const newAttempt: ExamAttempt = {
           id: `attempt-${Date.now()}`,
           examId,
-          studentId: 'user-student-1',
+          studentId: currentUser?.id || 'user-student-1',
           assignmentId: data.assignmentId,
           exam,
           questions,

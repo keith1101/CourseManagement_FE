@@ -166,7 +166,7 @@ export const StudentLayout: React.FC = () => {
                 {user?.fullName || 'Học sinh'}
               </div>
               <div style={{ fontSize: '0.75rem', color: 'rgba(255, 255, 255, 0.65)' }}>
-                {isProActive(user) ? '⭐ Gói PRO' : user?.tier === 'PRO' ? 'PRO hết hạn' : 'Gói Miễn phí'}
+                {isProActive(user) ? '⭐ Gói PRO' : user?.accessLevel === 'PRO' ? 'PRO hết hạn' : 'Gói Miễn phí'}
               </div>
             </div>
           </div>

@@ -1,6 +1,12 @@
 import { apiClient } from './client';
 import { Assignment } from '../types';
 import { mapAssignment } from './mappers';
+import { getApiErrorMessage } from './errors';
+
+export interface AssignmentBatchResult {
+  created: Assignment[];
+  failed: Array<{ studentId: string; message: string }>;
+}
 
 export const assignmentsApi = {
   getAssignments: async (): Promise<Assignment[]> => {
@@ -13,17 +19,31 @@ export const assignmentsApi = {
     return res.data.map(mapAssignment);
   },
 
-  createAssignment: async (data: { examId: string; studentIds: string[]; dueDate?: string }): Promise<Assignment[]> => {
+  createAssignment: async (data: { examId: string; studentIds: string[]; dueDate?: string }): Promise<AssignmentBatchResult> => {
     const payloadBase: { examId: string; dueAt?: string } = { examId: data.examId };
     if (data.dueDate && data.dueDate.trim() !== '') {
       payloadBase.dueAt = data.dueDate;
     }
-    const created = await Promise.all(
+    const results = await Promise.allSettled(
       data.studentIds.map((userId) =>
         apiClient.post<any>('/assignments', { userId, ...payloadBase }),
       ),
     );
-    return created.map((res) => mapAssignment(res.data));
+    return results.reduce<AssignmentBatchResult>(
+      (result, item, index) => {
+        const studentId = data.studentIds[index];
+        if (item.status === 'fulfilled') {
+          result.created.push(mapAssignment(item.value.data));
+        } else {
+          result.failed.push({
+            studentId,
+            message: getApiErrorMessage(item.reason, 'Không thể giao bài cho học sinh này.'),
+          });
+        }
+        return result;
+      },
+      { created: [], failed: [] },
+    );
   },
 
   updateAssignment: async (id: string, dueDate?: string | null): Promise<Assignment> => {

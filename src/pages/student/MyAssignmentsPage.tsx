@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Calendar, CheckCircle2, Clock, PlayCircle, Search, FileText } from 'lucide-react';
+import { Calendar, CheckCircle2, Clock, Lock, PlayCircle, Search, FileText } from 'lucide-react';
 import { Card } from '../../components/common/Card';
 import { Button } from '../../components/common/Button';
 import { Badge } from '../../components/common/Badge';
@@ -12,6 +12,9 @@ import { assignmentsApi } from '../../api/assignments';
 import { Assignment } from '../../types';
 import { useToast } from '../../contexts/ToastContext';
 import { getApiErrorMessage } from '../../api/errors';
+import { canStartExam } from '../../utils/access';
+import { useAuth } from '../../contexts/AuthContext';
+import { UpgradeModal } from '../../components/common/UpgradeModal';
 
 const statusToneMap: Record<Assignment['status'], StatusTone> = {
   PENDING: 'info',
@@ -29,11 +32,13 @@ const statusLabel: Record<Assignment['status'], string> = {
 
 export const MyAssignmentsPage: React.FC = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { error } = useToast();
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
+  const [lockedAssignment, setLockedAssignment] = useState<Assignment | null>(null);
 
   useEffect(() => {
     assignmentsApi
@@ -141,9 +146,12 @@ export const MyAssignmentsPage: React.FC = () => {
             const overdue = assignment.status === 'OVERDUE';
             const completed = assignment.status === 'COMPLETED';
             const inProgress = assignment.status === 'IN_PROGRESS';
-            const canOpen = !overdue;
+            const canAccess = !!assignment.exam && canStartExam(user, assignment.exam, assignment);
             const completedAttempt = assignment.examAttempts?.find(
               (attempt) => attempt.status === 'COMPLETED'
+            );
+            const inProgressAttempt = assignment.examAttempts?.find(
+              (attempt) => attempt.status === 'IN_PROGRESS'
             );
 
             return (
@@ -186,8 +194,9 @@ export const MyAssignmentsPage: React.FC = () => {
                 </div>
 
                 <div>
-                  <div style={{ marginBottom: '6px' }}>
+                  <div style={{ display: 'flex', gap: '6px', marginBottom: '6px', flexWrap: 'wrap' }}>
                     <Badge variant="neutral">{assignment.exam?.subject?.name || 'Môn học'}</Badge>
+                    {assignment.exam?.accessLevel === 'PRO' && <Badge variant="premium">PRO</Badge>}
                   </div>
                   <h3
                     style={{
@@ -261,18 +270,32 @@ export const MyAssignmentsPage: React.FC = () => {
                   ) : (
                     <Button
                       variant={inProgress ? 'primary' : 'primary'}
-                      disabled={!canOpen}
+                      disabled={overdue}
                       style={{ width: '100%' }}
-                      onClick={() =>
+                      onClick={() => {
+                        if (inProgressAttempt?.id) {
+                          navigate(`/student/attempts/${inProgressAttempt.id}/take`);
+                          return;
+                        }
+                        if (!canAccess) {
+                          setLockedAssignment(assignment);
+                          return;
+                        }
                         navigate(
                           `/student/exams/${assignment.examId}/take?assignmentId=${encodeURIComponent(
                             assignment.id
                           )}`
-                        )
-                      }
-                      leftIcon={<PlayCircle size={16} />}
+                        );
+                      }}
+                      leftIcon={canAccess || inProgressAttempt ? <PlayCircle size={16} /> : <Lock size={16} />}
                     >
-                      {inProgress ? 'Tiếp tục làm bài' : overdue ? 'Đã quá hạn' : 'Bắt đầu làm bài'}
+                      {inProgress
+                        ? 'Tiếp tục làm bài'
+                        : overdue
+                        ? 'Đã quá hạn'
+                        : canAccess
+                        ? 'Bắt đầu làm bài'
+                        : 'Nâng cấp để làm bài'}
                     </Button>
                   )}
                 </div>
@@ -281,6 +304,12 @@ export const MyAssignmentsPage: React.FC = () => {
           })}
         </div>
       )}
+
+      <UpgradeModal
+        isOpen={!!lockedAssignment}
+        onClose={() => setLockedAssignment(null)}
+        title="Bài thi dành riêng cho tài khoản PRO"
+      />
     </div>
   );
 };

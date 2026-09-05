@@ -9,6 +9,7 @@ import {
   Calendar,
   Clock,
   BookOpen,
+  Lock,
 } from 'lucide-react';
 import { Card } from '../../components/common/Card';
 import { Button } from '../../components/common/Button';
@@ -21,6 +22,8 @@ import { attemptsApi } from '../../api/attempts';
 import { Assignment, ExamAttempt } from '../../types';
 import { useToast } from '../../contexts/ToastContext';
 import { getApiErrorMessage } from '../../api/errors';
+import { canStartExam } from '../../utils/access';
+import { UpgradeModal } from '../../components/common/UpgradeModal';
 
 export const StudentDashboardPage: React.FC = () => {
   const { user } = useAuth();
@@ -30,6 +33,7 @@ export const StudentDashboardPage: React.FC = () => {
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [attempts, setAttempts] = useState<ExamAttempt[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [lockedAssignment, setLockedAssignment] = useState<Assignment | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -190,10 +194,18 @@ export const StudentDashboardPage: React.FC = () => {
           />
         ) : (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(320px, 100%), 1fr))', gap: '20px' }}>
-            {pendingAssignments.slice(0, 3).map((assign) => (
+            {pendingAssignments.slice(0, 3).map((assign) => {
+              const canAccess = !!assign.exam && canStartExam(user, assign.exam, assign);
+              const inProgressAttempt = assign.examAttempts?.find(
+                (attempt) => attempt.status === 'IN_PROGRESS',
+              );
+              return (
               <Card key={assign.id} interactive style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <Badge variant="primary">{assign.exam?.subject?.name || 'Môn học'}</Badge>
+                  <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                    <Badge variant="primary">{assign.exam?.subject?.name || 'Môn học'}</Badge>
+                    {assign.exam?.accessLevel === 'PRO' && <Badge variant="premium">PRO</Badge>}
+                  </div>
                   <span style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
                     <Calendar size={13} /> Hạn: {assign.dueDate ? new Date(assign.dueDate).toLocaleDateString('vi-VN') : 'Không giới hạn'}
                   </span>
@@ -214,14 +226,25 @@ export const StudentDashboardPage: React.FC = () => {
 
                 <Button
                   variant="primary"
-                  onClick={() => navigate(`/student/exams/${assign.examId}/take?assignmentId=${encodeURIComponent(assign.id)}`)}
-                  leftIcon={<PlayCircle size={16} />}
+                  onClick={() => {
+                    if (inProgressAttempt?.id) {
+                      navigate(`/student/attempts/${inProgressAttempt.id}/take`);
+                      return;
+                    }
+                    if (!canAccess) {
+                      setLockedAssignment(assign);
+                      return;
+                    }
+                    navigate(`/student/exams/${assign.examId}/take?assignmentId=${encodeURIComponent(assign.id)}`);
+                  }}
+                  leftIcon={canAccess || inProgressAttempt ? <PlayCircle size={16} /> : <Lock size={16} />}
                   style={{ width: '100%', marginTop: 'auto' }}
                 >
-                  Bắt đầu làm bài
+                  {inProgressAttempt ? 'Tiếp tục làm bài' : canAccess ? 'Bắt đầu làm bài' : 'Nâng cấp để làm bài'}
                 </Button>
               </Card>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
@@ -281,6 +304,12 @@ export const StudentDashboardPage: React.FC = () => {
           </div>
         </div>
       )}
+
+      <UpgradeModal
+        isOpen={!!lockedAssignment}
+        onClose={() => setLockedAssignment(null)}
+        title="Bài thi dành riêng cho tài khoản PRO"
+      />
     </div>
   );
 };

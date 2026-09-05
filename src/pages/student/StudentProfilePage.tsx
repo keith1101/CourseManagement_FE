@@ -118,7 +118,7 @@ export const StudentProfilePage: React.FC = () => {
               <Badge variant="premium" icon={<Sparkles size={13} />}>
                 Gói PRO
               </Badge>
-            ) : user?.tier === 'PRO' ? (
+            ) : user?.accessLevel === 'PRO' ? (
               <Badge variant="error">PRO đã hết hạn</Badge>
             ) : (
               <Badge variant="neutral">Gói Miễn phí</Badge>

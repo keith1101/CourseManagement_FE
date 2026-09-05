@@ -7,7 +7,7 @@ import { LoadingSpinner } from '../../components/common/LoadingSpinner';
 import { PageHeader } from '../../components/common/PageHeader';
 import { EmptyState } from '../../components/common/EmptyState';
 import { usersApi } from '../../api/users';
-import { User, UserRole, UserStatus, UserTier } from '../../types';
+import { AccessLevel, User, UserRole, UserStatus } from '../../types';
 import { useToast } from '../../contexts/ToastContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { getApiErrorMessage } from '../../api/errors';
@@ -20,11 +20,12 @@ export const UsersManagementPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [roleFilter, setRoleFilter] = useState<string>('ALL');
+  const [accessLevelFilter, setAccessLevelFilter] = useState<string>('ALL');
 
   // Edit user modal
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [targetRole, setTargetRole] = useState<UserRole>('STUDENT');
-  const [targetTier, setTargetTier] = useState<UserTier>('FREE');
+  const [targetAccessLevel, setTargetAccessLevel] = useState<AccessLevel>('FREE');
   const [targetProExpiresAt, setTargetProExpiresAt] = useState('');
   const [isSaving, setIsSaving] = useState<boolean>(false);
 
@@ -82,7 +83,7 @@ export const UsersManagementPage: React.FC = () => {
 
     setSelectedUser(u);
     setTargetRole(u.role);
-    setTargetTier(u.tier || 'FREE');
+    setTargetAccessLevel(u.accessLevel || 'FREE');
     setTargetProExpiresAt(u.proExpiresAt ? u.proExpiresAt.slice(0, 10) : '');
   };
 
@@ -92,11 +93,11 @@ export const UsersManagementPage: React.FC = () => {
 
     setIsSaving(true);
     try {
-      const updated = await usersApi.setUserRoleTier(
+      const updated = await usersApi.setUserAccessLevel(
         selectedUser.id,
         targetRole,
-        targetTier,
-        targetProExpiresAt ? new Date(`${targetProExpiresAt}T23:59:59`).toISOString() : null
+        targetAccessLevel,
+        targetProExpiresAt ? new Date(`${targetProExpiresAt}T23:59:59`).toISOString() : null,
       );
       setUsers((prev) =>
         prev.map((user) => (user.id === selectedUser.id ? updated : user))
@@ -162,7 +163,8 @@ export const UsersManagementPage: React.FC = () => {
       u.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (u.phoneNumber || '').toLowerCase().includes(searchTerm.toLowerCase());
     const matchRole = roleFilter === 'ALL' || u.role === roleFilter;
-    return matchSearch && matchRole;
+    const matchAccessLevel = accessLevelFilter === 'ALL' || u.accessLevel === accessLevelFilter;
+    return matchSearch && matchRole && matchAccessLevel;
   });
 
   if (isLoading) {
@@ -212,6 +214,17 @@ export const UsersManagementPage: React.FC = () => {
           <option value="ALL">Tất cả vai trò</option>
           <option value="STUDENT">Học sinh</option>
           <option value="ADMIN">Quản trị viên</option>
+        </select>
+
+        <select
+          value={accessLevelFilter}
+          onChange={(e) => setAccessLevelFilter(e.target.value)}
+          className="input-field"
+          style={{ minWidth: '200px', width: 'auto', height: '46px', minHeight: '46px', cursor: 'pointer' }}
+        >
+          <option value="ALL">Tất cả gói</option>
+          <option value="FREE">Gói Miễn phí</option>
+          <option value="PRO">Gói PRO</option>
         </select>
       </div>
 
@@ -284,8 +297,8 @@ export const UsersManagementPage: React.FC = () => {
                     </Badge>
                   </td>
                   <td style={{ textAlign: 'center' }}>
-                    <Badge variant={u.tier === 'PRO' ? 'premium' : 'neutral'}>
-                      {u.tier === 'PRO' ? '⭐ Gói PRO' : 'Miễn phí'}
+                    <Badge variant={u.accessLevel === 'PRO' ? 'premium' : 'neutral'}>
+                      {u.accessLevel === 'PRO' ? '⭐ Gói PRO' : 'Miễn phí'}
                     </Badge>
                   </td>
                   <td style={{ textAlign: 'center' }}>
@@ -396,15 +409,15 @@ export const UsersManagementPage: React.FC = () => {
             <label className="form-label">Gói thành viên</label>
             <select
               className="input-field"
-              value={targetTier}
-              onChange={(e) => setTargetTier(e.target.value as UserTier)}
+              value={targetAccessLevel}
+              onChange={(e) => setTargetAccessLevel(e.target.value as AccessLevel)}
             >
               <option value="FREE">Gói Miễn phí (FREE)</option>
               <option value="PRO">Gói Cao cấp (PRO)</option>
             </select>
           </div>
 
-          {targetTier === 'PRO' && (
+          {targetAccessLevel === 'PRO' && (
             <div className="form-group">
               <label className="form-label">Hạn dùng PRO (Tùy chọn)</label>
               <input

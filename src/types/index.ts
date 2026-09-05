@@ -1,13 +1,13 @@
 export type UserRole = 'ADMIN' | 'STUDENT';
-export type UserTier = 'FREE' | 'PRO';
 export type UserStatus = 'ACTIVE' | 'LOCKED';
+export type AccessLevel = 'FREE' | 'PRO';
 
 export interface User {
   id: string;
   email: string;
   fullName: string;
   role: UserRole;
-  tier: UserTier;
+  accessLevel: AccessLevel;
   status: UserStatus;
   phoneNumber?: string;
   dateOfBirth?: string;
@@ -86,7 +86,6 @@ export interface Question {
 }
 
 export type ExamStatus = 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
-export type AccessLevel = 'FREE' | 'PRO';
 
 export interface Exam {
   id: string;
@@ -116,6 +115,7 @@ export interface Assignment {
   studentId: string;
   student?: User;
   dueDate: string;
+  deletedAt?: string | null;
   status: AssignmentStatus;
   createdAt: string;
   updatedAt: string;

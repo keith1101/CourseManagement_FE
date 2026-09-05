@@ -13,7 +13,7 @@ const imageReference = (imageUrl?: string, storageUri?: string) =>
   storageUri || imageUrl || undefined;
 
 const toPayload = (data: Partial<Question>) => {
-  const isShortAnswer = data.type === 'FILL_BLANK' || data.type === 'ESSAY';
+  const isShortAnswer = data.type === 'ESSAY';
 
   return {
   subjectId: data.subjectId,

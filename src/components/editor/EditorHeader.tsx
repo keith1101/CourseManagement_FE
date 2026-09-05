@@ -186,9 +186,6 @@ export const EditorHeader: React.FC<EditorHeaderProps> = ({
             <option value="ESSAY" style={{ color: '#202938' }}>
               Tự luận
             </option>
-            <option value="FILL_BLANK" style={{ color: '#202938' }}>
-              Điền vào chỗ trống
-            </option>
           </select>
         </div>
       </div>

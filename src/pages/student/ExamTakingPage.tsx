@@ -156,11 +156,11 @@ export const ExamTakingPage: React.FC = () => {
             : value,
         rawValue: value || undefined,
         answerType:
-          question.type === 'FILL_BLANK' && /^-?\d+(\.\d+)?$/.test(value.trim())
+          question.type === 'ESSAY' && /^-?\d+(\.\d+)?$/.test(value.trim())
             ? 'NUMBER'
             : 'TEXT',
         numericValue:
-          question.type === 'FILL_BLANK' && /^-?\d+(\.\d+)?$/.test(value.trim())
+          question.type === 'ESSAY' && /^-?\d+(\.\d+)?$/.test(value.trim())
             ? Number(value)
             : undefined,
         timedOut,

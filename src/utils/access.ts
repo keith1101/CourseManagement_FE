@@ -1,7 +1,7 @@
 import { Assignment, Exam, Material, User } from '../types';
 
 export const isProActive = (user: User | null | undefined) => {
-  if (!user || user.accessLevel !== 'PRO') return false;
+  if (!user || user.accessLevel !== 'PRO' || user.status === 'LOCKED') return false;
   return !user.proExpiresAt || new Date(user.proExpiresAt).getTime() > Date.now();
 };
 

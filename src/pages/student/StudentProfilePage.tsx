@@ -10,6 +10,7 @@ import { authApi } from '../../api/auth';
 import { useToast } from '../../contexts/ToastContext';
 import { getApiErrorMessage } from '../../api/errors';
 import { isProActive } from '../../utils/access';
+import { formatDate } from '../../utils/date';
 
 export const StudentProfilePage: React.FC = () => {
   const { user, setUser } = useAuth();
@@ -114,7 +115,9 @@ export const StudentProfilePage: React.FC = () => {
             <Badge variant="primary">
               {user?.role === 'ADMIN' ? 'Quản trị viên' : 'Học sinh'}
             </Badge>
-            {isProActive(user) ? (
+            {user?.status === 'LOCKED' ? (
+              <Badge variant="error">Đã khóa</Badge>
+            ) : isProActive(user) ? (
               <Badge variant="premium" icon={<Sparkles size={13} />}>
                 Gói PRO
               </Badge>
@@ -129,9 +132,9 @@ export const StudentProfilePage: React.FC = () => {
             {user?.email}
           </p>
 
-          {user?.proExpiresAt && (
+          {user?.status !== 'LOCKED' && user?.accessLevel === 'PRO' && formatDate(user?.proExpiresAt) && (
             <div style={{ fontSize: '0.8125rem', color: 'var(--secondary)', fontWeight: 600, marginTop: '6px' }}>
-              Thời hạn PRO đến ngày {new Date(user.proExpiresAt).toLocaleDateString('vi-VN')}
+              Thời hạn PRO đến ngày {formatDate(user.proExpiresAt)}
             </div>
           )}
         </div>

@@ -37,15 +37,26 @@ export const mapSubject = (raw: any): Subject => ({
   updatedAt: asIso(raw.updatedAt),
 });
 
-export const mapOption = (raw: any, index: number): AnswerOption => ({
-  id: raw.id,
-  label: raw.label || String.fromCharCode(65 + index),
-  content: raw.contentText ?? raw.content ?? '',
-  isCorrect: raw.isCorrect === true,
-  position: raw.position ?? index,
-  image: raw.imageUrl ?? raw.image,
-  imageStorageUri: raw.imageStorageUri,
-});
+export const mapOption = (raw: any, index: number): AnswerOption => {
+  const isCorrect =
+    typeof raw.isCorrect === 'boolean'
+      ? raw.isCorrect
+      : typeof raw.is_correct === 'boolean'
+      ? raw.is_correct
+      : typeof raw.correct === 'boolean'
+      ? raw.correct
+      : undefined;
+
+  return {
+    id: raw.id != null ? String(raw.id) : undefined,
+    label: raw.label || String.fromCharCode(65 + index),
+    content: raw.contentText ?? raw.content ?? raw.content_text ?? '',
+    isCorrect,
+    position: raw.position ?? index,
+    image: raw.imageUrl ?? raw.image ?? raw.image_url,
+    imageStorageUri: raw.imageStorageUri,
+  };
+};
 
 export const mapQuestion = (raw: any): Question => {
   const type = raw.questionType || raw.type;
@@ -114,42 +125,66 @@ export const mapAssignment = (raw: any): Assignment => ({
   })),
 });
 
-export const mapAnswer = (raw: any): any => ({
-  id: raw.id,
-  attemptId: raw.attemptId,
-  questionId: raw.questionId,
-  selectedOptionId: raw.selectedOptionId,
-  textAnswer: raw.rawValue ?? raw.textAnswer ?? raw.content,
-  rawValue: raw.rawValue,
-  content: raw.content,
-  answerType: raw.answerType,
-  numericValue: raw.numericValue,
-  isCorrect: raw.isCorrect,
-  timedOut: raw.timedOut,
-  correctOptionId: raw.correctOptionId,
-  correctTextAnswer: raw.correctTextAnswer,
-  explanation: raw.explanation,
-  explanationImage: raw.explanationImageUrl ?? raw.explanationImage,
-});
+export const mapAnswer = (raw: any): any => {
+  const isCorrect =
+    typeof raw.isCorrect === 'boolean'
+      ? raw.isCorrect
+      : typeof raw.is_correct === 'boolean'
+      ? raw.is_correct
+      : typeof raw.correct === 'boolean'
+      ? raw.correct
+      : undefined;
+
+  return {
+    id: raw.id != null ? String(raw.id) : undefined,
+    attemptId: raw.attemptId != null ? String(raw.attemptId) : raw.attempt_id != null ? String(raw.attempt_id) : undefined,
+    questionId: String(raw.questionId ?? raw.question_id ?? raw.question?.id ?? ''),
+    selectedOptionId: raw.selectedOptionId != null
+      ? String(raw.selectedOptionId)
+      : raw.selected_option_id != null
+      ? String(raw.selected_option_id)
+      : raw.selectedOption?.id != null
+      ? String(raw.selectedOption.id)
+      : undefined,
+    textAnswer: raw.rawValue ?? raw.textAnswer ?? raw.text_answer ?? raw.content,
+    rawValue: raw.rawValue ?? raw.raw_value,
+    content: raw.content,
+    answerType: raw.answerType ?? raw.answer_type,
+    numericValue: typeof raw.numericValue === 'number' ? raw.numericValue : typeof raw.numeric_value === 'number' ? raw.numeric_value : undefined,
+    isCorrect,
+    score: typeof raw.score === 'number' ? raw.score : typeof raw.points === 'number' ? raw.points : undefined,
+    timedOut: raw.timedOut ?? raw.timed_out,
+    correctOptionId: raw.correctOptionId != null
+      ? String(raw.correctOptionId)
+      : raw.correct_option_id != null
+      ? String(raw.correct_option_id)
+      : raw.correctOption?.id != null
+      ? String(raw.correctOption.id)
+      : undefined,
+    correctTextAnswer: raw.correctTextAnswer ?? raw.correct_text_answer,
+    explanation: raw.explanation ?? raw.question?.explanation ?? raw.explaination,
+    explanationImage: raw.explanationImageUrl ?? raw.explanationImage ?? raw.explanation_image_url ?? raw.question?.explanationImageUrl,
+  };
+};
 
 export const mapAttempt = (raw: any): ExamAttempt => {
-  const totalQuestions = raw.totalQuestions ?? raw.questions?.length ?? 0;
-  const correctAnswers = raw.correctCount ?? raw.correctAnswers;
+  const totalQuestions = raw.totalQuestions ?? raw.total_questions ?? raw.questions?.length ?? 0;
+  const correctAnswers = raw.correctCount ?? raw.correct_count ?? raw.correctAnswers ?? raw.correct_answers;
   return {
-    id: raw.id,
-    examId: raw.examId,
-    assignmentId: raw.assignmentId,
+    id: raw.id != null ? String(raw.id) : '',
+    examId: raw.examId ?? raw.exam_id ?? '',
+    assignmentId: raw.assignmentId ?? raw.assignment_id,
     exam: raw.exam ? mapExam(raw.exam) : undefined,
-    studentId: raw.userId ?? raw.studentId,
+    studentId: raw.userId ?? raw.user_id ?? raw.studentId ?? raw.student_id,
     student: raw.user ? mapUser(raw.user) : raw.student ? mapUser(raw.student) : undefined,
-    startedAt: asIso(raw.startedAt),
-    submittedAt: raw.submittedAt ? asIso(raw.submittedAt) : undefined,
-    durationSeconds: raw.durationSeconds,
+    startedAt: asIso(raw.startedAt ?? raw.started_at),
+    submittedAt: raw.submittedAt || raw.submitted_at ? asIso(raw.submittedAt ?? raw.submitted_at) : undefined,
+    durationSeconds: raw.durationSeconds ?? raw.duration_seconds,
     score: raw.score ?? (typeof correctAnswers === 'number' && totalQuestions ? (correctAnswers / totalQuestions) * 10 : undefined),
     totalQuestions,
     correctAnswers,
     status: raw.status,
-    answers: (raw.attemptedAnswers ?? raw.answers ?? []).map(mapAnswer),
+    answers: (raw.attemptedAnswers ?? raw.attempted_answers ?? raw.answers ?? []).map(mapAnswer),
     questions: (raw.questions ?? raw.attemptedAnswers?.map((a: any) => a.question).filter(Boolean) ?? []).map(mapQuestion),
   };
 };

@@ -564,10 +564,34 @@ export const setupMockAdapter = (client: AxiosInstance) => {
       }
 
       if (url.includes('/save-answer') || url.includes('/answers')) {
+        const attemptId = url.split('/')[2];
         const qId = data.questionId;
         const allQ = Object.values(questionsState).flat();
         const targetQ = allQ.find((q) => q.id === qId);
-        const isCorrect = targetQ?.options.find((o) => o.id === data.selectedOptionId)?.isCorrect ?? true;
+        const selectedOpt = targetQ?.options?.find((o) => o.id === data.selectedOptionId);
+        const isCorrect = selectedOpt ? selectedOpt.isCorrect : true;
+
+        const currentAttempt = attemptsState.find((a) => a.id === attemptId);
+        if (currentAttempt) {
+          if (!currentAttempt.answers) currentAttempt.answers = [];
+          const idx = currentAttempt.answers.findIndex((a) => a.questionId === qId);
+          const savedAnswer = {
+            id: `ans-${Date.now()}`,
+            attemptId,
+            questionId: qId,
+            selectedOptionId: data.selectedOptionId,
+            textAnswer: data.textAnswer ?? data.rawValue,
+            rawValue: data.rawValue ?? data.textAnswer,
+            isCorrect,
+            score: isCorrect ? targetQ?.points || 1 : 0,
+            explanation: targetQ?.explanation || 'Đáp án chính xác.',
+          };
+          if (idx >= 0) {
+            currentAttempt.answers[idx] = savedAnswer;
+          } else {
+            currentAttempt.answers.push(savedAnswer);
+          }
+        }
 
         return Promise.reject({
           isMock: true,
@@ -583,6 +607,17 @@ export const setupMockAdapter = (client: AxiosInstance) => {
       }
 
       if (url.includes('/submit')) {
+        const attemptId = url.split('/')[2];
+        const currentAttempt = attemptsState.find((a) => a.id === attemptId);
+        if (currentAttempt) {
+          currentAttempt.status = 'COMPLETED';
+          currentAttempt.submittedAt = nowIso();
+          const totalQ = currentAttempt.questions?.length || currentAttempt.answers?.length || 1;
+          const correctQ = currentAttempt.answers?.filter((a) => a.isCorrect).length || 0;
+          currentAttempt.totalQuestions = totalQ;
+          currentAttempt.correctAnswers = correctQ;
+          currentAttempt.score = Number(((correctQ / totalQ) * 10).toFixed(1));
+        }
         return Promise.reject({
           isMock: true,
           mockResponse: mockResponse({ success: true, message: 'Đã nộp bài thi thành công' }),

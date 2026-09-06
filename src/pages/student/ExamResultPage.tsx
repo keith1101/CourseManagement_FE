@@ -74,10 +74,12 @@ export const ExamResultPage: React.FC = () => {
   const accuracyPercent = totalQuestions > 0 ? Math.round((correctCount / totalQuestions) * 100) : 0;
 
   // Map student answers
-  const answersMap = new Map();
+  const answersMap = new Map<string, any>();
   if (attempt.answers) {
     attempt.answers.forEach((ans) => {
-      answersMap.set(ans.questionId, ans);
+      if (ans.questionId) {
+        answersMap.set(String(ans.questionId), ans);
+      }
     });
   }
 
@@ -231,18 +233,40 @@ export const ExamResultPage: React.FC = () => {
 
         {attempt.questions && attempt.questions.length > 0 ? (
           attempt.questions.map((q, idx) => {
-            const studentAns = answersMap.get(q.id);
+            const studentAns = answersMap.get(String(q.id));
+            const selectedOptionId = studentAns?.selectedOptionId != null ? String(studentAns.selectedOptionId) : undefined;
             const selectedOpt = q.options?.find(
-              (o) => o.id === studentAns?.selectedOptionId || o.label === studentAns?.selectedOptionId
+              (o) =>
+                (o.id != null && String(o.id) === selectedOptionId) ||
+                (o.label != null && String(o.label) === selectedOptionId)
             );
-            const correctOpt = q.options?.find((o) => o.isCorrect);
-            const isCorrect = studentAns?.isCorrect ?? (selectedOpt?.isCorrect || false);
+            const correctOpt =
+              q.options?.find((o) => o.isCorrect === true) ||
+              (studentAns?.correctOptionId
+                ? q.options?.find((o) => o.id != null && String(o.id) === String(studentAns.correctOptionId))
+                : undefined);
+
+            // Determine grading status from backend data:
+            let isCorrect: boolean | undefined = undefined;
+            if (typeof studentAns?.isCorrect === 'boolean') {
+              isCorrect = studentAns.isCorrect;
+            } else if (typeof selectedOpt?.isCorrect === 'boolean') {
+              isCorrect = selectedOpt.isCorrect;
+            } else if (correctOpt && selectedOpt) {
+              isCorrect = String(selectedOpt.id) === String(correctOpt.id);
+            }
 
             return (
               <Card
                 key={q.id || idx}
                 style={{
-                  borderLeft: `4px solid ${isCorrect ? 'var(--success)' : 'var(--error)'}`,
+                  borderLeft: `4px solid ${
+                    isCorrect === true
+                      ? 'var(--success)'
+                      : isCorrect === false
+                      ? 'var(--error)'
+                      : 'var(--border-color)'
+                  }`,
                   padding: '24px',
                   display: 'flex',
                   flexDirection: 'column',
@@ -262,9 +286,15 @@ export const ExamResultPage: React.FC = () => {
                   <span style={{ fontWeight: 700, fontSize: '0.9375rem', color: 'var(--text-primary)' }}>
                     Câu {idx + 1}: ({q.points} điểm)
                   </span>
-                  <Badge variant={isCorrect ? 'success' : 'error'}>
-                    {isCorrect ? '✓ Chính xác' : '✕ Chưa đúng'}
-                  </Badge>
+                  {isCorrect === true && (
+                    <Badge variant="success">✓ Chính xác</Badge>
+                  )}
+                  {isCorrect === false && (
+                    <Badge variant="error">✕ Chưa đúng</Badge>
+                  )}
+                  {isCorrect === undefined && (
+                    <Badge variant="neutral">Đã ghi nhận</Badge>
+                  )}
                 </div>
 
                 {/* Question text */}
@@ -290,30 +320,62 @@ export const ExamResultPage: React.FC = () => {
                 {q.type === 'SINGLE_CHOICE' || q.type === 'MULTIPLE_CHOICE' ? (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                     {q.options?.map((opt) => {
-                      const isThisSelected = selectedOpt?.label === opt.label || selectedOpt?.id === opt.id;
-                      const isThisCorrect = opt.isCorrect;
+                      const isThisSelected =
+                        (selectedOpt && (selectedOpt.id === opt.id || selectedOpt.label === opt.label)) ||
+                        (selectedOptionId != null &&
+                          (String(opt.id) === selectedOptionId || String(opt.label) === selectedOptionId));
+
+                      const isThisCorrect =
+                        opt.isCorrect === true ||
+                        (correctOpt && String(correctOpt.id) === String(opt.id));
 
                       let itemBg = 'var(--bg-card)';
                       let itemBorder = 'var(--border-color)';
-                      let icon = null;
+                      let icon: React.ReactNode = null;
+                      let selectionLabel: React.ReactNode = null;
 
-                      if (isThisSelected && isThisCorrect) {
+                      if (isThisSelected) {
+                        if (isCorrect === true || isThisCorrect) {
+                          itemBg = 'var(--success-bg)';
+                          itemBorder = 'var(--success)';
+                          icon = <Check size={16} color="var(--success)" strokeWidth={3} />;
+                          selectionLabel = (
+                            <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--success)' }}>
+                              (Bạn đã chọn)
+                            </span>
+                          );
+                        } else if (isCorrect === false) {
+                          itemBg = 'var(--error-bg)';
+                          itemBorder = 'var(--error)';
+                          icon = <X size={16} color="var(--error)" strokeWidth={3} />;
+                          selectionLabel = (
+                            <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--error)' }}>
+                              (Bạn đã chọn)
+                            </span>
+                          );
+                        } else {
+                          itemBg = 'var(--primary-light)';
+                          itemBorder = 'var(--primary)';
+                          selectionLabel = (
+                            <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--primary)' }}>
+                              (Bạn đã chọn)
+                            </span>
+                          );
+                        }
+                      } else if (isThisCorrect) {
                         itemBg = 'var(--success-bg)';
                         itemBorder = 'var(--success)';
                         icon = <Check size={16} color="var(--success)" strokeWidth={3} />;
-                      } else if (isThisSelected && !isThisCorrect) {
-                        itemBg = 'var(--error-bg)';
-                        itemBorder = 'var(--error)';
-                        icon = <X size={16} color="var(--error)" strokeWidth={3} />;
-                      } else if (!isThisSelected && isThisCorrect) {
-                        itemBg = 'var(--success-bg)';
-                        itemBorder = 'var(--success)';
-                        icon = <Check size={16} color="var(--success)" strokeWidth={3} />;
+                        selectionLabel = (
+                          <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--success)' }}>
+                            (Đáp án đúng)
+                          </span>
+                        );
                       }
 
                       return (
                         <div
-                          key={opt.label}
+                          key={opt.id || opt.label}
                           style={{
                             display: 'flex',
                             alignItems: 'center',
@@ -347,11 +409,7 @@ export const ExamResultPage: React.FC = () => {
                             </div>
                           </div>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            {isThisSelected && (
-                              <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
-                                (Bạn đã chọn)
-                              </span>
-                            )}
+                            {selectionLabel}
                             {icon}
                           </div>
                         </div>
@@ -362,15 +420,48 @@ export const ExamResultPage: React.FC = () => {
                   <div
                     style={{
                       padding: '14px 16px',
-                      backgroundColor: 'var(--bg-subtle)',
+                      backgroundColor:
+                        isCorrect === true
+                          ? 'var(--success-bg)'
+                          : isCorrect === false
+                          ? 'var(--error-bg)'
+                          : 'var(--bg-subtle)',
                       borderRadius: 'var(--border-radius-md)',
-                      border: '1px solid var(--border-color)',
+                      border: `1.5px solid ${
+                        isCorrect === true
+                          ? 'var(--success)'
+                          : isCorrect === false
+                          ? 'var(--error)'
+                          : 'var(--border-color)'
+                      }`,
                       fontSize: '0.875rem',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      gap: '12px',
+                      flexWrap: 'wrap',
                     }}
                   >
                     <div>
                       <strong>Câu trả lời của bạn:</strong> {studentAns?.textAnswer || '(Chưa trả lời)'}
                     </div>
+                    {isCorrect === true && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--success)', fontWeight: 600, fontSize: '0.8125rem' }}>
+                        <Check size={16} color="var(--success)" strokeWidth={3} />
+                        <span>Chính xác</span>
+                      </div>
+                    )}
+                    {isCorrect === false && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--error)', fontWeight: 600, fontSize: '0.8125rem' }}>
+                        <X size={16} color="var(--error)" strokeWidth={3} />
+                        <span>Chưa đúng</span>
+                      </div>
+                    )}
+                    {isCorrect === undefined && (
+                      <div style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)' }}>
+                        (Đã ghi nhận câu trả lời)
+                      </div>
+                    )}
                   </div>
                 )}
 

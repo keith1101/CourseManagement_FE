@@ -56,7 +56,7 @@ export interface AnswerOption {
   id?: string;
   label: string;
   content: string;
-  isCorrect: boolean;
+  isCorrect?: boolean;
   position?: number;
   image?: string;
   imageStorageUri?: string;

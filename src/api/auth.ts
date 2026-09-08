@@ -1,5 +1,5 @@
 import { apiClient } from './client';
-import { AuthResponse, ChangePasswordDto, LoginDto, RegisterDto, User } from '../types';
+import { AuthResponse, ChangePasswordDto, LoginDto, RegisterDto, RegistrationResult, User } from '../types';
 import { mapUser } from './mappers';
 
 export const authApi = {
@@ -8,14 +8,15 @@ export const authApi = {
     return { accessToken: res.data.accessToken, user: mapUser(res.data.user) };
   },
 
-  register: async (data: RegisterDto): Promise<User> => {
-    const res = await apiClient.post<any>('/auth/register', {
+  register: async (data: RegisterDto): Promise<RegistrationResult> => {
+    const res = await apiClient.post<RegistrationResult>('/auth/register', {
       email: data.email,
       password: data.password,
       fullName: data.fullName,
       phone: data.phoneNumber || undefined,
     });
-    return mapUser(res.data);
+
+    return res.data;
   },
 
   getMe: async (): Promise<User> => {
@@ -39,5 +40,25 @@ export const authApi = {
       dateOfBirth: data.dateOfBirth,
     });
     return mapUser(res.data);
+  },
+
+  verifyEmail: async (
+    token: string,
+  ): Promise<{ message: string; email: string }> => {
+    const res = await apiClient.post('/auth/verify-email', { 
+      token, 
+    });
+
+    return res.data;
+  },
+
+  resendVerification: async (
+    email: string,
+  ): Promise<{ message: string }> => {
+    const res = await apiClient.post('/auth/resend-verification', {
+      email,
+    });
+
+    return res.data;
   },
 };

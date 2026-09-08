@@ -7,7 +7,7 @@ import { Button } from '../../components/common/Button';
 import { Modal } from '../../components/common/Modal';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
-import { getApiErrorMessage } from '../../api/errors';
+import { getApiErrorMessage, isEmailNotVerifiedError } from '../../api/errors';
 
 export const LoginPage: React.FC = () => {
   const navigate = useNavigate();
@@ -42,7 +42,16 @@ export const LoginPage: React.FC = () => {
       success(`Chào mừng trở lại, ${user.fullName}!`);
       navigate(user.role === 'ADMIN' ? '/admin' : '/student');
     } catch (err) {
-      error(getApiErrorMessage(err, 'Email hoặc mật khẩu không chính xác.'));
+      if (isEmailNotVerifiedError(err)) {
+        const verificationEmail = loginEmail.trim();
+        error('Email chưa được xác nhận. Bạn sẽ được chuyển đến trang xác thực email.');
+        navigate(
+          `/verify-email?email=${encodeURIComponent(verificationEmail)}`,
+          { replace: true },
+        );
+      } else {
+        error(getApiErrorMessage(err, 'Email hoặc mật khẩu không chính xác.'));
+      }
     } finally {
       setIsLoading(false);
     }

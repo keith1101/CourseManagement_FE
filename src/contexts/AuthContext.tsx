@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
-import { User, LoginDto, RegisterDto } from '../types';
+import { User, LoginDto, RegisterDto, RegistrationResult} from '../types';
 import { authApi } from '../api/auth';
 import { mapUser } from '../api/mappers';
 
@@ -9,7 +9,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (credentials: LoginDto) => Promise<User>;
-  register: (data: RegisterDto) => Promise<User>;
+  register: (data: RegisterDto) => Promise<RegistrationResult>;
   logout: () => void;
   setUser: (user: User | null) => void;
   refreshUser: () => Promise<void>;
@@ -67,7 +67,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
-  const register = async (data: RegisterDto): Promise<User> => {
+  const register = async (data: RegisterDto): Promise<RegistrationResult> => {
     setIsLoading(true);
     try {
       return await authApi.register(data);

@@ -27,14 +27,21 @@ export const RegisterPage: React.FC = () => {
     if (password !== confirmPassword) return error('Mật khẩu xác nhận không khớp.');
     setIsLoading(true);
     try {
-      const user = await register({
+      const result = await register({
         fullName: fullName.trim(),
         email: email.trim(),
         password,
         phoneNumber: phoneNumber.trim() || undefined,
       });
-      success(`Đăng ký thành công cho ${user.fullName}. Vui lòng đăng nhập.`);
-      navigate('/login');
+      const resultMessage = result.message.toLowerCase();
+      const announcement = resultMessage.includes('already exists')
+        ? 'Email này đã được đăng ký nhưng chưa được xác minh. Chúng tôi đã gửi lại email xác nhận.'
+        : 'Đăng ký thành công. Vui lòng kiểm tra hộp thư để xác nhận tài khoản.';
+
+      success(announcement);
+      navigate(
+        `/verify-email?email=${encodeURIComponent(result.email)}`,
+      );
     } catch (err) {
       error(getApiErrorMessage(err, 'Đăng ký không thành công.'));
     } finally {

@@ -117,7 +117,30 @@ export const setupMockAdapter = (client: AxiosInstance) => {
       usersState.push(newUser);
       return Promise.reject({
         isMock: true,
-        mockResponse: mockResponse(newUser),
+        mockResponse: mockResponse({
+          message: 'Đăng ký thành công. Vui lòng kiểm tra email để xác nhận tài khoản.',
+          email: newUser.email,
+          verificationRequired: true,
+        }),
+      });
+    }
+
+    if (url.includes('/auth/verify-email') && method === 'post') {
+      return Promise.reject({
+        isMock: true,
+        mockResponse: mockResponse({
+          message: 'Email đã được xác nhận. Bạn có thể đăng nhập.',
+          email: data.email || 'student@example.com',
+        }),
+      });
+    }
+
+    if (url.includes('/auth/resend-verification') && method === 'post') {
+      return Promise.reject({
+        isMock: true,
+        mockResponse: mockResponse({
+          message: 'Nếu tài khoản tồn tại và chưa được xác nhận, email mới đã được gửi.',
+        }),
       });
     }
 

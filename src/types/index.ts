@@ -185,3 +185,9 @@ export interface AttemptFeedback extends StudentAnswer {
   isCorrect: boolean;
   timedOut?: boolean;
 }
+
+export interface RegistrationResult {
+  message: string;
+  email: string;
+  verificationRequired: boolean;
+}

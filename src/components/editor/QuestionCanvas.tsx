@@ -5,6 +5,7 @@ import { AnswerOptionCard } from './AnswerOptionCard';
 import { ImageUploader } from '../common/ImageUploader';
 import { subjectsApi } from '../../api/subjects';
 import { questionsApi } from '../../api/questions';
+import { extractImageFileFromClipboard } from '../../utils/imageUpload';
 
 export interface QuestionCanvasProps {
   question: Question;
@@ -16,12 +17,26 @@ export const QuestionCanvas: React.FC<QuestionCanvasProps> = ({ question, onChan
   const [showExplanation, setShowExplanation] = useState(!!(question.explanation || question.explanationImage));
   const [showImageInput, setShowImageInput] = useState(!!question.image);
   const [subjects, setSubjects] = useState<{ id: string; code: string; name: string }[]>([]);
+  const [pendingQuestionImage, setPendingQuestionImage] = useState<File | null>(null);
+  const [isQuestionImageUploading, setIsQuestionImageUploading] = useState(false);
 
   useEffect(() => {
     void subjectsApi.getSubjects().then(setSubjects).catch(() => undefined);
   }, []);
 
   const isChoiceType = question.type === 'SINGLE_CHOICE' || question.type === 'MULTIPLE_CHOICE';
+
+  const handlePasteQuestionImage = (e: React.ClipboardEvent) => {
+    if (e.defaultPrevented) return;
+    const file = extractImageFileFromClipboard(e.clipboardData);
+    if (!file) return;
+
+    e.preventDefault();
+    if (isQuestionImageUploading) return;
+
+    setShowImageInput(true);
+    setPendingQuestionImage(file);
+  };
 
   const handleOptionChange = (index: number, updatedOption: AnswerOption) => {
     let newOptions = [...question.options];
@@ -79,7 +94,11 @@ export const QuestionCanvas: React.FC<QuestionCanvasProps> = ({ question, onChan
       </div>
 
       {/* 2. Question Title & Content Box */}
-      <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+      <div
+        className="card"
+        onPaste={handlePasteQuestionImage}
+        style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}
+      >
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
           <label style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-primary)' }}>
             Nội dung câu hỏi <span style={{ color: 'var(--error)' }}>*</span>
@@ -127,6 +146,7 @@ export const QuestionCanvas: React.FC<QuestionCanvasProps> = ({ question, onChan
           className="input-field"
           value={question.content}
           onChange={(e) => onChange({ ...question, content: e.target.value })}
+          onPaste={handlePasteQuestionImage}
           placeholder="Nhập nội dung câu hỏi tại đây..."
           style={{
             fontSize: '1rem',
@@ -142,6 +162,9 @@ export const QuestionCanvas: React.FC<QuestionCanvasProps> = ({ question, onChan
             label="Hình ảnh minh họa cho câu hỏi"
             value={question.image}
             uploadImage={questionsApi.uploadImage}
+            pendingFile={pendingQuestionImage}
+            onClearPendingFile={() => setPendingQuestionImage(null)}
+            onUploadingChange={setIsQuestionImageUploading}
             onChange={(imageUrl, storageUri) =>
               onChange({
                 ...question,

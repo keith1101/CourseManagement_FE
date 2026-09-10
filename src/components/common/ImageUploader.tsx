@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Upload, Link as LinkIcon, Trash2, X } from 'lucide-react';
+import { extractImageFileFromClipboard, validateImageFile } from '../../utils/imageUpload';
 
 export interface ImageUploadResult {
   url: string;
@@ -14,6 +15,9 @@ export interface ImageUploaderProps {
   label?: string;
   compact?: boolean;
   maxHeight?: number;
+  pendingFile?: File | null;
+  onClearPendingFile?: () => void;
+  onUploadingChange?: (uploading: boolean) => void;
 }
 
 export const ImageUploader: React.FC<ImageUploaderProps> = ({
@@ -23,12 +27,17 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
   label,
   compact = false,
   maxHeight = 220,
+  pendingFile,
+  onClearPendingFile,
+  onUploadingChange,
 }) => {
   const [activeTab, setActiveTab] = useState<'upload' | 'url'>('upload');
   const [urlInput, setUrlInput] = useState(value?.startsWith('http') ? value : '');
   const [isDragging, setIsDragging] = useState(false);
+  const [isFocused, setIsFocused] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const lastHandledFileRef = useRef<File | null>(null);
 
   useEffect(() => {
     if (value?.startsWith('http')) setUrlInput(value);
@@ -37,17 +46,14 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
   const uploadSelectedFile = async (file: File) => {
     if (isUploading) return;
 
-    if (!file.type.startsWith('image/')) {
-      alert('Vui lòng chọn tệp hình ảnh hợp lệ (PNG, JPG, JPEG, GIF, WebP, SVG).');
-      return;
-    }
-
-    if (file.size > 5 * 1024 * 1024) {
-      alert('Kích thước hình ảnh không được vượt quá 5 MB.');
+    const validation = validateImageFile(file);
+    if (!validation.valid) {
+      alert(validation.error);
       return;
     }
 
     setIsUploading(true);
+    onUploadingChange?.(true);
     try {
       const uploaded = await uploadImage(file);
       if (!uploaded?.url || !uploaded.storageUri) {
@@ -58,8 +64,17 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
       alert('Không thể tải hình ảnh lên. Vui lòng thử lại.');
     } finally {
       setIsUploading(false);
+      onUploadingChange?.(false);
     }
   };
+
+  useEffect(() => {
+    if (pendingFile && pendingFile !== lastHandledFileRef.current) {
+      lastHandledFileRef.current = pendingFile;
+      void uploadSelectedFile(pendingFile);
+      onClearPendingFile?.();
+    }
+  }, [pendingFile]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -83,6 +98,15 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
     if (file) void uploadSelectedFile(file);
   };
 
+  const handlePaste = (e: React.ClipboardEvent) => {
+    const file = extractImageFileFromClipboard(e.clipboardData);
+    if (file) {
+      e.preventDefault();
+      e.stopPropagation();
+      void uploadSelectedFile(file);
+    }
+  };
+
   const handleUrlSubmit = () => {
     const valueToApply = urlInput.trim();
     if (!valueToApply) return;
@@ -101,11 +125,11 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
   // Compact Mode (for Answer Option cards or small spaces)
   if (compact) {
     return (
-      <div style={{ marginTop: '8px' }}>
+      <div style={{ marginTop: '8px' }} onPaste={handlePaste}>
         <input
           type="file"
           ref={fileInputRef}
-          accept="image/*"
+          accept="image/png,image/jpeg,image/gif,image/webp,image/svg+xml"
           style={{ display: 'none' }}
           disabled={isUploading}
           onChange={handleFileChange}
@@ -189,6 +213,7 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
   // Full / Standard Mode (for Question canvas, Hint, Explanation)
   return (
     <div
+      onPaste={handlePaste}
       style={{
         padding: '16px',
         backgroundColor: 'var(--bg-subtle)',
@@ -202,7 +227,7 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
       <input
         type="file"
         ref={fileInputRef}
-        accept="image/*"
+        accept="image/png,image/jpeg,image/gif,image/webp,image/svg+xml"
         style={{ display: 'none' }}
         disabled={isUploading}
         onChange={handleFileChange}
@@ -268,17 +293,30 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
       {/* Action / Input based on Tab */}
       {activeTab === 'upload' ? (
         <div
+          tabIndex={0}
+          role="button"
+          aria-label="Nhấn để tải ảnh lên, kéo thả hoặc dán ảnh chụp màn hình bằng Cmd/Ctrl + V"
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
+          onFocus={() => setIsFocused(true)}
+          onBlur={() => setIsFocused(false)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              if (!isUploading) fileInputRef.current?.click();
+            }
+          }}
           onClick={() => {
             if (!isUploading) fileInputRef.current?.click();
           }}
           style={{
             padding: '20px 16px',
             borderRadius: 'var(--border-radius-md)',
-            border: `2px dashed ${isDragging ? 'var(--primary)' : 'var(--border-color)'}`,
-            backgroundColor: isDragging ? 'var(--primary-light)' : 'var(--bg-card)',
+            border: `2px dashed ${isDragging || isFocused ? 'var(--primary)' : 'var(--border-color)'}`,
+            backgroundColor: isDragging || isFocused ? 'var(--primary-light)' : 'var(--bg-card)',
+            outline: isFocused ? '2px solid var(--primary)' : 'none',
+            outlineOffset: '2px',
             textAlign: 'center',
             cursor: 'pointer',
             opacity: isUploading ? 0.65 : 1,
@@ -309,7 +347,7 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
               {isUploading ? 'Đang tải ảnh lên...' : 'Nhấn để tải ảnh lên'}
             </strong>{' '}
             <span style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)' }}>
-              hoặc kéo và thả tệp vào đây
+              , kéo thả hoặc dán ảnh chụp màn hình bằng Cmd/Ctrl + V
             </span>
           </div>
           <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>

@@ -115,7 +115,7 @@ export const EditorHeader: React.FC<EditorHeaderProps> = ({
               padding: '2px 4px',
             }}
           />
-          <span style={{ fontSize: '0.75rem', color: 'rgba(255, 255, 255, 0.7)' }}>s</span>
+          <span style={{ fontSize: '0.75rem', color: 'rgba(255, 255, 255, 0.7)' }}>giây</span>
         </div>
 
         {/* Points */}

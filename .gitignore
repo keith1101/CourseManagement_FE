@@ -4,6 +4,9 @@ dist/
 .env.*
 !.env.example
 coverage/
+playwright-report/
+test-results/
+playwright/.auth/
 .vite/
 *.log
 .DS_Store
@@ -11,4 +14,3 @@ coverage/
 .idea/
 asset/
 assets/
-

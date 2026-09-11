@@ -117,12 +117,81 @@ export interface Assignment {
   dueDate: string;
   deletedAt?: string | null;
   status: AssignmentStatus;
+  /** A failed pre-sequential (v1) attempt can be started again. */
+  canRetake?: boolean;
   createdAt: string;
   updatedAt: string;
-  examAttempts?: Array<{ id: string; status: AttemptStatus; score?: number }>;
+  examAttempts?: Array<{
+    id: string;
+    status: AttemptStatus;
+    score?: number;
+    flowVersion?: number;
+    correctCount?: number | null;
+    totalQuestions?: number;
+  }>;
 }
 
 export type AttemptStatus = 'IN_PROGRESS' | 'COMPLETED' | 'ABANDONED' | 'SUBMITTED' | 'SCORED';
+
+export type SequentialQuestionStatus =
+  | 'LOCKED'
+  | 'ACTIVE'
+  | 'CORRECT'
+  | 'INCORRECT'
+  | 'TIMED_OUT'
+  | 'COMPLETED';
+
+export interface SequentialGuidance {
+  text?: string | null;
+  image?: string | null;
+}
+
+export interface SequentialExplanation {
+  text?: string | null;
+  image?: string | null;
+}
+
+export interface SequentialFeedback {
+  questionId: string;
+  isCorrect: boolean;
+  timedOut?: boolean;
+  correctOptionId?: string;
+  correctTextAnswer?: string;
+  correctAnswer?: { id: string; content: string };
+  guidance?: SequentialGuidance;
+  explanation?: SequentialExplanation;
+}
+
+export interface SequentialNavigatorItem {
+  ordinal: number;
+  status: SequentialQuestionStatus;
+}
+
+export interface SequentialCurrentQuestion {
+  id: string;
+  ordinal: number;
+  status: SequentialQuestionStatus;
+  activatedAt?: string | null;
+  deadlineAt?: string | null;
+  advanceAfter?: string | null;
+  question?: Question;
+  feedback?: SequentialFeedback;
+}
+
+export interface SequentialSession {
+  attemptId: string;
+  examId: string;
+  flowVersion: number;
+  attemptStatus: AttemptStatus;
+  progressVersion: number;
+  totalQuestions: number;
+  currentOrdinal?: number | null;
+  serverNow: string;
+  navigator: SequentialNavigatorItem[];
+  currentQuestion?: SequentialCurrentQuestion | null;
+  resultUrl?: string;
+  synchronizedTimeout?: boolean;
+}
 
 export interface StudentAnswer {
   id?: string;
@@ -157,8 +226,11 @@ export interface ExamAttempt {
   totalQuestions?: number;
   correctAnswers?: number;
   status: AttemptStatus;
+  flowVersion?: number;
+  progressVersion?: number;
   answers?: StudentAnswer[];
   questions?: Question[];
+  sequentialSession?: SequentialSession;
 }
 
 export type MaterialType = 'PDF' | 'DOCX' | 'EMBEDDED_VIDEO';
@@ -184,6 +256,8 @@ export interface AttemptFeedback extends StudentAnswer {
   questionId: string;
   isCorrect: boolean;
   timedOut?: boolean;
+  correctAnswer?: { id: string; content: string };
+  guidance?: SequentialGuidance;
 }
 
 export interface RegistrationResult {

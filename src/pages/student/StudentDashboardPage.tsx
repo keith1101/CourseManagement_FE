@@ -10,6 +10,7 @@ import {
   Clock,
   BookOpen,
   Lock,
+  RotateCcw,
 } from 'lucide-react';
 import { Card } from '../../components/common/Card';
 import { Button } from '../../components/common/Button';
@@ -69,7 +70,7 @@ export const StudentDashboardPage: React.FC = () => {
       : '0.0';
 
   const pendingAssignments = assignments.filter(
-    (a) => a.status === 'PENDING' || a.status === 'IN_PROGRESS'
+    (a) => a.status === 'PENDING' || a.status === 'IN_PROGRESS' || a.canRetake === true
   );
 
   return (
@@ -199,6 +200,7 @@ export const StudentDashboardPage: React.FC = () => {
               const inProgressAttempt = assign.examAttempts?.find(
                 (attempt) => attempt.status === 'IN_PROGRESS',
               );
+              const canRetake = assign.canRetake === true;
               return (
               <Card key={assign.id} interactive style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -231,16 +233,28 @@ export const StudentDashboardPage: React.FC = () => {
                       navigate(`/student/attempts/${inProgressAttempt.id}/take`);
                       return;
                     }
+                    if (canRetake) {
+                      if (!canAccess) {
+                        setLockedAssignment(assign);
+                        return;
+                      }
+                      navigate(`/student/exams/${assign.examId}/take?assignmentId=${encodeURIComponent(assign.id)}`);
+                      return;
+                    }
                     if (!canAccess) {
                       setLockedAssignment(assign);
                       return;
                     }
                     navigate(`/student/exams/${assign.examId}/take?assignmentId=${encodeURIComponent(assign.id)}`);
                   }}
-                  leftIcon={canAccess || inProgressAttempt ? <PlayCircle size={16} /> : <Lock size={16} />}
+                  leftIcon={canRetake ? <RotateCcw size={16} /> : canAccess || inProgressAttempt ? <PlayCircle size={16} /> : <Lock size={16} />}
                   style={{ width: '100%', marginTop: 'auto' }}
                 >
-                  {inProgressAttempt ? 'Tiếp tục làm bài' : canAccess ? 'Bắt đầu làm bài' : 'Nâng cấp để làm bài'}
+                  {inProgressAttempt
+                    ? 'Tiếp tục làm bài'
+                    : canRetake
+                    ? canAccess ? 'Làm lại bài' : 'Nâng cấp để làm bài'
+                    : canAccess ? 'Bắt đầu làm bài' : 'Nâng cấp để làm bài'}
                 </Button>
               </Card>
               );

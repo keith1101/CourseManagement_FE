@@ -8,7 +8,16 @@ import {
   MOCK_MATERIALS,
   MOCK_ATTEMPTS,
 } from './mockData';
-import { Exam, Question, Subject, Material, Assignment, User, ExamAttempt } from '../types';
+import {
+  Exam,
+  Question,
+  Subject,
+  Material,
+  Assignment,
+  User,
+  ExamAttempt,
+  SequentialQuestionStatus,
+} from '../types';
 import { isProActive } from '../utils/access';
 
 const nowIso = () => new Date().toISOString();
@@ -58,6 +67,112 @@ let questionsState: Record<string, Question[]> = {
 let assignmentsState: Assignment[] = [...MOCK_ASSIGNMENTS];
 let materialsState: Material[] = [...MOCK_MATERIALS];
 let attemptsState: ExamAttempt[] = [...MOCK_ATTEMPTS];
+
+type MockSequentialAnswer = {
+  selectedOptionId?: string;
+  rawValue?: string;
+  answerType?: 'TEXT' | 'NUMBER';
+  normalizedText?: string;
+  content?: string;
+  numericValue?: number;
+  submittedAt?: string | null;
+  timedOut?: boolean;
+};
+
+type MockSequentialAttempt = {
+  attempt: ExamAttempt;
+  questions: Question[];
+  statuses: SequentialQuestionStatus[];
+  currentIndex: number;
+  progressVersion: number;
+  answers: Record<string, MockSequentialAnswer>;
+  feedback: Record<string, any>;
+  activatedAt: Record<string, string>;
+  deadlines: Record<string, string | null>;
+  advanceAfter: Record<string, string | null>;
+  submissionKeys: Record<string, any>;
+};
+
+const sequentialAttempts = new Map<string, MockSequentialAttempt>();
+
+const mockSequentialEnabled = () =>
+  (import.meta.env.VITE_SEQUENTIAL_EXAM_FLOW ?? import.meta.env.SEQUENTIAL_EXAM_FLOW_ENABLED) === 'true';
+
+const mockAnswerValue = (data: any): MockSequentialAnswer => ({
+  selectedOptionId: data.selectedOptionId || undefined,
+  rawValue: data.rawValue ?? data.textAnswer ?? undefined,
+  answerType: data.answerType,
+  normalizedText: data.normalizedText,
+  content: data.content,
+  numericValue: data.numericValue,
+});
+
+const mockSequentialFeedback = (question: Question, isCorrect: boolean, timedOut: boolean) => {
+  if (isCorrect) return { questionId: question.id, isCorrect: true, timedOut: false };
+  const correctOption = question.options?.find((option) => option.isCorrect);
+  return {
+    questionId: question.id,
+    isCorrect: false,
+    timedOut,
+    correctOptionId: correctOption?.id,
+    correctAnswer: correctOption
+      ? { id: correctOption.id, content: correctOption.content }
+      : undefined,
+    guidance: { text: question.hint || null, image: question.hintImage || null },
+    explanation: { text: question.explanation || null, image: question.explanationImage || null },
+  };
+};
+
+// Keep the mock contract aligned with the student-facing backend allowlist.
+// Grading fields stay in memory and are only returned as feedback after a
+// submit/timeout.
+const mockStudentQuestion = (question: Question): Question => {
+  const {
+    explanation: _explanation,
+    explanationImage: _explanationImage,
+    correctTextAnswer: _correctTextAnswer,
+    options,
+    ...safeQuestion
+  } = question;
+  return {
+    ...safeQuestion,
+    options: (options || []).map(({ isCorrect: _isCorrect, ...option }) => option),
+  };
+};
+
+const mockSequentialSession = (state: MockSequentialAttempt) => {
+  const currentQuestion = state.currentIndex >= 0 ? state.questions[state.currentIndex] : undefined;
+  const currentStatus = state.currentIndex >= 0 ? state.statuses[state.currentIndex] : undefined;
+  return {
+    id: state.attempt.id,
+    attemptId: state.attempt.id,
+    userId: state.attempt.studentId,
+    examId: state.attempt.examId,
+    flowVersion: 2,
+    attemptStatus: state.attempt.status,
+    progressVersion: state.progressVersion,
+    totalQuestions: state.questions.length,
+    startedAt: state.attempt.startedAt,
+    currentOrdinal: currentQuestion ? state.currentIndex + 1 : null,
+    serverNow: nowIso(),
+    navigator: state.statuses.map((status, index) => ({ ordinal: index + 1, status })),
+    currentQuestion: currentQuestion
+      ? {
+          id: currentQuestion.id,
+          ordinal: state.currentIndex + 1,
+          status: currentStatus,
+          activatedAt: state.activatedAt[currentQuestion.id] || state.attempt.startedAt,
+          deadlineAt: state.deadlines[currentQuestion.id],
+          advanceAfter: state.advanceAfter[currentQuestion.id],
+          question: mockStudentQuestion(currentQuestion),
+          feedback: state.feedback[currentQuestion.id],
+        }
+      : null,
+    ...(state.attempt.status === 'COMPLETED'
+      ? { resultUrl: `/student/attempts/${state.attempt.id}/result` }
+      : {}),
+  };
+};
 
 export const setupMockAdapter = (client: AxiosInstance) => {
   // Use request adapter to intercept all calls before sending to network
@@ -523,7 +638,12 @@ export const setupMockAdapter = (client: AxiosInstance) => {
 
     // 8. Exam Attempts routes
     if (url === '/exam-attempts/my-attempts' || url === '/attempts/my-attempts' || url.includes('/attempts')) {
-      if (url.includes('/start') || (url.includes('/exam-attempts') && method === 'post')) {
+      if (
+        method === 'post' &&
+        (url.includes('/start') ||
+          url.includes('/exam-attempts') ||
+          /^\/exams\/[^/]+\/attempts$/.test(url))
+      ) {
         const examId = data.examId || url.match(/^\/exams\/([^/]+)\/attempts/)?.[1] || 'exam-1';
         const exam = examsState.find((e) => e.id === examId) || examsState[0];
         const savedUser = localStorage.getItem('user_info');
@@ -577,24 +697,300 @@ export const setupMockAdapter = (client: AxiosInstance) => {
           studentId: currentUser?.id || 'user-student-1',
           assignmentId: data.assignmentId,
           exam,
-          questions,
+          questions: mockSequentialEnabled() ? undefined : questions,
           answers: [],
           status: 'IN_PROGRESS',
           startedAt: nowIso(),
+          flowVersion: mockSequentialEnabled() ? 2 : 1,
         };
         attemptsState.unshift(newAttempt);
+        if (mockSequentialEnabled()) {
+          const startedAt = newAttempt.startedAt;
+          const firstQuestion = questions[0];
+          sequentialAttempts.set(newAttempt.id, {
+            attempt: newAttempt,
+            questions,
+            statuses: questions.map((_, index) =>
+              index === 0 ? 'ACTIVE' : 'LOCKED',
+            ),
+            currentIndex: 0,
+            progressVersion: 0,
+            answers: {},
+            feedback: {},
+            activatedAt: { [firstQuestion.id]: startedAt },
+            deadlines: {
+              [firstQuestion.id]: new Date(
+                Date.parse(startedAt) + (firstQuestion.timeLimit || 30) * 1000,
+              ).toISOString(),
+            },
+            advanceAfter: {},
+            submissionKeys: {},
+          });
+        }
         return Promise.reject({ isMock: true, mockResponse: mockResponse(newAttempt) });
+      }
+
+      const sequentialAttemptId = url.match(/^\/attempts\/([^/]+)(?:\/|$)/)?.[1];
+      const sequentialAttempt = sequentialAttemptId
+        ? sequentialAttempts.get(sequentialAttemptId)
+        : undefined;
+      if (sequentialAttempt) {
+        const currentQuestion =
+          sequentialAttempt.currentIndex >= 0
+            ? sequentialAttempt.questions[sequentialAttempt.currentIndex]
+            : undefined;
+        const currentStatus = currentQuestion
+          ? sequentialAttempt.statuses[sequentialAttempt.currentIndex]
+          : undefined;
+        const currentDeadline = currentQuestion
+          ? sequentialAttempt.deadlines[currentQuestion.id]
+          : null;
+        const currentNow = Date.now();
+
+        if (url === `/attempts/${sequentialAttempt.attempt.id}` && method === 'get') {
+          return Promise.reject({
+            isMock: true,
+            mockResponse: mockResponse(mockSequentialSession(sequentialAttempt)),
+          });
+        }
+
+        if (url.endsWith('/result') && method === 'get') {
+          if (sequentialAttempt.attempt.status !== 'COMPLETED') {
+            return Promise.reject({
+              isMock: true,
+              mockResponse: mockResponse({ message: 'Attempt has not been submitted' }, 409),
+            });
+          }
+          return Promise.reject({
+            isMock: true,
+            mockResponse: mockResponse({
+              ...sequentialAttempt.attempt,
+              questions: sequentialAttempt.questions,
+              answers: sequentialAttempt.questions.map((question) => ({
+                questionId: question.id,
+                selectedOptionId: sequentialAttempt.answers[question.id]?.selectedOptionId,
+                rawValue: sequentialAttempt.answers[question.id]?.rawValue,
+                isCorrect: sequentialAttempt.feedback[question.id]?.isCorrect === true,
+              })),
+            }),
+          });
+        }
+
+        if (url.endsWith('/session') && method === 'get') {
+          return Promise.reject({
+            isMock: true,
+            mockResponse: mockResponse(mockSequentialSession(sequentialAttempt)),
+          });
+        }
+
+        if (url.endsWith('/current-question/submit') && method === 'post') {
+          const idempotencyKey = String(
+            (config.headers as any)?.['Idempotency-Key'] ||
+              (config.headers as any)?.['idempotency-key'] ||
+              '',
+          );
+          if (idempotencyKey && sequentialAttempt.submissionKeys[idempotencyKey]) {
+            return Promise.reject({
+              isMock: true,
+              mockResponse: mockResponse(sequentialAttempt.submissionKeys[idempotencyKey]),
+            });
+          }
+          if (!idempotencyKey) {
+            return Promise.reject({
+              isMock: true,
+              mockResponse: mockResponse({ message: 'Idempotency-Key header is required' }, 400),
+            });
+          }
+          if (
+            !currentQuestion ||
+            currentStatus !== 'ACTIVE' ||
+            data.questionId !== currentQuestion.id ||
+            Number(data.progressVersion) !== sequentialAttempt.progressVersion
+          ) {
+            return Promise.reject({
+              isMock: true,
+              mockResponse: mockResponse({ message: 'Question is no longer active' }, 409),
+            });
+          }
+          const selected = currentQuestion.options?.find(
+            (option) => option.id === data.selectedOptionId,
+          );
+          if (currentQuestion.type !== 'ESSAY' && (!data.selectedOptionId || !selected)) {
+            return Promise.reject({
+              isMock: true,
+              mockResponse: mockResponse({ message: 'A valid selected option is required' }, 400),
+            });
+          }
+          if (currentQuestion.type === 'ESSAY' && !String(data.rawValue ?? '').trim()) {
+            return Promise.reject({
+              isMock: true,
+              mockResponse: mockResponse({ message: 'rawValue is required' }, 400),
+            });
+          }
+          const timedOut = !!currentDeadline && currentNow >= Date.parse(currentDeadline);
+          const isCorrect = !timedOut && !!selected?.isCorrect;
+          const status: SequentialQuestionStatus = timedOut
+            ? 'TIMED_OUT'
+            : isCorrect
+            ? 'CORRECT'
+            : 'INCORRECT';
+          const submittedAt = nowIso();
+          sequentialAttempt.answers[currentQuestion.id] = {
+            ...sequentialAttempt.answers[currentQuestion.id],
+            ...mockAnswerValue(data),
+            submittedAt,
+            timedOut,
+          };
+          sequentialAttempt.statuses[sequentialAttempt.currentIndex] = status;
+          sequentialAttempt.feedback[currentQuestion.id] = mockSequentialFeedback(
+            currentQuestion,
+            isCorrect,
+            timedOut,
+          );
+          sequentialAttempt.progressVersion += 1;
+          const advanceAfter = isCorrect
+            ? new Date(currentNow + 3000).toISOString()
+            : null;
+          sequentialAttempt.advanceAfter[currentQuestion.id] = advanceAfter;
+          const outcome = {
+            attemptId: sequentialAttempt.attempt.id,
+            questionId: currentQuestion.id,
+            status,
+            isCorrect,
+            timedOut,
+            advanceAfter,
+            progressVersion: sequentialAttempt.progressVersion,
+            feedback: sequentialAttempt.feedback[currentQuestion.id],
+          };
+          if (idempotencyKey) sequentialAttempt.submissionKeys[idempotencyKey] = outcome;
+          return Promise.reject({ isMock: true, mockResponse: mockResponse(outcome) });
+        }
+
+        if (url.endsWith('/current-question/expire') && method === 'post') {
+          if (
+            currentQuestion &&
+            currentStatus === 'ACTIVE' &&
+            currentDeadline &&
+            currentNow >= Date.parse(currentDeadline)
+          ) {
+            sequentialAttempt.statuses[sequentialAttempt.currentIndex] = 'TIMED_OUT';
+            sequentialAttempt.feedback[currentQuestion.id] = mockSequentialFeedback(
+              currentQuestion,
+              false,
+              true,
+            );
+            sequentialAttempt.answers[currentQuestion.id] = {
+              ...sequentialAttempt.answers[currentQuestion.id],
+              submittedAt: nowIso(),
+              timedOut: true,
+            };
+            sequentialAttempt.progressVersion += 1;
+          }
+          return Promise.reject({
+            isMock: true,
+            mockResponse: mockSequentialSession(sequentialAttempt),
+          });
+        }
+
+        if (url.endsWith('/current-question/continue') && method === 'post') {
+          const idempotencyKey = String(
+            (config.headers as any)?.['Idempotency-Key'] ||
+              (config.headers as any)?.['idempotency-key'] ||
+              '',
+          );
+          if (idempotencyKey && sequentialAttempt.submissionKeys[idempotencyKey]) {
+            return Promise.reject({
+              isMock: true,
+              mockResponse: mockResponse(sequentialAttempt.submissionKeys[idempotencyKey]),
+            });
+          }
+          if (!idempotencyKey) {
+            return Promise.reject({
+              isMock: true,
+              mockResponse: mockResponse({ message: 'Idempotency-Key header is required' }, 400),
+            });
+          }
+          if (
+            !currentQuestion ||
+            data.questionId !== currentQuestion.id ||
+            Number(data.progressVersion) !== sequentialAttempt.progressVersion
+          ) {
+            return Promise.reject({
+              isMock: true,
+              mockResponse: mockResponse({ message: 'The exam progress has changed' }, 409),
+            });
+          }
+          const canContinue =
+            currentQuestion &&
+            (currentStatus === 'INCORRECT' || currentStatus === 'TIMED_OUT' ||
+              (currentStatus === 'CORRECT' &&
+                sequentialAttempt.advanceAfter[currentQuestion.id] &&
+                currentNow >= Date.parse(sequentialAttempt.advanceAfter[currentQuestion.id]!)));
+          if (!canContinue) {
+            return Promise.reject({
+              isMock: true,
+              mockResponse: mockResponse({ message: 'Question cannot be continued yet' }, 409),
+            });
+          }
+          sequentialAttempt.statuses[sequentialAttempt.currentIndex] = 'COMPLETED';
+          const nextIndex = sequentialAttempt.currentIndex + 1;
+          if (nextIndex < sequentialAttempt.questions.length) {
+            sequentialAttempt.currentIndex = nextIndex;
+            sequentialAttempt.statuses[nextIndex] = 'ACTIVE';
+            const nextQuestion = sequentialAttempt.questions[nextIndex];
+            sequentialAttempt.activatedAt[nextQuestion.id] = new Date(currentNow).toISOString();
+            sequentialAttempt.deadlines[nextQuestion.id] = new Date(
+              currentNow + (nextQuestion.timeLimit || 30) * 1000,
+            ).toISOString();
+          } else {
+            sequentialAttempt.currentIndex = -1;
+            sequentialAttempt.attempt.status = 'COMPLETED';
+            sequentialAttempt.attempt.submittedAt = nowIso();
+            sequentialAttempt.attempt.correctAnswers = Object.values(
+              sequentialAttempt.feedback,
+            ).filter((feedback: any) => feedback?.isCorrect === true).length;
+            sequentialAttempt.attempt.totalQuestions = sequentialAttempt.questions.length;
+            sequentialAttempt.attempt.score = Number(
+              ((sequentialAttempt.attempt.correctAnswers / sequentialAttempt.questions.length) * 10).toFixed(1),
+            );
+          }
+          sequentialAttempt.progressVersion += 1;
+          const nextSession = mockSequentialSession(sequentialAttempt);
+          if (idempotencyKey) sequentialAttempt.submissionKeys[idempotencyKey] = nextSession;
+          return Promise.reject({
+            isMock: true,
+            mockResponse: nextSession,
+          });
+        }
       }
 
       if (url.includes('/save-answer') || url.includes('/answers')) {
         const attemptId = url.split('/')[2];
+        const currentAttempt = attemptsState.find((a) => a.id === attemptId);
+        if (currentAttempt?.flowVersion === 2) {
+          return Promise.reject({
+            isMock: true,
+            mockResponse: mockResponse({
+              code: 'SEQUENTIAL_FLOW_REQUIRED',
+              message: 'Use the current-question endpoints for this attempt',
+            }, 409),
+          });
+        }
+        if (!data.finalize && !data.timedOut) {
+          return Promise.reject({
+            isMock: true,
+            mockResponse: mockResponse(
+              { message: 'Answers can only be saved when submitted or timed out' },
+              400,
+            ),
+          });
+        }
         const qId = data.questionId;
         const allQ = Object.values(questionsState).flat();
         const targetQ = allQ.find((q) => q.id === qId);
         const selectedOpt = targetQ?.options?.find((o) => o.id === data.selectedOptionId);
         const isCorrect = selectedOpt ? selectedOpt.isCorrect : true;
 
-        const currentAttempt = attemptsState.find((a) => a.id === attemptId);
         if (currentAttempt) {
           if (!currentAttempt.answers) currentAttempt.answers = [];
           const idx = currentAttempt.answers.findIndex((a) => a.questionId === qId);
@@ -632,6 +1028,15 @@ export const setupMockAdapter = (client: AxiosInstance) => {
       if (url.includes('/submit')) {
         const attemptId = url.split('/')[2];
         const currentAttempt = attemptsState.find((a) => a.id === attemptId);
+        if (currentAttempt?.flowVersion === 2) {
+          return Promise.reject({
+            isMock: true,
+            mockResponse: mockResponse({
+              code: 'SEQUENTIAL_FLOW_REQUIRED',
+              message: 'Use the current-question endpoints for this attempt',
+            }, 409),
+          });
+        }
         if (currentAttempt) {
           currentAttempt.status = 'COMPLETED';
           currentAttempt.submittedAt = nowIso();

@@ -5,6 +5,8 @@ import {
   ExamAttempt,
   Material,
   Question,
+  SequentialFeedback,
+  SequentialSession,
   Subject,
   User,
 } from '../types';
@@ -116,11 +118,15 @@ export const mapAssignment = (raw: any): Assignment => ({
   dueDate: asIso(raw.dueAt ?? raw.dueDate),
   deletedAt: raw.deletedAt ? asIso(raw.deletedAt) : null,
   status: raw.status === 'OVERDUE' ? 'OVERDUE' : raw.status,
+  canRetake: raw.canRetake === true,
   createdAt: asIso(raw.createdAt ?? raw.assignedAt),
   updatedAt: asIso(raw.updatedAt),
   examAttempts: (raw.examAttempts || []).map((attempt: any) => ({
     id: attempt.id,
     status: attempt.status,
+    flowVersion: attempt.flowVersion,
+    correctCount: attempt.correctCount,
+    totalQuestions: attempt.totalQuestions,
     score: attempt.score ?? (attempt.totalQuestions ? (attempt.correctCount / attempt.totalQuestions) * 10 : undefined),
   })),
 });
@@ -167,11 +173,85 @@ export const mapAnswer = (raw: any): any => {
   };
 };
 
+export const mapSequentialFeedback = (raw: any): SequentialFeedback | undefined => {
+  if (!raw) return undefined;
+  const guidance = raw.guidance
+    ? {
+        text: raw.guidance.text ?? undefined,
+        image: raw.guidance.image ?? undefined,
+      }
+    : undefined;
+  const explanation = raw.explanation
+    ? typeof raw.explanation === 'string'
+      ? { text: raw.explanation }
+      : {
+          text: raw.explanation.text ?? undefined,
+          image: raw.explanation.image ?? undefined,
+        }
+    : undefined;
+  return {
+    questionId: String(raw.questionId ?? ''),
+    isCorrect: raw.isCorrect === true,
+    timedOut: raw.timedOut === true,
+    correctOptionId: raw.correctOptionId != null ? String(raw.correctOptionId) : undefined,
+    correctTextAnswer: raw.correctTextAnswer,
+    correctAnswer: raw.correctAnswer
+      ? { id: String(raw.correctAnswer.id), content: raw.correctAnswer.content ?? '' }
+      : undefined,
+    guidance,
+    explanation,
+  };
+};
+
+export const mapSequentialSession = (raw: any): SequentialSession => ({
+  attemptId: String(raw.attemptId ?? raw.id ?? ''),
+  examId: String(raw.examId ?? ''),
+  flowVersion: Number(raw.flowVersion ?? 2),
+  attemptStatus: raw.attemptStatus ?? raw.status ?? 'IN_PROGRESS',
+  progressVersion: Number(raw.progressVersion ?? 0),
+  totalQuestions: Number(raw.totalQuestions ?? raw.navigator?.length ?? 0),
+  currentOrdinal: raw.currentOrdinal ?? raw.currentQuestion?.ordinal ?? null,
+  serverNow: asIso(raw.serverNow ?? new Date().toISOString()),
+  navigator: (raw.navigator ?? []).map((item: any) => ({
+    ordinal: Number(item.ordinal),
+    status: item.status,
+  })),
+  synchronizedTimeout: raw.synchronizedTimeout === true,
+  currentQuestion: raw.currentQuestion
+    ? {
+        id: String(raw.currentQuestion.id),
+        ordinal: Number(raw.currentQuestion.ordinal),
+        status: raw.currentQuestion.status,
+        activatedAt: raw.currentQuestion.activatedAt
+          ? asIso(raw.currentQuestion.activatedAt)
+          : null,
+        deadlineAt: raw.currentQuestion.deadlineAt
+          ? asIso(raw.currentQuestion.deadlineAt)
+          : null,
+        advanceAfter: raw.currentQuestion.advanceAfter
+          ? asIso(raw.currentQuestion.advanceAfter)
+          : null,
+        question: raw.currentQuestion.question
+          ? mapQuestion(raw.currentQuestion.question)
+          : undefined,
+        feedback: mapSequentialFeedback(raw.currentQuestion.feedback),
+      }
+    : null,
+  resultUrl: raw.resultUrl,
+});
+
 export const mapAttempt = (raw: any): ExamAttempt => {
   const totalQuestions = raw.totalQuestions ?? raw.total_questions ?? raw.questions?.length ?? 0;
   const correctAnswers = raw.correctCount ?? raw.correct_count ?? raw.correctAnswers ?? raw.correct_answers;
+  const sequentialSession = raw.navigator
+    ? mapSequentialSession(raw)
+    : undefined;
   return {
-    id: raw.id != null ? String(raw.id) : '',
+    id: raw.id != null
+      ? String(raw.id)
+      : raw.attemptId != null
+      ? String(raw.attemptId)
+      : '',
     examId: raw.examId ?? raw.exam_id ?? '',
     assignmentId: raw.assignmentId ?? raw.assignment_id,
     exam: raw.exam ? mapExam(raw.exam) : undefined,
@@ -183,9 +263,12 @@ export const mapAttempt = (raw: any): ExamAttempt => {
     score: raw.score ?? (typeof correctAnswers === 'number' && totalQuestions ? (correctAnswers / totalQuestions) * 10 : undefined),
     totalQuestions,
     correctAnswers,
-    status: raw.status,
+    status: raw.status ?? raw.attemptStatus,
+    flowVersion: raw.flowVersion ?? (sequentialSession ? 2 : 1),
+    progressVersion: raw.progressVersion,
     answers: (raw.attemptedAnswers ?? raw.attempted_answers ?? raw.answers ?? []).map(mapAnswer),
     questions: (raw.questions ?? raw.attemptedAnswers?.map((a: any) => a.question).filter(Boolean) ?? []).map(mapQuestion),
+    sequentialSession,
   };
 };
 

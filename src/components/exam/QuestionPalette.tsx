@@ -4,8 +4,8 @@ interface QuestionPaletteProps {
   totalQuestions: number;
   currentIndex: number;
   answers: Record<string, any>;
-  flaggedQuestions: Record<number, boolean>;
   questionIds: string[];
+  questionStatuses?: Array<'LOCKED' | 'ACTIVE' | 'CORRECT' | 'INCORRECT' | 'TIMED_OUT' | 'COMPLETED'>;
   onSelectIndex: (index: number) => void;
 }
 
@@ -13,11 +13,13 @@ export const QuestionPalette: React.FC<QuestionPaletteProps> = ({
   totalQuestions,
   currentIndex,
   answers,
-  flaggedQuestions,
   questionIds,
+  questionStatuses,
   onSelectIndex,
 }) => {
-  const answeredCount = Object.keys(answers).filter((k) => answers[k] !== '' && answers[k] !== undefined).length;
+  const answeredCount = questionStatuses
+    ? questionStatuses.filter((status) => status === 'COMPLETED').length
+    : Object.keys(answers).filter((k) => answers[k] !== '' && answers[k] !== undefined).length;
 
   return (
     <div className="card question-palette">
@@ -36,23 +38,29 @@ export const QuestionPalette: React.FC<QuestionPaletteProps> = ({
         {Array.from({ length: totalQuestions }).map((_, idx) => {
           const qId = questionIds[idx];
           const isAnswered = answers[qId] !== undefined && answers[qId] !== '';
-          const isFlagged = !!flaggedQuestions[idx];
+          const status = questionStatuses?.[idx];
           const isCurrent = idx === currentIndex;
+          const isNavigable = !questionStatuses || status === 'ACTIVE' && isCurrent;
 
           let bg = 'var(--bg-card)';
           let color = 'var(--text-primary)';
           let border = '1px solid var(--border-color)';
 
-          if (isAnswered) {
+          if (status === 'COMPLETED' || isAnswered) {
             bg = 'var(--primary)';
             color = '#FFFFFF';
             border = '1px solid var(--primary)';
+          }
+          if (status === 'LOCKED') {
+            bg = 'var(--bg-subtle)';
+            color = 'var(--text-secondary)';
           }
 
           return (
             <button
               key={idx}
-              onClick={() => onSelectIndex(idx)}
+              onClick={() => isNavigable && onSelectIndex(idx)}
+              disabled={!isNavigable}
               style={{
                 height: '38px',
                 borderRadius: 'var(--border-radius-sm)',
@@ -67,23 +75,11 @@ export const QuestionPalette: React.FC<QuestionPaletteProps> = ({
                 position: 'relative',
                 boxShadow: isCurrent ? '0 0 0 2px rgba(200, 100, 62, 0.3)' : 'none',
                 transition: 'all var(--transition-fast)',
+                cursor: isNavigable ? 'pointer' : 'not-allowed',
+                opacity: status === 'LOCKED' ? 0.65 : 1,
               }}
             >
               {idx + 1}
-              {isFlagged && (
-                <div
-                  style={{
-                    position: 'absolute',
-                    top: '-3px',
-                    right: '-3px',
-                    width: '10px',
-                    height: '10px',
-                    borderRadius: '50%',
-                    backgroundColor: 'var(--accent)',
-                    border: '1.5px solid #FFFFFF',
-                  }}
-                />
-              )}
             </button>
           );
         })}
@@ -108,10 +104,6 @@ export const QuestionPalette: React.FC<QuestionPaletteProps> = ({
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <div style={{ width: '12px', height: '12px', borderRadius: '3px', backgroundColor: 'var(--bg-card)', border: '1px solid var(--border-color)' }} />
           <span>Chưa trả lời ({totalQuestions - answeredCount})</span>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <div style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: 'var(--accent)' }} />
-          <span>Đã đánh dấu xem lại</span>
         </div>
       </div>
     </div>

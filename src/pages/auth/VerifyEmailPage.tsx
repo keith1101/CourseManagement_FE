@@ -91,7 +91,7 @@ export const VerifyEmailPage: React.FC = () => {
   if (status === 'success') {
     return (
       <AuthLayout
-        title="Email đã được xác nhận"
+        title="Thư điện tử đã được xác nhận"
         subtitle="Tài khoản của bạn đã sẵn sàng"
       >
         <div style={{ textAlign: 'center' }}>
@@ -138,7 +138,7 @@ export const VerifyEmailPage: React.FC = () => {
 
       <form onSubmit={handleResend}>
         <Input
-          label="Email đăng ký"
+          label="Thư điện tử đăng ký"
           type="email"
           required
           value={email}

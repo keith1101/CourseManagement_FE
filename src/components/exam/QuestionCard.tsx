@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Check, Flag, Lightbulb, X, HelpCircle, FileText } from 'lucide-react';
+import { Check, Lightbulb, X, HelpCircle, FileText } from 'lucide-react';
 import { AttemptFeedback, Question } from '../../types';
 
 interface QuestionCardProps {
@@ -10,10 +10,8 @@ interface QuestionCardProps {
   textAnswer?: string;
   feedback?: AttemptFeedback;
   disabled?: boolean;
-  isFlagged?: boolean;
   onSelectOption: (optionId: string) => void;
   onTextAnswerChange: (text: string) => void;
-  onToggleFlag: () => void;
 }
 
 export const QuestionCard: React.FC<QuestionCardProps> = ({
@@ -24,17 +22,19 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
   textAnswer = '',
   feedback,
   disabled = false,
-  isFlagged = false,
   onSelectOption,
   onTextAnswerChange,
-  onToggleFlag,
 }) => {
   const [showHint, setShowHint] = useState(false);
   const isChoice = question.type === 'SINGLE_CHOICE' || question.type === 'MULTIPLE_CHOICE';
   const correctOptionId = feedback?.correctOptionId;
 
   return (
-    <div className="card question-card animate-slide-up">
+    <div
+      className="card question-card animate-slide-up"
+      data-testid="question-card"
+      data-question-id={question.id}
+    >
       {/* Question Card Header */}
       <div className="question-card-header">
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -55,26 +55,6 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
           </span>
         </div>
 
-        <button
-          type="button"
-          onClick={onToggleFlag}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '6px',
-            padding: '6px 14px',
-            borderRadius: 'var(--border-radius-full)',
-            backgroundColor: isFlagged ? 'var(--warning-bg)' : 'var(--bg-subtle)',
-            color: isFlagged ? 'var(--warning)' : 'var(--text-secondary)',
-            border: `1px solid ${isFlagged ? 'var(--warning-border)' : 'var(--border-color)'}`,
-            fontWeight: 600,
-            fontSize: '0.8125rem',
-            transition: 'all var(--transition-fast)',
-          }}
-        >
-          <Flag size={14} fill={isFlagged ? 'var(--warning)' : 'none'} />
-          {isFlagged ? 'Đã đánh dấu' : 'Đánh dấu xem lại'}
-        </button>
       </div>
 
       {/* Question Content & Media */}
@@ -355,6 +335,33 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
             </div>
           )}
 
+          {feedback.correctAnswer && (
+            <div style={{ marginTop: '6px' }}>
+              Đáp án đúng: <strong>{feedback.correctAnswer.content}</strong>
+            </div>
+          )}
+
+          {feedback.guidance && (
+            <div
+              style={{
+                marginTop: '8px',
+                paddingTop: '8px',
+                borderTop: '1px solid rgba(0, 0, 0, 0.08)',
+                color: 'var(--text-secondary)',
+                fontSize: '0.875rem',
+              }}
+            >
+              <strong>Hướng dẫn:</strong>{feedback.guidance.text ? ` ${feedback.guidance.text}` : ' —'}
+              {feedback.guidance.image && (
+                <img
+                  src={feedback.guidance.image}
+                  alt="Hình minh họa hướng dẫn"
+                  style={{ display: 'block', maxWidth: '100%', maxHeight: '220px', marginTop: '8px' }}
+                />
+              )}
+            </div>
+          )}
+
           {(feedback.explanation || feedback.explanationImage) && (
             <div
               style={{
@@ -370,11 +377,9 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
             >
               <FileText size={16} color="var(--primary)" style={{ flexShrink: 0, marginTop: '2px' }} />
               <div>
-                {feedback.explanation && (
-                  <div>
-                    <strong>Giải thích:</strong> {feedback.explanation}
-                  </div>
-                )}
+                <div>
+                  <strong>Giải thích:</strong>{feedback.explanation ? ` ${feedback.explanation}` : ' —'}
+                </div>
                 {feedback.explanationImage && (
                   <img
                     src={feedback.explanationImage}

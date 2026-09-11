@@ -147,6 +147,7 @@ export const MyAssignmentsPage: React.FC = () => {
             const completed = assignment.status === 'COMPLETED';
             const inProgress = assignment.status === 'IN_PROGRESS';
             const canAccess = !!assignment.exam && canStartExam(user, assignment.exam, assignment);
+            const canRetake = assignment.canRetake === true;
             const completedAttempt = assignment.examAttempts?.find(
               (attempt) => attempt.status === 'COMPLETED'
             );
@@ -256,17 +257,34 @@ export const MyAssignmentsPage: React.FC = () => {
                   }}
                 >
                   {completed ? (
-                    <Button
-                      variant="outline"
-                      style={{ width: '100%' }}
-                      onClick={() =>
-                        completedAttempt?.id &&
-                        navigate(`/student/attempts/${completedAttempt.id}/result`)
-                      }
-                      leftIcon={<CheckCircle2 size={16} />}
-                    >
-                      Xem kết quả
-                    </Button>
+                    <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                      <Button
+                        variant="outline"
+                        style={{ flex: '1 1 180px' }}
+                        onClick={() =>
+                          completedAttempt?.id &&
+                          navigate(`/student/attempts/${completedAttempt.id}/result`)
+                        }
+                        leftIcon={<CheckCircle2 size={16} />}
+                      >
+                        Xem kết quả
+                      </Button>
+                      {canRetake && (
+                        <Button
+                          variant="primary"
+                          style={{ flex: '1 1 180px' }}
+                          disabled={!canAccess}
+                          onClick={() => navigate(
+                            `/student/exams/${assignment.examId}/take?assignmentId=${encodeURIComponent(
+                              assignment.id
+                            )}`
+                          )}
+                          leftIcon={<PlayCircle size={16} />}
+                        >
+                          {canAccess ? 'Làm lại bài' : 'Nâng cấp để làm bài'}
+                        </Button>
+                      )}
+                    </div>
                   ) : (
                     <Button
                       variant={inProgress ? 'primary' : 'primary'}

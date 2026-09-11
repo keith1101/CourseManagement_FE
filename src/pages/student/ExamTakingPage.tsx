@@ -6,13 +6,14 @@ import { ExamProgress } from '../../components/exam/ExamProgress';
 import { QuestionCard } from '../../components/exam/QuestionCard';
 import { QuestionPalette } from '../../components/exam/QuestionPalette';
 import { SubmitConfirmModal } from '../../components/exam/SubmitConfirmModal';
+import { SequentialExamTakingView } from '../../components/exam/SequentialExamTakingView';
 import { Button } from '../../components/common/Button';
 import { LoadingSpinner } from '../../components/common/LoadingSpinner';
 import { UpgradeModal } from '../../components/common/UpgradeModal';
 import { attemptsApi, SaveAnswerPayload } from '../../api/attempts';
 import { examsApi } from '../../api/exams';
 import { questionsApi } from '../../api/questions';
-import { AttemptFeedback, Exam, ExamAttempt, Question } from '../../types';
+import { AttemptFeedback, Exam, ExamAttempt, Question, SequentialSession } from '../../types';
 import { useToast } from '../../contexts/ToastContext';
 import { getApiErrorMessage } from '../../api/errors';
 
@@ -29,13 +30,13 @@ export const ExamTakingPage: React.FC = () => {
   const navigate = useNavigate();
   const { success, error, warning } = useToast();
   const [attempt, setAttempt] = useState<ExamAttempt | null>(null);
+  const [sequentialSession, setSequentialSession] = useState<SequentialSession | null>(null);
   const [exam, setExam] = useState<Exam | null>(null);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [feedback, setFeedback] = useState<Record<string, AttemptFeedback>>({});
   const [deadlines, setDeadlines] = useState<Record<string, number>>({});
-  const [flaggedQuestions, setFlaggedQuestions] = useState<Record<number, boolean>>({});
   const [now, setNow] = useState(Date.now());
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -47,11 +48,20 @@ export const ExamTakingPage: React.FC = () => {
     setIsLoading(true);
     setDeadlines({});
     setFeedback({});
+    setSequentialSession(null);
     try {
       const currentAttempt = attemptId
         ? await attemptsApi.getAttempt(attemptId)
         : await attemptsApi.startAttempt(examId!, assignmentId);
       setAttempt(currentAttempt);
+      if (currentAttempt.flowVersion === 2) {
+        const session = currentAttempt.sequentialSession || await attemptsApi.getSequentialSession(currentAttempt.id);
+        const targetExamId = currentAttempt.examId || examId!;
+        const examData = await examsApi.getExamById(targetExamId);
+        setExam(examData);
+        setSequentialSession(session);
+        return;
+      }
       const deadlineKey = `course-management:attempt-deadlines:${currentAttempt.id}`;
       const storedDeadlines = localStorage.getItem(deadlineKey);
       if (storedDeadlines) {
@@ -209,34 +219,12 @@ export const ExamTakingPage: React.FC = () => {
   const handleSelectOption = (optionId: string) => {
     if (!currentQuestion || currentLocked) return;
     setAnswers((previous) => ({ ...previous, [currentQuestion.id]: optionId }));
-    // Save the selection as a draft. Grading is only requested by an
-    // explicit per-question submit, timeout, or final exam submission.
-    void persistAnswer(currentQuestion, optionId, { revealFeedback: false }).catch((err) => {
-      error(getApiErrorMessage(err, 'Không thể lưu đáp án.'));
-    });
   };
 
   const handleTextAnswerChange = (value: string) => {
     if (!currentQuestion || currentLocked) return;
     setAnswers((previous) => ({ ...previous, [currentQuestion.id]: value }));
   };
-
-  useEffect(() => {
-    if (
-      !currentQuestion ||
-      currentQuestion.type === 'SINGLE_CHOICE' ||
-      currentQuestion.type === 'MULTIPLE_CHOICE' ||
-      currentFeedback ||
-      !attempt?.id
-    )
-      return;
-    const value = answers[currentQuestion.id];
-    if (!value) return;
-    const timer = window.setTimeout(() => {
-      void persistAnswer(currentQuestion, value, { revealFeedback: false }).catch(() => undefined);
-    }, 500);
-    return () => window.clearTimeout(timer);
-  }, [answers, attempt?.id, currentFeedback, currentQuestion, persistAnswer]);
 
   const handleSubmitQuestion = async () => {
     if (!attempt?.id || !currentQuestion) return;
@@ -279,7 +267,7 @@ export const ExamTakingPage: React.FC = () => {
 
       await Promise.all(
         pendingAnswers.map(({ question, value }) =>
-          persistAnswer(question, value, { revealFeedback: false }),
+          persistAnswer(question, value, { finalize: true, revealFeedback: false }),
         ),
       );
       await attemptsApi.submitAttempt(attempt.id);
@@ -294,16 +282,7 @@ export const ExamTakingPage: React.FC = () => {
     }
   };
 
-  const handleNextQuestion = async () => {
-    if (
-      currentQuestion &&
-      answers[currentQuestion.id] &&
-      !currentFeedback
-    ) {
-      await persistAnswer(currentQuestion, answers[currentQuestion.id], { revealFeedback: false }).catch(
-        () => undefined
-      );
-    }
+  const handleNextQuestion = () => {
     setCurrentIndex((index) => Math.min(questions.length - 1, index + 1));
   };
 
@@ -313,6 +292,17 @@ export const ExamTakingPage: React.FC = () => {
   );
 
   if (isLoading) return <LoadingSpinner fullPage text="Đang chuẩn bị đề thi cho bạn..." />;
+
+  if (attempt?.flowVersion === 2 && sequentialSession) {
+    return (
+      <SequentialExamTakingView
+        attemptId={attempt.id}
+        attempt={attempt}
+        initialSession={sequentialSession}
+        examTitle={exam?.title}
+      />
+    );
+  }
 
   if (!currentQuestion)
     return (
@@ -387,15 +377,8 @@ export const ExamTakingPage: React.FC = () => {
             textAnswer={answers[currentQuestion.id] || ''}
             feedback={currentFeedback}
             disabled={secondsLeft === 0 && !currentFeedback}
-            isFlagged={!!flaggedQuestions[currentIndex]}
             onSelectOption={handleSelectOption}
             onTextAnswerChange={handleTextAnswerChange}
-            onToggleFlag={() =>
-              setFlaggedQuestions((previous) => ({
-                ...previous,
-                [currentIndex]: !previous[currentIndex],
-              }))
-            }
           />
 
           {currentFeedback && (
@@ -447,7 +430,6 @@ export const ExamTakingPage: React.FC = () => {
             totalQuestions={questions.length}
             currentIndex={currentIndex}
             answers={answers}
-            flaggedQuestions={flaggedQuestions}
             questionIds={questionIds}
             onSelectIndex={(index) => setCurrentIndex(index)}
           />

@@ -266,7 +266,7 @@ export const QuestionCanvas: React.FC<QuestionCanvasProps> = ({ question, onChan
             }}
           >
             <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <FileText size={18} color="var(--primary)" /> Giải thích chi tiết đáp án (Explanation)
+              <FileText size={18} color="var(--primary)" /> Giải thích chi tiết đáp án
             </span>
             {showExplanation ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
           </button>

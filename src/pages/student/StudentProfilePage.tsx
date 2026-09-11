@@ -171,11 +171,11 @@ export const StudentProfilePage: React.FC = () => {
               required
             />
             <Input
-              label="Địa chỉ Email"
+              label="Địa chỉ thư điện tử"
               value={user?.email || ''}
               disabled
               leftIcon={<Mail size={18} />}
-              helperText="Email được dùng làm tên đăng nhập cố định và không thể thay đổi."
+              helperText="Thư điện tử được dùng làm tên đăng nhập cố định và không thể thay đổi."
             />
             <Input
               label="Số điện thoại liên hệ"

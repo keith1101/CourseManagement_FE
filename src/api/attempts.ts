@@ -1,6 +1,12 @@
 import { apiClient } from './client';
-import { ExamAttempt, StudentAnswer, AttemptFeedback } from '../types';
-import { mapAnswer, mapAttempt } from './mappers';
+import {
+  AttemptFeedback,
+  ExamAttempt,
+  SequentialFeedback,
+  SequentialSession,
+  StudentAnswer,
+} from '../types';
+import { mapAnswer, mapAttempt, mapSequentialFeedback, mapSequentialSession } from './mappers';
 
 export interface SaveAnswerPayload extends StudentAnswer {
   timedOut?: boolean;
@@ -11,6 +17,28 @@ export type SaveAnswerResponse = Omit<AttemptFeedback, 'isCorrect'> & {
   isCorrect?: boolean;
 };
 
+export interface SequentialAnswerPayload {
+  questionId: string;
+  progressVersion: number;
+  selectedOptionId?: string;
+  rawValue?: string;
+  answerType?: 'TEXT' | 'NUMBER';
+  normalizedText?: string;
+  content?: string;
+  numericValue?: number;
+}
+
+export interface SequentialSubmitResponse {
+  attemptId: string;
+  questionId: string;
+  status: 'CORRECT' | 'INCORRECT' | 'TIMED_OUT';
+  isCorrect: boolean;
+  timedOut: boolean;
+  advanceAfter?: string | null;
+  progressVersion: number;
+  feedback?: SequentialFeedback;
+}
+
 export const attemptsApi = {
   startAttempt: async (examId: string, assignmentId?: string): Promise<ExamAttempt> => {
     const res = await apiClient.post<any>(`/exams/${examId}/attempts`, assignmentId ? { assignmentId } : {});
@@ -20,6 +48,49 @@ export const attemptsApi = {
   getAttempt: async (attemptId: string): Promise<ExamAttempt> => {
     const res = await apiClient.get<any>(`/attempts/${attemptId}`);
     return mapAttempt(res.data);
+  },
+
+  getSequentialSession: async (attemptId: string): Promise<SequentialSession> => {
+    const res = await apiClient.get<any>(`/attempts/${attemptId}/session`, {
+      headers: { 'Cache-Control': 'no-store' },
+    });
+    return mapSequentialSession(res.data);
+  },
+
+  submitCurrentQuestion: async (
+    attemptId: string,
+    answer: SequentialAnswerPayload,
+    idempotencyKey: string,
+  ): Promise<SequentialSubmitResponse | SequentialSession> => {
+    const res = await apiClient.post<any>(
+      `/attempts/${attemptId}/current-question/submit`,
+      answer,
+      { headers: { 'Idempotency-Key': idempotencyKey } },
+    );
+    if (res.data?.navigator) return mapSequentialSession(res.data);
+    return {
+      ...res.data,
+      feedback: mapSequentialFeedback(res.data?.feedback),
+    } as SequentialSubmitResponse;
+  },
+
+  expireCurrentQuestion: async (attemptId: string): Promise<SequentialSession> => {
+    const res = await apiClient.post<any>(`/attempts/${attemptId}/current-question/expire`);
+    return mapSequentialSession(res.data);
+  },
+
+  continueCurrentQuestion: async (
+    attemptId: string,
+    questionId: string,
+    progressVersion: number,
+    idempotencyKey: string,
+  ): Promise<SequentialSession> => {
+    const res = await apiClient.post<any>(
+      `/attempts/${attemptId}/current-question/continue`,
+      { questionId, progressVersion },
+      { headers: { 'Idempotency-Key': idempotencyKey } },
+    );
+    return mapSequentialSession(res.data);
   },
 
   saveAnswer: async (attemptId: string, answer: SaveAnswerPayload): Promise<SaveAnswerResponse> => {

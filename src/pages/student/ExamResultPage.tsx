@@ -533,7 +533,13 @@ export const ExamResultPage: React.FC = () => {
         {attempt.examId && (
           <Button
             variant="primary"
-            onClick={() => navigate(`/student/exams/${attempt.examId}/take`)}
+            onClick={() => navigate(
+              `/student/exams/${attempt.examId}/take${
+                attempt.assignmentId
+                  ? `?assignmentId=${encodeURIComponent(attempt.assignmentId)}`
+                  : ''
+              }`,
+            )}
             leftIcon={<RotateCcw size={16} />}
           >
             Luyện tập lại đề này

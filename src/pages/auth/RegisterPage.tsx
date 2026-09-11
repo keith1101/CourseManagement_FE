@@ -35,7 +35,7 @@ export const RegisterPage: React.FC = () => {
       });
       const resultMessage = result.message.toLowerCase();
       const announcement = resultMessage.includes('already exists')
-        ? 'Email này đã được đăng ký nhưng chưa được xác minh. Chúng tôi đã gửi lại email xác nhận.'
+        ? 'Thư điện tử này đã được đăng ký nhưng chưa được xác minh. Chúng tôi đã gửi lại thư xác nhận.'
         : 'Đăng ký thành công. Vui lòng kiểm tra hộp thư để xác nhận tài khoản.';
 
       success(announcement);
@@ -65,7 +65,7 @@ export const RegisterPage: React.FC = () => {
           disabled={isLoading}
         />
         <Input
-          label="Email"
+          label="Thư điện tử"
           type="email"
           placeholder="name@example.com"
           required

@@ -234,7 +234,7 @@ export const UsersManagementPage: React.FC = () => {
           <thead>
             <tr>
               <th style={{ minWidth: '180px' }}>Họ và tên</th>
-              <th style={{ minWidth: '200px' }}>Email</th>
+              <th style={{ minWidth: '200px' }}>Thư điện tử</th>
               <th style={{ minWidth: '130px' }}>Số điện thoại</th>
               <th style={{ textAlign: 'center', width: '120px', minWidth: '110px' }}>Vai trò</th>
               <th style={{ textAlign: 'center', width: '130px', minWidth: '120px' }}>Gói thành viên</th>

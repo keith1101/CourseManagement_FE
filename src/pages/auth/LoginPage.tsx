@@ -44,13 +44,13 @@ export const LoginPage: React.FC = () => {
     } catch (err) {
       if (isEmailNotVerifiedError(err)) {
         const verificationEmail = loginEmail.trim();
-        error('Email chưa được xác nhận. Bạn sẽ được chuyển đến trang xác thực email.');
+        error('Thư điện tử chưa được xác nhận. Bạn sẽ được chuyển đến trang xác thực.');
         navigate(
           `/verify-email?email=${encodeURIComponent(verificationEmail)}`,
           { replace: true },
         );
       } else {
-        error(getApiErrorMessage(err, 'Email hoặc mật khẩu không chính xác.'));
+        error(getApiErrorMessage(err, 'Thư điện tử hoặc mật khẩu không chính xác.'));
       }
     } finally {
       setIsLoading(false);
@@ -70,7 +70,7 @@ export const LoginPage: React.FC = () => {
     >
       <form onSubmit={(e) => handleSubmit(e)}>
         <Input
-          label="Email"
+          label="Thư điện tử"
           type="email"
           placeholder="name@example.com"
           required

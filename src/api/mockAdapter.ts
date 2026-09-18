@@ -333,15 +333,7 @@ export const setupMockAdapter = (client: AxiosInstance) => {
             : examsState.filter((exam) => {
                 if (exam.status !== 'PUBLISHED') return false;
                 if (isProActive(currentUser)) return true;
-                return (
-                  exam.accessLevel === 'FREE' &&
-                  assignmentsState.some(
-                    (assignment) =>
-                      assignment.studentId === currentUser?.id &&
-                      assignment.examId === exam.id &&
-                      !assignment.deletedAt,
-                  )
-                );
+                return exam.accessLevel === 'FREE';
               });
         return Promise.reject({ isMock: true, mockResponse: mockResponse(visibleExams) });
       }
@@ -383,7 +375,7 @@ export const setupMockAdapter = (client: AxiosInstance) => {
       if (
         currentUser?.role === 'STUDENT' &&
         (!exam || exam.status !== 'PUBLISHED' ||
-          (!isProActive(currentUser) && (exam.accessLevel !== 'FREE' || !hasAssignment)))
+          (!isProActive(currentUser) && exam.accessLevel === 'PRO'))
       ) {
         return Promise.reject({
           isMock: true,
@@ -668,18 +660,6 @@ export const setupMockAdapter = (client: AxiosInstance) => {
             isMock: true,
             mockResponse: mockResponse(
               { code: 'EXAM_REQUIRES_PRO', message: 'Nội dung này yêu cầu tài khoản PRO.' },
-              403,
-            ),
-          });
-        }
-        if (!isProActive(currentUser) && !activeAssignment) {
-          return Promise.reject({
-            isMock: true,
-            mockResponse: mockResponse(
-              {
-                code: 'ASSIGNMENT_REQUIRED',
-                message: 'Tài khoản miễn phí chỉ được làm đề thi đã được giao.',
-              },
               403,
             ),
           });

@@ -147,7 +147,11 @@ export const QuestionSidebar: React.FC<QuestionSidebarProps> = ({
                   fontWeight: 500,
                 }}
               >
-                <span>{question.points} điểm</span>
+                <span>
+                  {question.type === 'MULTI_PART_SHORT_ANSWER'
+                    ? `${question.parts?.length || question.questionParts?.length || 1} điểm thành phần`
+                    : `${question.points} điểm`}
+                </span>
                 <span>{question.timeLimit || 30}s</span>
               </div>
             </div>

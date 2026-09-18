@@ -28,13 +28,18 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
   const [urlInput, setUrlInput] = useState(value?.startsWith('http') ? value : '');
   const [isDragging, setIsDragging] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [isFocused, setIsFocused] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const dropZoneRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (value?.startsWith('http')) setUrlInput(value);
   }, [value]);
 
-  const uploadSelectedFile = async (file: File) => {
+  const uploadImageFile = async (file: File) => {
     if (isUploading) return;
 
     if (!file.type.startsWith('image/')) {
@@ -61,10 +66,96 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
     }
   };
 
+  const extractImageFromClipboard = (clipboardData: DataTransfer | null): File | null => {
+    if (!clipboardData) return null;
+
+    // Primary: check clipboard items for image/*
+    const items = clipboardData.items;
+    if (items && items.length > 0) {
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        if (item.type.startsWith('image/')) {
+          const file = item.getAsFile();
+          if (file) return file;
+        }
+      }
+    }
+
+    // Fallback: check clipboard files
+    const files = clipboardData.files;
+    if (files && files.length > 0) {
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        if (file.type.startsWith('image/')) {
+          return file;
+        }
+      }
+    }
+
+    return null;
+  };
+
+  const handleDropZonePaste = (e: React.ClipboardEvent<HTMLDivElement>) => {
+    const file = extractImageFromClipboard(e.clipboardData);
+    if (file) {
+      e.preventDefault();
+      e.stopPropagation();
+      void uploadImageFile(file);
+    }
+  };
+
+  useEffect(() => {
+    const isTextInputElement = (el: HTMLElement | null): boolean => {
+      if (!el) return false;
+      const tagName = el.tagName?.toUpperCase();
+      return tagName === 'INPUT' || tagName === 'TEXTAREA' || el.isContentEditable;
+    };
+
+    const handleWindowPaste = (e: ClipboardEvent) => {
+      if (e.defaultPrevented) return;
+      if (activeTab !== 'upload' || isUploading) return;
+
+      const activeEl = document.activeElement as HTMLElement | null;
+      const targetEl = e.target as HTMLElement | null;
+
+      // Do NOT intercept if activeElement or target is an input, textarea, or contentEditable
+      if (isTextInputElement(activeEl) || isTextInputElement(targetEl)) {
+        return;
+      }
+
+      // Only handle if this upload zone is focused or user is interacting with it
+      const isZoneFocused =
+        dropZoneRef.current &&
+        (dropZoneRef.current === activeEl || dropZoneRef.current.contains(activeEl));
+
+      const isInsideContainer =
+        containerRef.current &&
+        (containerRef.current.contains(activeEl) || containerRef.current.contains(targetEl));
+
+      const isInteracting = isFocused || isZoneFocused || (isHovered && isInsideContainer);
+
+      if (!isInteracting) {
+        return;
+      }
+
+      const file = extractImageFromClipboard(e.clipboardData);
+      if (file) {
+        e.preventDefault();
+        e.stopPropagation();
+        void uploadImageFile(file);
+      }
+    };
+
+    window.addEventListener('paste', handleWindowPaste);
+    return () => {
+      window.removeEventListener('paste', handleWindowPaste);
+    };
+  }, [activeTab, isUploading, isFocused, isHovered, uploadImage, onChange]);
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     e.target.value = '';
-    if (file) void uploadSelectedFile(file);
+    if (file) void uploadImageFile(file);
   };
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -80,7 +171,7 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
     e.preventDefault();
     setIsDragging(false);
     const file = e.dataTransfer.files?.[0];
-    if (file) void uploadSelectedFile(file);
+    if (file) void uploadImageFile(file);
   };
 
   const handleUrlSubmit = () => {
@@ -189,6 +280,9 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
   // Full / Standard Mode (for Question canvas, Hint, Explanation)
   return (
     <div
+      ref={containerRef}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
       style={{
         padding: '16px',
         backgroundColor: 'var(--bg-subtle)',
@@ -268,17 +362,45 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
       {/* Action / Input based on Tab */}
       {activeTab === 'upload' ? (
         <div
+          ref={dropZoneRef}
+          tabIndex={0}
+          role="region"
+          aria-label="Khu vực tải lên hình ảnh"
+          onFocus={() => setIsFocused(true)}
+          onBlur={() => setIsFocused(false)}
+          onMouseEnter={() => setIsHovered(true)}
+          onMouseLeave={() => setIsHovered(false)}
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
+          onPaste={handleDropZonePaste}
           onClick={() => {
-            if (!isUploading) fileInputRef.current?.click();
+            if (!isUploading) dropZoneRef.current?.focus();
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              if (!isUploading) fileInputRef.current?.click();
+            }
           }}
           style={{
-            padding: '20px 16px',
+            padding: '22px 16px',
             borderRadius: 'var(--border-radius-md)',
-            border: `2px dashed ${isDragging ? 'var(--primary)' : 'var(--border-color)'}`,
-            backgroundColor: isDragging ? 'var(--primary-light)' : 'var(--bg-card)',
+            border: `2px dashed ${
+              isDragging
+                ? 'var(--primary)'
+                : isFocused
+                ? 'var(--primary)'
+                : 'var(--border-color)'
+            }`,
+            backgroundColor: isDragging
+              ? 'var(--primary-light)'
+              : isFocused
+              ? 'var(--primary-light)'
+              : 'var(--bg-card)',
+            outline: isFocused ? '2px solid var(--primary)' : 'none',
+            outlineOffset: '2px',
+            boxShadow: isFocused ? '0 0 0 4px rgba(37, 99, 235, 0.15)' : 'none',
             textAlign: 'center',
             cursor: 'pointer',
             opacity: isUploading ? 0.65 : 1,
@@ -290,30 +412,94 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
             gap: '8px',
           }}
         >
-          <div
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              if (!isUploading) fileInputRef.current?.click();
+            }}
+            title="Tải ảnh lên từ máy tính"
             style={{
               width: '40px',
               height: '40px',
               borderRadius: '50%',
-              backgroundColor: 'var(--primary-light)',
-              color: 'var(--primary)',
+              backgroundColor: isFocused ? 'var(--primary)' : 'var(--primary-light)',
+              color: isFocused ? '#FFFFFF' : 'var(--primary)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
+              border: 'none',
+              cursor: 'pointer',
+              transition: 'all var(--transition-fast)',
             }}
           >
             <Upload size={20} />
-          </div>
-          <div>
-            <strong style={{ fontSize: '0.875rem', color: 'var(--primary)' }}>
+          </button>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '4px',
+              flexWrap: 'wrap',
+              lineHeight: 1.5,
+            }}
+          >
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                if (!isUploading) fileInputRef.current?.click();
+              }}
+              style={{
+                background: 'none',
+                border: 'none',
+                padding: 0,
+                font: 'inherit',
+                fontSize: '0.875rem',
+                fontWeight: 700,
+                color: 'var(--primary)',
+                cursor: 'pointer',
+                textDecoration: 'underline',
+                textUnderlineOffset: '2px',
+              }}
+            >
               {isUploading ? 'Đang tải ảnh lên...' : 'Nhấn để tải ảnh lên'}
-            </strong>{' '}
+            </button>
             <span style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)' }}>
-              hoặc kéo và thả tệp vào đây
+              , kéo thả tệp hoặc
+            </span>
+            <kbd
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                padding: '2px 6px',
+                fontSize: '0.75rem',
+                fontWeight: 600,
+                fontFamily: 'inherit',
+                color: 'var(--text-primary)',
+                backgroundColor: 'var(--bg-subtle)',
+                border: '1px solid var(--border-color)',
+                borderRadius: '4px',
+                boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)',
+              }}
+            >
+              Ctrl + V
+            </kbd>
+            <span style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)' }}>
+              để dán ảnh
             </span>
           </div>
-          <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-            Hỗ trợ PNG, JPG, JPEG, GIF, WebP, SVG (Tối đa 5MB)
+          <span
+            style={{
+              fontSize: '0.75rem',
+              color: isFocused ? 'var(--primary)' : 'var(--text-muted)',
+              fontWeight: isFocused ? 600 : 400,
+            }}
+          >
+            {isFocused
+              ? '✓ Vùng tải ảnh đang được chọn. Nhấn Ctrl + V hoặc Cmd + V để dán ảnh'
+              : 'Hỗ trợ PNG, JPG, JPEG, GIF, WebP, SVG (Tối đa 5MB)'}
           </span>
         </div>
       ) : (

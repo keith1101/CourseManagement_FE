@@ -50,7 +50,7 @@ export interface Subject {
   updatedAt: string;
 }
 
-export type QuestionType = 'MULTIPLE_CHOICE' | 'SINGLE_CHOICE' | 'ESSAY';
+export type QuestionType = 'MULTIPLE_CHOICE' | 'SINGLE_CHOICE' | 'ESSAY' | 'MULTI_PART_SHORT_ANSWER';
 
 export interface AnswerOption {
   id?: string;
@@ -60,6 +60,13 @@ export interface AnswerOption {
   position?: number;
   image?: string;
   imageStorageUri?: string;
+}
+
+export interface QuestionPart {
+  id?: string;
+  contentText: string;
+  correctAnswer?: string;
+  position?: number;
 }
 
 export interface Question {
@@ -75,6 +82,8 @@ export interface Question {
   imageStorageUri?: string;
   instruction?: string;
   options: AnswerOption[];
+  parts?: QuestionPart[];
+  questionParts?: QuestionPart[];
   hint?: string;
   hintImage?: string;
   hintImageStorageUri?: string;
@@ -151,6 +160,12 @@ export interface SequentialExplanation {
   image?: string | null;
 }
 
+export interface PartFeedback {
+  partId: string;
+  isCorrect: boolean;
+  correctAnswer?: string;
+}
+
 export interface SequentialFeedback {
   questionId: string;
   isCorrect: boolean;
@@ -158,6 +173,8 @@ export interface SequentialFeedback {
   correctOptionId?: string;
   correctTextAnswer?: string;
   correctAnswer?: { id: string; content: string };
+  parts?: PartFeedback[];
+  partFeedback?: PartFeedback[];
   guidance?: SequentialGuidance;
   explanation?: SequentialExplanation;
 }
@@ -208,6 +225,8 @@ export interface StudentAnswer {
   timedOut?: boolean;
   correctOptionId?: string;
   correctTextAnswer?: string;
+  parts?: Array<{ partId: string; rawValue: string }>;
+  partFeedback?: PartFeedback[];
   explanation?: string;
   explanationImage?: string;
 }
@@ -252,11 +271,13 @@ export interface Material {
   updatedAt: string;
 }
 
-export interface AttemptFeedback extends StudentAnswer {
+export interface AttemptFeedback extends Omit<StudentAnswer, 'parts'> {
   questionId: string;
   isCorrect: boolean;
   timedOut?: boolean;
   correctAnswer?: { id: string; content: string };
+  parts?: PartFeedback[];
+  partFeedback?: PartFeedback[];
   guidance?: SequentialGuidance;
 }
 

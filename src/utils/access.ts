@@ -14,10 +14,11 @@ export const canStartExam = (
   exam: Exam,
   assignment?: Assignment,
 ) => {
+  if (!user || user.status === 'LOCKED') return false;
   if (exam.status !== 'PUBLISHED') return false;
   if (assignment?.status === 'OVERDUE') return false;
   if (exam.accessLevel === 'PRO') return isProActive(user);
-  return isProActive(user) || !!assignment;
+  return true;
 };
 
 export const canAccessMaterial = (user: User | null | undefined, material: Material) =>

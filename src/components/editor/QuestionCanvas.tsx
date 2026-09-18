@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { Image as ImageIcon, ChevronDown, ChevronUp, Lightbulb, FileText, BookOpen } from 'lucide-react';
-import { Question, AnswerOption } from '../../types';
+import { Image as ImageIcon, ChevronDown, ChevronUp, Lightbulb, FileText, BookOpen, Plus, Trash2 } from 'lucide-react';
+import { Question, AnswerOption, QuestionPart } from '../../types';
 import { AnswerOptionCard } from './AnswerOptionCard';
 import { ImageUploader } from '../common/ImageUploader';
+import { Button } from '../common/Button';
 import { subjectsApi } from '../../api/subjects';
 import { questionsApi } from '../../api/questions';
 
@@ -21,7 +22,36 @@ export const QuestionCanvas: React.FC<QuestionCanvasProps> = ({ question, onChan
     void subjectsApi.getSubjects().then(setSubjects).catch(() => undefined);
   }, []);
 
+  const isMultiPart = question.type === 'MULTI_PART_SHORT_ANSWER';
   const isChoiceType = question.type === 'SINGLE_CHOICE' || question.type === 'MULTIPLE_CHOICE';
+
+  const parts: QuestionPart[] = question.parts && question.parts.length > 0
+    ? question.parts
+    : question.questionParts && question.questionParts.length > 0
+    ? question.questionParts
+    : [{ contentText: '', correctAnswer: '' }];
+
+  const getPartLabel = (index: number) => `${String.fromCharCode(97 + index)})`;
+
+  const handleAddPart = () => {
+    const nextParts = [...parts, { contentText: '', correctAnswer: '', position: parts.length }];
+    onChange({ ...question, parts: nextParts, questionParts: nextParts });
+  };
+
+  const handleDeletePart = (index: number) => {
+    if (parts.length <= 1) return;
+    const nextParts = parts
+      .filter((_, i) => i !== index)
+      .map((part, newIdx) => ({ ...part, position: newIdx }));
+    onChange({ ...question, parts: nextParts, questionParts: nextParts });
+  };
+
+  const handlePartChange = (index: number, field: 'contentText' | 'correctAnswer', val: string) => {
+    const nextParts = parts.map((part, i) =>
+      i === index ? { ...part, [field]: val } : part,
+    );
+    onChange({ ...question, parts: nextParts, questionParts: nextParts });
+  };
 
   const handleOptionChange = (index: number, updatedOption: AnswerOption) => {
     let newOptions = [...question.options];
@@ -153,8 +183,116 @@ export const QuestionCanvas: React.FC<QuestionCanvasProps> = ({ question, onChan
         )}
       </div>
 
-      {/* 3. Answers Grid / Form */}
-      {isChoiceType ? (
+      {/* 3. Answers Grid / Multi-part List / Essay standard answer */}
+      {isMultiPart ? (
+        <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
+            <div>
+              <h3 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-primary)' }}>
+                Danh sách các ý câu hỏi ({parts.length} ý = {parts.length} điểm thành phần)
+              </h3>
+              <span style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)' }}>
+                Mỗi ý gồm nội dung câu hỏi và đáp án đúng bắt buộc
+              </span>
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleAddPart}
+              leftIcon={<Plus size={15} />}
+            >
+              Thêm ý
+            </Button>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            {parts.map((part, index) => (
+              <div
+                key={part.id || `part-${index}`}
+                style={{
+                  padding: '16px',
+                  borderRadius: 'var(--border-radius-md)',
+                  border: '1.5px solid var(--border-color)',
+                  backgroundColor: 'var(--bg-subtle, #f8fafc)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '12px',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span
+                      style={{
+                        backgroundColor: 'var(--primary)',
+                        color: '#FFFFFF',
+                        fontWeight: 700,
+                        fontSize: '0.8125rem',
+                        padding: '2px 10px',
+                        borderRadius: 'var(--border-radius-full)',
+                      }}
+                    >
+                      {getPartLabel(index)}
+                    </span>
+                    <strong style={{ fontSize: '0.9375rem', color: 'var(--text-primary)' }}>
+                      Ý thứ {index + 1}
+                    </strong>
+                  </div>
+                  {parts.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => handleDeletePart(index)}
+                      title="Xóa ý này"
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                        color: 'var(--error)',
+                        background: 'transparent',
+                        border: 'none',
+                        cursor: 'pointer',
+                        fontSize: '0.8125rem',
+                        fontWeight: 600,
+                        padding: '4px 8px',
+                      }}
+                    >
+                      <Trash2 size={15} /> Xóa ý
+                    </button>
+                  )}
+                </div>
+
+                <div>
+                  <label style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '4px', display: 'block' }}>
+                    Nội dung ý {getPartLabel(index)} <span style={{ color: 'var(--error)' }}>*</span>
+                  </label>
+                  <input
+                    type="text"
+                    className="input-field"
+                    placeholder={`Ví dụ: ${getPartLabel(index)} BMI của học sinh là:`}
+                    value={part.contentText || ''}
+                    onChange={(e) => handlePartChange(index, 'contentText', e.target.value)}
+                    style={{ height: '44px' }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '4px', display: 'block' }}>
+                    Đáp án đúng <span style={{ color: 'var(--error)' }}>*</span>
+                  </label>
+                  <input
+                    type="text"
+                    className="input-field"
+                    placeholder="Nhập đáp án đúng cho ý này..."
+                    value={part.correctAnswer || ''}
+                    onChange={(e) => handlePartChange(index, 'correctAnswer', e.target.value)}
+                    style={{ height: '44px' }}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : isChoiceType ? (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
             <h3 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-primary)' }}>

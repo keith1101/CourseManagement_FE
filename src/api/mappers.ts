@@ -62,6 +62,19 @@ export const mapOption = (raw: any, index: number): AnswerOption => {
 
 export const mapQuestion = (raw: any): Question => {
   const type = raw.questionType || raw.type;
+  const isMultiPart = type === 'MULTI_PART_SHORT_ANSWER';
+  const rawParts = raw.questionParts ?? raw.parts;
+  const parts = Array.isArray(rawParts)
+    ? [...rawParts]
+        .sort((a: any, b: any) => (a.position ?? 0) - (b.position ?? 0))
+        .map((p: any, index: number) => ({
+          id: p.id != null ? String(p.id) : undefined,
+          contentText: p.contentText ?? p.content_text ?? p.content ?? '',
+          correctAnswer: p.correctAnswer ?? p.correct_answer,
+          position: p.position ?? index,
+        }))
+    : undefined;
+
   return {
     id: raw.id,
     examId: raw.examId,
@@ -71,17 +84,21 @@ export const mapQuestion = (raw: any): Question => {
     // The backend stores every choice question as MULTIPLE_CHOICE, but its
     // answer-key contract requires exactly one correct option. Keep the UI
     // in single-select mode after a question is reloaded.
-    type: type === 'SHORT_ANSWER' || type === 'ESSAY' || type === 'FILL_BLANK'
+    type: isMultiPart
+      ? 'MULTI_PART_SHORT_ANSWER'
+      : type === 'SHORT_ANSWER' || type === 'ESSAY' || type === 'FILL_BLANK'
       ? 'ESSAY'
       : type === 'MULTIPLE_CHOICE'
       ? 'SINGLE_CHOICE'
       : type || 'SINGLE_CHOICE',
-    points: raw.points ?? 1,
+    points: raw.points ?? (isMultiPart ? (parts?.length || 1) : 1),
     timeLimit: raw.timeLimitSeconds ?? raw.timeLimit ?? 30,
     image: raw.imageUrl ?? raw.image,
     imageStorageUri: raw.imageStorageUri,
     instruction: raw.instruction,
     options: (raw.questionOptions ?? raw.options ?? []).map(mapOption),
+    parts,
+    questionParts: parts,
     hint: raw.hint,
     hintImage: raw.hintImageUrl ?? raw.hintImage,
     hintImageStorageUri: raw.hintImageStorageUri,
@@ -132,6 +149,36 @@ export const mapAssignment = (raw: any): Assignment => ({
 });
 
 export const mapAnswer = (raw: any): any => {
+  const rawPartFeedback = raw.partFeedback ?? raw.part_feedback ?? raw.partsFeedback;
+  let partFeedback = Array.isArray(rawPartFeedback)
+    ? rawPartFeedback.map((p: any) => ({
+        partId: String(p.partId ?? p.part_id ?? p.id ?? ''),
+        isCorrect: p.isCorrect === true || p.is_correct === true,
+        correctAnswer: p.correctAnswer ?? p.correct_answer,
+      }))
+    : undefined;
+
+  const rawParts = raw.partAnswers ?? raw.parts;
+  const parts = Array.isArray(rawParts)
+    ? rawParts.map((p: any) => ({
+        partId: String(p.partId ?? p.part?.id ?? p.part_id ?? p.id ?? ''),
+        rawValue: String(p.rawValue ?? p.raw_value ?? p.textAnswer ?? ''),
+      }))
+    : undefined;
+
+  if (!partFeedback && Array.isArray(rawParts) && rawParts.some((p: any) => p.isCorrect !== undefined)) {
+    partFeedback = rawParts.map((p: any) => ({
+      partId: String(p.partId ?? p.part?.id ?? p.part_id ?? p.id ?? ''),
+      isCorrect: p.isCorrect === true || p.is_correct === true,
+      correctAnswer: p.correctAnswer ?? p.correct_answer,
+    }));
+  }
+
+  const calculatedIsCorrect =
+    partFeedback && partFeedback.length > 0
+      ? partFeedback.every((p) => p.isCorrect)
+      : undefined;
+
   const isCorrect =
     typeof raw.isCorrect === 'boolean'
       ? raw.isCorrect
@@ -139,7 +186,7 @@ export const mapAnswer = (raw: any): any => {
       ? raw.is_correct
       : typeof raw.correct === 'boolean'
       ? raw.correct
-      : undefined;
+      : calculatedIsCorrect;
 
   return {
     id: raw.id != null ? String(raw.id) : undefined,
@@ -168,6 +215,8 @@ export const mapAnswer = (raw: any): any => {
       ? String(raw.correctOption.id)
       : undefined,
     correctTextAnswer: raw.correctTextAnswer ?? raw.correct_text_answer,
+    parts,
+    partFeedback,
     explanation: raw.explanation ?? raw.question?.explanation ?? raw.explaination,
     explanationImage: raw.explanationImageUrl ?? raw.explanationImage ?? raw.explanation_image_url ?? raw.question?.explanationImageUrl,
   };
@@ -189,15 +238,32 @@ export const mapSequentialFeedback = (raw: any): SequentialFeedback | undefined 
           image: raw.explanation.image ?? undefined,
         }
     : undefined;
+
+  const rawParts = raw.parts ?? raw.partFeedback ?? raw.part_feedback;
+  const parts = Array.isArray(rawParts)
+    ? rawParts.map((p: any) => ({
+        partId: String(p.partId ?? p.part_id ?? p.id ?? ''),
+        isCorrect: p.isCorrect === true || p.is_correct === true,
+        correctAnswer: p.correctAnswer ?? p.correct_answer,
+      }))
+    : undefined;
+
+  const allPartsCorrect = parts && parts.length > 0 ? parts.every((p) => p.isCorrect) : false;
+  const isCorrect = raw.isCorrect !== undefined
+    ? raw.isCorrect === true
+    : (parts ? allPartsCorrect : false);
+
   return {
     questionId: String(raw.questionId ?? ''),
-    isCorrect: raw.isCorrect === true,
+    isCorrect,
     timedOut: raw.timedOut === true,
     correctOptionId: raw.correctOptionId != null ? String(raw.correctOptionId) : undefined,
     correctTextAnswer: raw.correctTextAnswer,
     correctAnswer: raw.correctAnswer
       ? { id: String(raw.correctAnswer.id), content: raw.correctAnswer.content ?? '' }
       : undefined,
+    parts,
+    partFeedback: parts,
     guidance,
     explanation,
   };

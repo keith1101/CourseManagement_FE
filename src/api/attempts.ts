@@ -17,9 +17,15 @@ export type SaveAnswerResponse = Omit<AttemptFeedback, 'isCorrect'> & {
   isCorrect?: boolean;
 };
 
+export interface SequentialAnswerPart {
+  partId: string;
+  rawValue: string;
+}
+
 export interface SequentialAnswerPayload {
   questionId: string;
   progressVersion: number;
+  parts?: SequentialAnswerPart[];
   selectedOptionId?: string;
   rawValue?: string;
   answerType?: 'TEXT' | 'NUMBER';
@@ -68,9 +74,17 @@ export const attemptsApi = {
       { headers: { 'Idempotency-Key': idempotencyKey } },
     );
     if (res.data?.navigator) return mapSequentialSession(res.data);
+    const feedback = mapSequentialFeedback(res.data?.feedback);
+    const allPartsCorrect = feedback?.parts && feedback.parts.length > 0
+      ? feedback.parts.every((p) => p.isCorrect)
+      : undefined;
+    const isCorrect = res.data?.isCorrect ?? feedback?.isCorrect ?? allPartsCorrect ?? false;
+    const status = res.data?.status ?? (isCorrect ? 'CORRECT' : 'INCORRECT');
     return {
       ...res.data,
-      feedback: mapSequentialFeedback(res.data?.feedback),
+      isCorrect,
+      status,
+      feedback,
     } as SequentialSubmitResponse;
   },
 
@@ -94,17 +108,22 @@ export const attemptsApi = {
   },
 
   saveAnswer: async (attemptId: string, answer: SaveAnswerPayload): Promise<SaveAnswerResponse> => {
-    const res = await apiClient.post<any>(`/attempts/${attemptId}/answers`, {
+    const payload: any = {
       questionId: answer.questionId,
-      selectedOptionId: answer.selectedOptionId || undefined,
-      answerType: answer.answerType,
-      rawValue: answer.rawValue ?? answer.textAnswer,
-      normalizedText: answer.textAnswer?.trim().toLowerCase(),
-      content: answer.content,
-      numericValue: answer.numericValue,
       timedOut: answer.timedOut,
       finalize: answer.finalize,
-    });
+    };
+    if (answer.parts) {
+      payload.parts = answer.parts;
+    } else {
+      payload.selectedOptionId = answer.selectedOptionId || undefined;
+      payload.answerType = answer.answerType;
+      payload.rawValue = answer.rawValue ?? answer.textAnswer;
+      payload.normalizedText = answer.textAnswer?.trim().toLowerCase();
+      payload.content = answer.content;
+      payload.numericValue = answer.numericValue;
+    }
+    const res = await apiClient.post<any>(`/attempts/${attemptId}/answers`, payload);
     return mapAnswer(res.data) as SaveAnswerResponse;
   },
 

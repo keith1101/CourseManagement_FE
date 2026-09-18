@@ -459,4 +459,32 @@ describe('SequentialExamTakingView submission flow', () => {
     await user.click(screen.getByRole('button', { name: 'Hoàn thành bài thi' }));
     expect(attemptsApi.continueCurrentQuestion).toHaveBeenCalledTimes(1);
   });
+
+  it('recognizes final question and displays navigator.length when totalQuestions > navigator.length', async () => {
+    // totalQuestions is 3 (scoring units), but navigator.length is 2 (actual questions)
+    const sessionWithExtraScoringUnits = makeSession({
+      status: 'INCORRECT',
+      ordinal: 2,
+      feedback: {
+        questionId: question.id,
+        isCorrect: false,
+      },
+    });
+    sessionWithExtraScoringUnits.totalQuestions = 3; // total scoring units
+    sessionWithExtraScoringUnits.navigator = [
+      { ordinal: 1, status: 'COMPLETED' },
+      { ordinal: 2, status: 'INCORRECT' },
+    ];
+
+    renderView(sessionWithExtraScoringUnits);
+
+    // QuestionCard header should say "Câu 2 / 2", NOT "Câu 2 / 3"
+    expect(screen.getByText('Câu 2 / 2')).toBeInTheDocument();
+
+    // The button for the final question should say "Hoàn thành bài thi", NOT "Tiếp tục"
+    expect(screen.getByRole('button', { name: 'Hoàn thành bài thi' })).toBeInTheDocument();
+
+    // Palette should show 2 questions, not 3
+    expect(screen.getByText(/2 đã làm/)).toBeInTheDocument();
+  });
 });

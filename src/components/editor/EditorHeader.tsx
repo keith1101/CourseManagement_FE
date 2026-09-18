@@ -8,6 +8,7 @@ export interface EditorHeaderProps {
   timeLimit: number;
   points: number;
   questionType: QuestionType;
+  partsCount?: number;
   isSaving: boolean;
   onTimeLimitChange: (time: number) => void;
   onPointsChange: (points: number) => void;
@@ -21,6 +22,7 @@ export const EditorHeader: React.FC<EditorHeaderProps> = ({
   timeLimit,
   points,
   questionType,
+  partsCount,
   isSaving,
   onTimeLimitChange,
   onPointsChange,
@@ -133,26 +135,39 @@ export const EditorHeader: React.FC<EditorHeaderProps> = ({
           <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'rgba(255, 255, 255, 0.8)' }}>
             Điểm:
           </span>
-          <input
-            type="number"
-            min={0.5}
-            max={100}
-            step={0.5}
-            value={points}
-            onChange={(e) => onPointsChange(Number(e.target.value))}
-            style={{
-              width: '46px',
-              backgroundColor: 'rgba(255, 255, 255, 0.2)',
-              border: 'none',
-              borderRadius: '4px',
-              color: '#FFFFFF',
-              textAlign: 'center',
-              fontWeight: 700,
-              fontSize: '0.8125rem',
-              outline: 'none',
-              padding: '2px 4px',
-            }}
-          />
+          {questionType === 'MULTI_PART_SHORT_ANSWER' ? (
+            <span
+              style={{
+                color: '#FFFFFF',
+                fontWeight: 700,
+                fontSize: '0.8125rem',
+                padding: '2px 4px',
+              }}
+            >
+              {partsCount ?? 1} ý = {partsCount ?? 1} điểm thành phần
+            </span>
+          ) : (
+            <input
+              type="number"
+              min={0.5}
+              max={100}
+              step={0.5}
+              value={points}
+              onChange={(e) => onPointsChange(Number(e.target.value))}
+              style={{
+                width: '46px',
+                backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                border: 'none',
+                borderRadius: '4px',
+                color: '#FFFFFF',
+                textAlign: 'center',
+                fontWeight: 700,
+                fontSize: '0.8125rem',
+                outline: 'none',
+                padding: '2px 4px',
+              }}
+            />
+          )}
         </div>
 
         {/* Question Type */}
@@ -185,6 +200,9 @@ export const EditorHeader: React.FC<EditorHeaderProps> = ({
             </option>
             <option value="ESSAY" style={{ color: '#202938' }}>
               Tự luận
+            </option>
+            <option value="MULTI_PART_SHORT_ANSWER" style={{ color: '#202938' }}>
+              Tự luận nhiều ý
             </option>
           </select>
         </div>

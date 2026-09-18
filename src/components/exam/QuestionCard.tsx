@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Check, Lightbulb, X, HelpCircle, FileText } from 'lucide-react';
-import { AttemptFeedback, Question } from '../../types';
+import { AttemptFeedback, PartFeedback, Question, SequentialFeedback } from '../../types';
 
 interface QuestionCardProps {
   question: Question;
@@ -8,10 +8,12 @@ interface QuestionCardProps {
   totalQuestions: number;
   selectedOptionId?: string;
   textAnswer?: string;
+  partAnswers?: Record<string, string>;
   feedback?: AttemptFeedback;
   disabled?: boolean;
   onSelectOption: (optionId: string) => void;
   onTextAnswerChange: (text: string) => void;
+  onPartAnswerChange?: (partId: string, value: string) => void;
 }
 
 export const QuestionCard: React.FC<QuestionCardProps> = ({
@@ -20,14 +22,19 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
   totalQuestions,
   selectedOptionId,
   textAnswer = '',
+  partAnswers,
   feedback,
   disabled = false,
   onSelectOption,
   onTextAnswerChange,
+  onPartAnswerChange,
 }) => {
   const [showHint, setShowHint] = useState(false);
+  const isMultiPart = question.type === 'MULTI_PART_SHORT_ANSWER';
   const isChoice = question.type === 'SINGLE_CHOICE' || question.type === 'MULTIPLE_CHOICE';
   const correctOptionId = feedback?.correctOptionId;
+
+  const getPartLabel = (index: number) => `${String.fromCharCode(97 + index)})`;
 
   return (
     <div
@@ -51,7 +58,7 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
             Câu {currentIndex + 1} / {totalQuestions}
           </span>
           <span style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', fontWeight: 600 }}>
-            ({question.points} điểm)
+            ({isMultiPart ? `${(question.questionParts || question.parts || []).length} điểm thành phần` : `${question.points} điểm`})
           </span>
         </div>
 
@@ -159,8 +166,94 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
         )}
       </div>
 
-      {/* Answer Choices Grid or Essay Textarea */}
-      {isChoice ? (
+      {/* Answer Choices Grid or Multi-part inputs or Essay Textarea */}
+      {isMultiPart ? (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          {(question.questionParts || question.parts || []).map((part, index) => {
+            const partId = part.id || `part-${index}`;
+            const val = partAnswers?.[partId] ?? '';
+            const partFb: PartFeedback | undefined = (feedback?.parts as PartFeedback[] | undefined)?.find((p) => String(p.partId) === String(partId))
+              || feedback?.partFeedback?.find((p) => String(p.partId) === String(partId));
+            const isPartCorrect = partFb?.isCorrect === true;
+            const isPartWrong = partFb?.isCorrect === false;
+
+            const partLabel = getPartLabel(index);
+            const displayText = part.contentText?.trim().match(/^[a-z]\)/i)
+              ? part.contentText
+              : `${partLabel} ${part.contentText || ''}`;
+
+            return (
+              <div
+                key={partId}
+                style={{
+                  padding: '16px',
+                  borderRadius: 'var(--border-radius-md)',
+                  border: `1.5px solid ${
+                    isPartCorrect
+                      ? 'var(--success)'
+                      : isPartWrong
+                      ? 'var(--error)'
+                      : 'var(--border-color)'
+                  }`,
+                  backgroundColor: isPartCorrect
+                    ? 'var(--success-bg)'
+                    : isPartWrong
+                    ? 'var(--error-bg)'
+                    : 'var(--bg-card)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '10px',
+                  transition: 'all var(--transition-fast)',
+                }}
+              >
+                <div style={{ fontWeight: 600, fontSize: '0.9375rem', color: 'var(--text-primary)' }}>
+                  {displayText}
+                </div>
+                <div>
+                  <input
+                    type="text"
+                    className="input-field"
+                    placeholder="Nhập câu trả lời cho ý này..."
+                    value={val}
+                    disabled={disabled || !!feedback}
+                    onChange={(e) => onPartAnswerChange?.(partId, e.target.value)}
+                    style={{
+                      height: '44px',
+                      backgroundColor: '#FFFFFF',
+                      border: `1px solid ${
+                        isPartCorrect
+                          ? 'var(--success)'
+                          : isPartWrong
+                          ? 'var(--error)'
+                          : 'var(--border-color)'
+                      }`,
+                    }}
+                  />
+                </div>
+                {isPartCorrect && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--success)', fontWeight: 600, fontSize: '0.875rem' }}>
+                    <Check size={16} color="var(--success)" strokeWidth={3} />
+                    <span>Chính xác</span>
+                  </div>
+                )}
+                {isPartWrong && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--error)', fontWeight: 600, fontSize: '0.875rem' }}>
+                      <X size={16} color="var(--error)" strokeWidth={3} />
+                      <span>Chưa chính xác</span>
+                    </div>
+                    {partFb?.correctAnswer && (
+                      <div style={{ fontSize: '0.875rem', color: 'var(--text-primary)', marginTop: '2px' }}>
+                        Đáp án đúng: <strong style={{ color: 'var(--success)' }}>{partFb.correctAnswer}</strong>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      ) : isChoice ? (
         <div className="question-options">
           {question.options.map((option, index) => {
             const optionId = option.id || option.label || `option-${index}`;
@@ -329,13 +422,13 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
             )}
           </div>
 
-          {feedback.correctTextAnswer && (
+          {!isMultiPart && feedback.correctTextAnswer && (
             <div style={{ marginTop: '6px' }}>
               Đáp án đúng: <strong>{feedback.correctTextAnswer}</strong>
             </div>
           )}
 
-          {feedback.correctAnswer && (
+          {!isMultiPart && feedback.correctAnswer && (
             <div style={{ marginTop: '6px' }}>
               Đáp án đúng: <strong>{feedback.correctAnswer.content}</strong>
             </div>

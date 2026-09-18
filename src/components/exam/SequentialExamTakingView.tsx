@@ -33,6 +33,7 @@ export const SequentialExamTakingView: React.FC<SequentialExamTakingViewProps> =
   const { error, warning } = useToast();
   const [session, setSession] = useState<SequentialSession | null>(initialSession || null);
   const [answer, setAnswer] = useState('');
+  const [partAnswers, setPartAnswers] = useState<Record<string, string>>({});
   const [serverOffset, setServerOffset] = useState(() =>
     initialSession ? Date.parse(initialSession.serverNow) - Date.now() : 0,
   );
@@ -61,6 +62,7 @@ export const SequentialExamTakingView: React.FC<SequentialExamTakingViewProps> =
     const nextId = next.currentQuestion?.id || null;
     if (currentIdRef.current !== nextId) {
       setAnswer('');
+      setPartAnswers({});
       currentIdRef.current = nextId;
       autoAdvanceFailedRef.current = null;
     }
@@ -108,35 +110,74 @@ export const SequentialExamTakingView: React.FC<SequentialExamTakingViewProps> =
 
   const current = session?.currentQuestion || null;
   const question = current?.question;
+  const isMultiPart = question?.type === 'MULTI_PART_SHORT_ANSWER';
+  const partsList = question?.questionParts || question?.parts || [];
+  const hasMultiPartAnswer = isMultiPart && partsList.length > 0 && partsList.some((p) => (partAnswers[p.id || '']?.trim() || '').length > 0);
   const serverNow = now + serverOffset;
   const secondsLeft = current?.deadlineAt
     ? Math.max(0, Math.ceil((Date.parse(current.deadlineAt) - serverNow) / 1000))
     : 0;
   const isExpired = secondsLeft <= 0;
   const value = answer.trim();
+  const hasAnswer = isMultiPart ? hasMultiPartAnswer : !!value;
   const isActive = current?.status === 'ACTIVE';
+
+  useEffect(() => {
+    if (!current?.question || current.question.type !== 'MULTI_PART_SHORT_ANSWER') return;
+    const rawAns = (current as any).parts || (current as any).answers || (current.feedback as any)?.parts;
+    if (Array.isArray(rawAns)) {
+      const restored: Record<string, string> = {};
+      rawAns.forEach((p: any) => {
+        const pid = p.partId || p.id;
+        if (pid && (p.rawValue || p.textAnswer)) {
+          restored[pid] = p.rawValue || p.textAnswer || '';
+        }
+      });
+      if (Object.keys(restored).length > 0) {
+        setPartAnswers((prev) => ({ ...restored, ...prev }));
+      }
+    }
+  }, [current]);
+
   const answerPayload = useCallback(
-    (questionId: string, progressVersion: number, answerValue: string): SequentialAnswerPayload => ({
-      questionId,
-      progressVersion,
-      selectedOptionId:
-        question?.type === 'SINGLE_CHOICE' || question?.type === 'MULTIPLE_CHOICE'
-          ? answerValue || undefined
-          : undefined,
-      rawValue:
-        question?.type === 'SINGLE_CHOICE' || question?.type === 'MULTIPLE_CHOICE'
-          ? undefined
-          : answerValue,
-      answerType:
-        question?.type === 'ESSAY' && /^-?\d+(\.\d+)?$/.test(answerValue)
-          ? 'NUMBER'
-          : 'TEXT',
-      numericValue:
-        question?.type === 'ESSAY' && /^-?\d+(\.\d+)?$/.test(answerValue)
-          ? Number(answerValue)
-          : undefined,
-    }),
-    [question],
+    (questionId: string, progressVersion: number): SequentialAnswerPayload => {
+      if (question?.type === 'MULTI_PART_SHORT_ANSWER') {
+        const parts = (question.questionParts || question.parts || []).map((p) => {
+          const pid = p.id || '';
+          return {
+            partId: pid,
+            rawValue: partAnswers[pid] ?? '',
+          };
+        });
+        return {
+          questionId,
+          progressVersion,
+          parts,
+        };
+      }
+
+      return {
+        questionId,
+        progressVersion,
+        selectedOptionId:
+          question?.type === 'SINGLE_CHOICE' || question?.type === 'MULTIPLE_CHOICE'
+            ? answer || undefined
+            : undefined,
+        rawValue:
+          question?.type === 'SINGLE_CHOICE' || question?.type === 'MULTIPLE_CHOICE'
+            ? undefined
+            : answer,
+        answerType:
+          question?.type === 'ESSAY' && /^-?\d+(\.\d+)?$/.test(answer)
+            ? 'NUMBER'
+            : 'TEXT',
+        numericValue:
+          question?.type === 'ESSAY' && /^-?\d+(\.\d+)?$/.test(answer)
+            ? Number(answer)
+            : undefined,
+      };
+    },
+    [answer, partAnswers, question],
   );
 
   useEffect(() => {
@@ -272,12 +313,19 @@ export const SequentialExamTakingView: React.FC<SequentialExamTakingViewProps> =
   }, [refreshSession]);
 
   const submit = async () => {
-    if (!session || !current || !question || !isActive || !value || isSubmitting) return;
+    if (!session || !current || !question || !isActive || !hasAnswer || isSubmitting) return;
+    if (question.type === 'MULTI_PART_SHORT_ANSWER') {
+      const partsList = question.questionParts || question.parts || [];
+      if (partsList.length === 0 || partsList.some((p) => !p.id)) {
+        error('Không thể nộp câu hỏi do dữ liệu câu hỏi không hợp lệ.');
+        return;
+      }
+    }
     setIsSubmitting(true);
     try {
       const response = await attemptsApi.submitCurrentQuestion(
         attemptId,
-        answerPayload(current.id, session.progressVersion, answer),
+        answerPayload(current.id, session.progressVersion),
         randomKey(),
       );
       if ('navigator' in response) applySession(response);
@@ -301,8 +349,12 @@ export const SequentialExamTakingView: React.FC<SequentialExamTakingViewProps> =
     [session],
   );
   const paletteAnswers = useMemo(
-    () => (current ? { [current.id]: answer, [String(current.ordinal)]: answer } : {}),
-    [answer, current],
+    () => {
+      if (!current) return {};
+      const ans = isMultiPart ? (hasMultiPartAnswer ? 'answered' : '') : answer;
+      return { [current.id]: ans, [String(current.ordinal)]: ans };
+    },
+    [answer, current, hasMultiPartAnswer, isMultiPart],
   );
 
   if (isLoading || !session) {
@@ -326,12 +378,14 @@ export const SequentialExamTakingView: React.FC<SequentialExamTakingViewProps> =
   const feedback = current.feedback
     ? {
         ...current.feedback,
+        parts: current.feedback.parts || current.feedback.partFeedback,
         explanation: current.feedback.explanation?.text,
         explanationImage: current.feedback.explanation?.image,
         guidance: current.feedback.guidance,
       }
     : undefined;
-  const isFinalQuestion = current.ordinal === session.totalQuestions;
+  const totalNavPages = session.navigator?.length || 1;
+  const isFinalQuestion = current.ordinal === totalNavPages;
   const buttonLabel = isSubmitting
     ? 'Đang nộp…'
     : isActive
@@ -346,7 +400,7 @@ export const SequentialExamTakingView: React.FC<SequentialExamTakingViewProps> =
   const buttonDisabled =
     isSubmitting ||
     correctFeedbackWaiting ||
-    (isActive && (!value || secondsLeft === 0));
+    (isActive && (!hasAnswer || secondsLeft === 0));
 
   return (
     <div
@@ -377,13 +431,17 @@ export const SequentialExamTakingView: React.FC<SequentialExamTakingViewProps> =
           <QuestionCard
             question={question}
             currentIndex={current.ordinal - 1}
-            totalQuestions={session.totalQuestions}
-            selectedOptionId={question.type === 'ESSAY' ? undefined : answer}
+            totalQuestions={totalNavPages}
+            selectedOptionId={question.type === 'ESSAY' || isMultiPart ? undefined : answer}
             textAnswer={question.type === 'ESSAY' ? answer : ''}
+            partAnswers={partAnswers}
             feedback={feedback as any}
             disabled={!isActive || secondsLeft === 0 || isSubmitting}
             onSelectOption={setAnswer}
             onTextAnswerChange={setAnswer}
+            onPartAnswerChange={(partId, val) =>
+              setPartAnswers((prev) => ({ ...prev, [partId]: val }))
+            }
           />
 
           <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 12 }}>
@@ -400,7 +458,7 @@ export const SequentialExamTakingView: React.FC<SequentialExamTakingViewProps> =
 
         <div className="exam-palette" style={{ position: 'sticky', top: 88 }}>
           <QuestionPalette
-            totalQuestions={session.totalQuestions}
+            totalQuestions={totalNavPages}
             currentIndex={current.ordinal - 1}
             answers={paletteAnswers}
             questionIds={session.navigator.map((item) => String(item.ordinal))}

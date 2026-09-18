@@ -78,4 +78,51 @@ describe('API Mappers - Grading and Result Consistency', () => {
     expect(mapped.answers?.[0].isCorrect).toBe(true);
     expect(mapped.answers?.[1].isCorrect).toBe(true);
   });
+
+  it('correctly maps multi-part attemptedAnswers from raw.partAnswers and raw.partFeedback', () => {
+    const rawAnswer = {
+      id: 'ans-multi',
+      questionId: 'q-multi',
+      partAnswers: [
+        {
+          partId: 'part-1',
+          rawValue: '20.0',
+          normalizedText: '20.0',
+          numericValue: 20,
+          isCorrect: true,
+          part: { id: 'part-1', contentText: 'Ý 1', position: 0 },
+        },
+        {
+          partId: 'part-2',
+          rawValue: 'normal',
+          normalizedText: 'normal',
+          isCorrect: false,
+          part: { id: 'part-2', contentText: 'Ý 2', position: 1 },
+        },
+      ],
+      partFeedback: [
+        {
+          partId: 'part-1',
+          isCorrect: true,
+        },
+        {
+          partId: 'part-2',
+          isCorrect: false,
+          correctAnswer: 'overweight',
+        },
+      ],
+    };
+
+    const mapped = mapAnswer(rawAnswer);
+    expect(mapped.parts).toEqual([
+      { partId: 'part-1', rawValue: '20.0' },
+      { partId: 'part-2', rawValue: 'normal' },
+    ]);
+    expect(mapped.partFeedback).toEqual([
+      { partId: 'part-1', isCorrect: true, correctAnswer: undefined },
+      { partId: 'part-2', isCorrect: false, correctAnswer: 'overweight' },
+    ]);
+    expect(mapped.isCorrect).toBe(false);
+  });
 });
+

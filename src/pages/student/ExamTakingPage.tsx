@@ -21,6 +21,7 @@ interface PersistAnswerOptions {
   timedOut?: boolean;
   finalize?: boolean;
   revealFeedback?: boolean;
+  parts?: Array<{ partId: string; rawValue: string }>;
 }
 
 export const ExamTakingPage: React.FC = () => {
@@ -35,6 +36,7 @@ export const ExamTakingPage: React.FC = () => {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
+  const [partAnswers, setPartAnswers] = useState<Record<string, Record<string, string>>>({});
   const [feedback, setFeedback] = useState<Record<string, AttemptFeedback>>({});
   const [deadlines, setDeadlines] = useState<Record<string, number>>({});
   const [now, setNow] = useState(Date.now());
@@ -81,16 +83,29 @@ export const ExamTakingPage: React.FC = () => {
       setExam(examData);
       setQuestions(questionData);
       const prefilled: Record<string, string> = {};
+      const prefilledParts: Record<string, Record<string, string>> = {};
       currentAttempt.answers?.forEach((answer) => {
+        if (answer.parts && Array.isArray(answer.parts) && answer.parts.length > 0) {
+          const partsMap: Record<string, string> = {};
+          answer.parts.forEach((p) => {
+            if (p.partId) {
+              partsMap[p.partId] = p.rawValue ?? '';
+            }
+          });
+          if (Object.keys(partsMap).length > 0) {
+            prefilledParts[answer.questionId] = partsMap;
+          }
+        }
         const value = answer.selectedOptionId || answer.textAnswer || answer.rawValue;
         if (value) prefilled[answer.questionId] = value;
-        if (answer.isCorrect !== undefined)
+        if (answer.isCorrect !== undefined || answer.partFeedback || answer.parts)
           setFeedback((previous) => ({
             ...previous,
             [answer.questionId]: answer as AttemptFeedback,
           }));
       });
       setAnswers(prefilled);
+      setPartAnswers(prefilledParts);
     } catch (err: any) {
       const apiMessage = getApiErrorMessage(err, 'Không thể bắt đầu làm bài.');
       const apiCode = err?.response?.data?.code;
@@ -98,13 +113,8 @@ export const ExamTakingPage: React.FC = () => {
         setShowUpgrade(true);
         return;
       }
-      if (err?.response?.status === 403 && apiCode === 'ASSIGNMENT_REQUIRED') {
-        error(apiMessage);
-        navigate('/student/assignments');
-        return;
-      }
       error(apiMessage);
-      navigate('/student/assignments');
+      navigate(assignmentId ? '/student/assignments' : '/student');
     } finally {
       setIsLoading(false);
     }
@@ -151,37 +161,56 @@ export const ExamTakingPage: React.FC = () => {
         timedOut = false,
         finalize = false,
         revealFeedback = finalize || timedOut,
+        parts,
       }: PersistAnswerOptions = {},
     ) => {
-      if (!attempt?.id || (!value && !timedOut)) return null;
-      const payload: SaveAnswerPayload = {
-        questionId: question.id,
-        selectedOptionId:
-          question.type === 'SINGLE_CHOICE' || question.type === 'MULTIPLE_CHOICE'
-            ? value
-            : undefined,
-        textAnswer:
-          question.type === 'SINGLE_CHOICE' || question.type === 'MULTIPLE_CHOICE'
-            ? undefined
-            : value,
-        rawValue: value || undefined,
-        answerType:
-          question.type === 'ESSAY' && /^-?\d+(\.\d+)?$/.test(value.trim())
-            ? 'NUMBER'
-            : 'TEXT',
-        numericValue:
-          question.type === 'ESSAY' && /^-?\d+(\.\d+)?$/.test(value.trim())
-            ? Number(value)
-            : undefined,
-        timedOut,
-        finalize,
-      };
+      if (!attempt?.id) return null;
+      const isMultiPart = question.type === 'MULTI_PART_SHORT_ANSWER';
+
+      let payload: SaveAnswerPayload;
+      if (isMultiPart) {
+        if (!parts || parts.length === 0 || parts.some((p) => !p.partId)) {
+          return null;
+        }
+        payload = {
+          questionId: question.id,
+          parts,
+          timedOut,
+          finalize,
+        };
+      } else {
+        if (!value && !timedOut) return null;
+        payload = {
+          questionId: question.id,
+          selectedOptionId:
+            question.type === 'SINGLE_CHOICE' || question.type === 'MULTIPLE_CHOICE'
+              ? value
+              : undefined,
+          textAnswer:
+            question.type === 'SINGLE_CHOICE' || question.type === 'MULTIPLE_CHOICE'
+              ? undefined
+              : value,
+          rawValue: value || undefined,
+          answerType:
+            question.type === 'ESSAY' && /^-?\d+(\.\d+)?$/.test(value.trim())
+              ? 'NUMBER'
+              : 'TEXT',
+          numericValue:
+            question.type === 'ESSAY' && /^-?\d+(\.\d+)?$/.test(value.trim())
+              ? Number(value)
+              : undefined,
+          timedOut,
+          finalize,
+        };
+      }
+
       const result = await attemptsApi.saveAnswer(attempt.id, payload);
-      if (revealFeedback && result.isCorrect !== undefined)
+      if (revealFeedback && (result.isCorrect !== undefined || result.partFeedback || result.parts)) {
         setFeedback((previous) => ({
           ...previous,
           [question.id]: result as AttemptFeedback,
         }));
+      }
       return result;
     },
     [attempt?.id]
@@ -190,6 +219,45 @@ export const ExamTakingPage: React.FC = () => {
   useEffect(() => {
     if (!currentQuestion || currentFeedback || !currentDeadline || secondsLeft > 0) return;
     warning(`Câu ${currentIndex + 1} đã hết thời gian.`);
+
+    if (currentQuestion.type === 'MULTI_PART_SHORT_ANSWER') {
+      const partsList = currentQuestion.questionParts || currentQuestion.parts || [];
+      if (partsList.length === 0 || partsList.some((p) => !p.id)) {
+        setFeedback((previous) => ({
+          ...previous,
+          [currentQuestion.id]: {
+            questionId: currentQuestion.id,
+            isCorrect: false,
+            timedOut: true,
+            explanation: currentQuestion.explanation,
+          },
+        }));
+        return;
+      }
+      const qPartAnswers = partAnswers[currentQuestion.id] || {};
+      const parts = partsList.map((p) => ({
+        partId: p.id!,
+        rawValue: qPartAnswers[p.id!] ?? '',
+      }));
+      void persistAnswer(currentQuestion, '', {
+        timedOut: true,
+        finalize: true,
+        revealFeedback: true,
+        parts,
+      }).catch(() => {
+        setFeedback((previous) => ({
+          ...previous,
+          [currentQuestion.id]: {
+            questionId: currentQuestion.id,
+            isCorrect: false,
+            timedOut: true,
+            explanation: currentQuestion.explanation,
+          },
+        }));
+      });
+      return;
+    }
+
     void persistAnswer(currentQuestion, answers[currentQuestion.id] || '', {
       timedOut: true,
       finalize: true,
@@ -211,6 +279,7 @@ export const ExamTakingPage: React.FC = () => {
     currentFeedback,
     currentIndex,
     currentQuestion,
+    partAnswers,
     persistAnswer,
     secondsLeft,
     warning,
@@ -226,11 +295,56 @@ export const ExamTakingPage: React.FC = () => {
     setAnswers((previous) => ({ ...previous, [currentQuestion.id]: value }));
   };
 
+  const handlePartAnswerChange = (questionId: string, partId: string, value: string) => {
+    if (currentLocked) return;
+    setPartAnswers((previous) => ({
+      ...previous,
+      [questionId]: {
+        ...(previous[questionId] || {}),
+        [partId]: value,
+      },
+    }));
+  };
+
   const handleSubmitQuestion = async () => {
     if (!attempt?.id || !currentQuestion) return;
     if (currentFeedback) {
       setShowSubmitModal(false);
       return warning(`Câu ${currentIndex + 1} đã được nộp.`);
+    }
+
+    if (currentQuestion.type === 'MULTI_PART_SHORT_ANSWER') {
+      const partsList = currentQuestion.questionParts || currentQuestion.parts || [];
+      if (partsList.length === 0 || partsList.some((p) => !p.id)) {
+        return error('Không thể nộp câu hỏi do dữ liệu câu hỏi không hợp lệ.');
+      }
+      const qPartAnswers = partAnswers[currentQuestion.id] || {};
+      const hasMissing = partsList.some((p) => !p.id || !qPartAnswers[p.id]?.trim());
+      if (hasMissing) {
+        return error('Vui lòng điền đầy đủ câu trả lời cho tất cả các ý.');
+      }
+
+      setIsSubmitting(true);
+      setSubmittingAction('question');
+      try {
+        const parts = partsList.map((p) => ({
+          partId: p.id!,
+          rawValue: qPartAnswers[p.id!].trim(),
+        }));
+        await persistAnswer(currentQuestion, '', {
+          finalize: true,
+          revealFeedback: true,
+          parts,
+        });
+        setShowSubmitModal(false);
+        success(`Đã nộp câu ${currentIndex + 1}.`);
+      } catch (err) {
+        error(getApiErrorMessage(err, 'Không thể nộp câu hỏi.'));
+      } finally {
+        setIsSubmitting(false);
+        setSubmittingAction(null);
+      }
+      return;
     }
 
     const value = answers[currentQuestion.id]?.trim();
@@ -258,18 +372,41 @@ export const ExamTakingPage: React.FC = () => {
     setIsSubmitting(true);
     setSubmittingAction('exam');
     try {
-      const pendingAnswers = questions
-        .map((question) => ({
-          question,
-          value: answers[question.id]?.trim(),
-        }))
-        .filter(({ question, value }) => value && !feedback[question.id]);
+      const pendingAnswers: Array<() => Promise<any>> = [];
 
-      await Promise.all(
-        pendingAnswers.map(({ question, value }) =>
-          persistAnswer(question, value, { finalize: true, revealFeedback: false }),
-        ),
-      );
+      for (const question of questions) {
+        if (feedback[question.id]) continue;
+
+        if (question.type === 'MULTI_PART_SHORT_ANSWER') {
+          const partsList = question.questionParts || question.parts || [];
+          if (partsList.length > 0 && partsList.every((p) => !!p.id)) {
+            const qPartAnswers = partAnswers[question.id] || {};
+            const parts = partsList.map((p) => ({
+              partId: p.id!,
+              rawValue: qPartAnswers[p.id!]?.trim() || '',
+            }));
+            pendingAnswers.push(() =>
+              persistAnswer(question, '', {
+                finalize: true,
+                revealFeedback: false,
+                parts,
+              }),
+            );
+          }
+        } else {
+          const value = answers[question.id]?.trim();
+          if (value) {
+            pendingAnswers.push(() =>
+              persistAnswer(question, value, {
+                finalize: true,
+                revealFeedback: false,
+              }),
+            );
+          }
+        }
+      }
+
+      await Promise.all(pendingAnswers.map((fn) => fn()));
       await attemptsApi.submitAttempt(attempt.id);
       success('Nộp bài thi thành công!');
       navigate(`/student/attempts/${attempt.id}/result`);
@@ -290,6 +427,28 @@ export const ExamTakingPage: React.FC = () => {
     () => [{ id: 'all', title: 'Toàn bộ câu hỏi', questionCount: questions.length }],
     [questions.length]
   );
+
+  const paletteAnswers = useMemo(() => {
+    const result: Record<string, string> = { ...answers };
+    questions.forEach((q) => {
+      if (q.type === 'MULTI_PART_SHORT_ANSWER') {
+        const qParts = q.questionParts || q.parts || [];
+        const qAnswers = partAnswers[q.id] || {};
+        const hasAll =
+          qParts.length > 0 && qParts.every((p) => p.id && (qAnswers[p.id]?.trim() || '').length > 0);
+        if (hasAll) {
+          result[q.id] = 'answered';
+        } else {
+          const hasAny =
+            qParts.length > 0 && qParts.some((p) => p.id && (qAnswers[p.id]?.trim() || '').length > 0);
+          if (hasAny) {
+            result[q.id] = 'partial';
+          }
+        }
+      }
+    });
+    return result;
+  }, [answers, partAnswers, questions]);
 
   if (isLoading) return <LoadingSpinner fullPage text="Đang chuẩn bị đề thi cho bạn..." />;
 
@@ -320,8 +479,9 @@ export const ExamTakingPage: React.FC = () => {
       </div>
     );
 
+  const isMultiPart = currentQuestion?.type === 'MULTI_PART_SHORT_ANSWER';
   const questionIds = questions.map((question) => question.id);
-  const answeredCount = Object.keys(answers).filter((id) => answers[id] !== '').length;
+  const answeredCount = Object.keys(paletteAnswers).filter((id) => paletteAnswers[id] !== '').length;
 
   return (
     <div
@@ -373,12 +533,16 @@ export const ExamTakingPage: React.FC = () => {
             question={currentQuestion}
             currentIndex={currentIndex}
             totalQuestions={questions.length}
-            selectedOptionId={answers[currentQuestion.id]}
-            textAnswer={answers[currentQuestion.id] || ''}
+            selectedOptionId={isMultiPart ? undefined : answers[currentQuestion.id]}
+            textAnswer={isMultiPart ? '' : (answers[currentQuestion.id] || '')}
+            partAnswers={partAnswers[currentQuestion.id] || {}}
             feedback={currentFeedback}
             disabled={secondsLeft === 0 && !currentFeedback}
             onSelectOption={handleSelectOption}
             onTextAnswerChange={handleTextAnswerChange}
+            onPartAnswerChange={(partId, val) =>
+              handlePartAnswerChange(currentQuestion.id, partId, val)
+            }
           />
 
           {currentFeedback && (
@@ -429,7 +593,7 @@ export const ExamTakingPage: React.FC = () => {
           <QuestionPalette
             totalQuestions={questions.length}
             currentIndex={currentIndex}
-            answers={answers}
+            answers={paletteAnswers}
             questionIds={questionIds}
             onSelectIndex={(index) => setCurrentIndex(index)}
           />

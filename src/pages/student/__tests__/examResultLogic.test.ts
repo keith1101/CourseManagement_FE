@@ -83,6 +83,40 @@ export function evaluateQuestionResult(
   };
 }
 
+export function evaluateMultiPartResult(
+  question: Question,
+  studentAns: StudentAnswer | undefined,
+) {
+  const parts = question.questionParts || question.parts || [];
+  return parts.map((part, partIdx) => {
+    const partId = part.id || `part-${partIdx}`;
+    const partFb = (studentAns?.partFeedback || (studentAns as any)?.partsFeedback)?.find(
+      (pf: any) => String(pf.partId) === String(partId),
+    );
+    const partAnsItem = studentAns?.parts?.find((p: any) => String(p.partId) === String(partId));
+    const studentRawValue =
+      partAnsItem?.rawValue ??
+      (partFb as any)?.rawValue ??
+      (studentAns as any)?.partAnswers?.find((p: any) => String(p.partId) === String(partId))?.rawValue;
+    const isPartCorrect = partFb?.isCorrect === true;
+    const isPartWrong = partFb?.isCorrect === false;
+
+    const border = isPartCorrect ? 'success' : isPartWrong ? 'error' : 'neutral';
+    const showCorrectAnswer = isPartWrong && !!partFb?.correctAnswer;
+    const correctAnswerShown = showCorrectAnswer ? partFb?.correctAnswer : undefined;
+
+    return {
+      partId,
+      isPartCorrect,
+      isPartWrong,
+      border,
+      studentRawValue,
+      showCorrectAnswer,
+      correctAnswerShown,
+    };
+  });
+}
+
 describe('ExamResultPage Grading & Display Logic', () => {
   const choiceQuestion: Question = {
     id: 'q-1',
@@ -226,4 +260,53 @@ describe('ExamResultPage Grading & Display Logic', () => {
     const selectedOpt = res.optionsEvaluation.find((o) => o.isThisSelected);
     expect(selectedOpt?.status).toBe('neutral_selected'); // Not "wrong_selected" (no red background, no X icon)
   });
+
+  it('7. Multi-part short answer: Hiển thị xanh/đỏ theo từng ý, chỉ hiện correctAnswer cho ý sai, không lộ ở ý đúng', () => {
+    const multiPartQuestion: Question = {
+      id: 'q-multi',
+      examId: 'exam-1',
+      subjectId: 'subj-1',
+      content: 'Tính các giá trị:',
+      type: 'MULTI_PART_SHORT_ANSWER',
+      points: 2,
+      timeLimit: 60,
+      order: 2,
+      options: [],
+      questionParts: [
+        { id: 'part-1', contentText: 'Ý a', position: 0 },
+        { id: 'part-2', contentText: 'Ý b', position: 1 },
+      ],
+    };
+
+    const studentAns: StudentAnswer = {
+      questionId: 'q-multi',
+      parts: [
+        { partId: 'part-1', rawValue: '10' },
+        { partId: 'part-2', rawValue: 'sai_roi' },
+      ],
+      partFeedback: [
+        { partId: 'part-1', isCorrect: true, correctAnswer: '10' },
+        { partId: 'part-2', isCorrect: false, correctAnswer: 'dung_la_20' },
+      ],
+    };
+
+    const evaluated = evaluateMultiPartResult(multiPartQuestion, studentAns);
+
+    expect(evaluated).toHaveLength(2);
+
+    // Part 1: Đúng -> viền xanh (success), hiển thị câu trả lời học sinh "10", KHÔNG hiển thị correctAnswer
+    expect(evaluated[0].isPartCorrect).toBe(true);
+    expect(evaluated[0].border).toBe('success');
+    expect(evaluated[0].studentRawValue).toBe('10');
+    expect(evaluated[0].showCorrectAnswer).toBe(false);
+    expect(evaluated[0].correctAnswerShown).toBeUndefined();
+
+    // Part 2: Sai -> viền đỏ (error), hiển thị câu trả lời học sinh "sai_roi", hiển thị correctAnswer "dung_la_20"
+    expect(evaluated[1].isPartWrong).toBe(true);
+    expect(evaluated[1].border).toBe('error');
+    expect(evaluated[1].studentRawValue).toBe('sai_roi');
+    expect(evaluated[1].showCorrectAnswer).toBe(true);
+    expect(evaluated[1].correctAnswerShown).toBe('dung_la_20');
+  });
 });
+

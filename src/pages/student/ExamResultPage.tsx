@@ -254,6 +254,8 @@ export const ExamResultPage: React.FC = () => {
               isCorrect = selectedOpt.isCorrect;
             } else if (correctOpt && selectedOpt) {
               isCorrect = String(selectedOpt.id) === String(correctOpt.id);
+            } else if (q.type === 'MULTI_PART_SHORT_ANSWER' && studentAns?.partFeedback && studentAns.partFeedback.length > 0) {
+              isCorrect = studentAns.partFeedback.every((p: any) => p.isCorrect);
             }
 
             return (
@@ -284,7 +286,7 @@ export const ExamResultPage: React.FC = () => {
                   }}
                 >
                   <span style={{ fontWeight: 700, fontSize: '0.9375rem', color: 'var(--text-primary)' }}>
-                    Câu {idx + 1}: ({q.points} điểm)
+                    Câu {idx + 1}: ({q.type === 'MULTI_PART_SHORT_ANSWER' ? `${(q.questionParts || q.parts || []).length} điểm thành phần` : `${q.points} điểm`})
                   </span>
                   {isCorrect === true && (
                     <Badge variant="success">✓ Chính xác</Badge>
@@ -316,8 +318,88 @@ export const ExamResultPage: React.FC = () => {
                   />
                 )}
 
-                {/* Options List */}
-                {q.type === 'SINGLE_CHOICE' || q.type === 'MULTIPLE_CHOICE' ? (
+                {/* Options List or Multi-Part or Essay */}
+                {q.type === 'MULTI_PART_SHORT_ANSWER' ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    {(q.questionParts || q.parts || []).map((part, partIdx) => {
+                      const partId = part.id || `part-${partIdx}`;
+                      const partFb = (studentAns?.partFeedback || (studentAns as any)?.partsFeedback)?.find(
+                        (pf: any) => String(pf.partId) === String(partId),
+                      );
+                      const partAnsItem = studentAns?.parts?.find(
+                        (p: any) => String(p.partId) === String(partId),
+                      );
+                      const studentRawValue =
+                        partAnsItem?.rawValue ??
+                        (partFb as any)?.rawValue ??
+                        (studentAns as any)?.partAnswers?.find((p: any) => String(p.partId) === String(partId))?.rawValue;
+                      const isPartCorrect = partFb?.isCorrect === true;
+                      const isPartWrong = partFb?.isCorrect === false;
+
+                      const partLabel = `${String.fromCharCode(97 + partIdx)})`;
+                      const displayText = part.contentText?.trim().match(/^[a-z]\)/i)
+                        ? part.contentText
+                        : `${partLabel} ${part.contentText || ''}`;
+
+                      const border = isPartCorrect
+                        ? 'var(--success)'
+                        : isPartWrong
+                        ? 'var(--error)'
+                        : 'var(--border-color)';
+                      const bg = isPartCorrect
+                        ? 'var(--success-bg)'
+                        : isPartWrong
+                        ? 'var(--error-bg)'
+                        : 'var(--bg-subtle)';
+
+                      return (
+                        <div
+                          key={partId}
+                          style={{
+                            padding: '14px 16px',
+                            backgroundColor: bg,
+                            borderRadius: 'var(--border-radius-md)',
+                            border: `1.5px solid ${border}`,
+                            fontSize: '0.875rem',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: '8px',
+                          }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
+                            <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
+                              {displayText}
+                            </div>
+                            {isPartCorrect && (
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--success)', fontWeight: 600, fontSize: '0.8125rem' }}>
+                                <Check size={16} color="var(--success)" strokeWidth={3} />
+                                <span>Chính xác</span>
+                              </div>
+                            )}
+                            {isPartWrong && (
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--error)', fontWeight: 600, fontSize: '0.8125rem' }}>
+                                <X size={16} color="var(--error)" strokeWidth={3} />
+                                <span>Chưa đúng</span>
+                              </div>
+                            )}
+                          </div>
+
+                          {studentRawValue !== undefined && (
+                            <div style={{ color: 'var(--text-secondary)' }}>
+                              <strong>Câu trả lời của bạn:</strong> {studentRawValue || '(Để trống)'}
+                            </div>
+                          )}
+
+                          {isPartWrong && partFb?.correctAnswer && (
+                            <div style={{ color: 'var(--text-primary)' }}>
+                              Đáp án đúng: <strong style={{ color: 'var(--success)' }}>{partFb.correctAnswer}</strong>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : q.type === 'SINGLE_CHOICE' || q.type === 'MULTIPLE_CHOICE' ? (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                     {q.options?.map((opt) => {
                       const isThisSelected =

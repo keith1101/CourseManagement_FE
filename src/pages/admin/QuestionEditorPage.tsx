@@ -158,6 +158,19 @@ export const QuestionEditorPage: React.FC = () => {
     )
       return warning('Vui lòng chọn ít nhất một đáp án đúng.');
 
+    if (activeQuestion.type === 'MULTI_PART_SHORT_ANSWER') {
+      const parts = activeQuestion.parts || activeQuestion.questionParts || [];
+      if (parts.length === 0) {
+        return error('Câu hỏi tự luận nhiều ý cần có ít nhất một ý.');
+      }
+      const hasEmpty = parts.some(
+        (p) => !p.contentText?.trim() || !p.correctAnswer?.trim()
+      );
+      if (hasEmpty) {
+        return error('Nội dung và đáp án đúng của mọi ý không được để trống.');
+      }
+    }
+
     setIsSaving(true);
     try {
       const saved = activeQuestion.id.startsWith('temp-')
@@ -178,6 +191,8 @@ export const QuestionEditorPage: React.FC = () => {
 
   if (isLoading) return <LoadingSpinner fullPage text="Đang tải giao diện soạn câu hỏi..." />;
 
+  const activeParts = activeQuestion?.parts || activeQuestion?.questionParts;
+
   return (
     <div className="question-editor-shell">
       <EditorHeader
@@ -185,10 +200,21 @@ export const QuestionEditorPage: React.FC = () => {
         timeLimit={activeQuestion?.timeLimit || 30}
         points={activeQuestion?.points || 1}
         questionType={activeQuestion?.type || 'SINGLE_CHOICE'}
+        partsCount={activeParts?.length || 1}
         isSaving={isSaving}
         onTimeLimitChange={(time) => activeQuestion && updateQuestion({ ...activeQuestion, timeLimit: time })}
         onPointsChange={(points) => activeQuestion && updateQuestion({ ...activeQuestion, points })}
-        onQuestionTypeChange={(type) => activeQuestion && updateQuestion({ ...activeQuestion, type })}
+        onQuestionTypeChange={(type) => {
+          if (!activeQuestion) return;
+          const parts = activeQuestion.parts?.length
+            ? activeQuestion.parts
+            : [{ contentText: '', correctAnswer: '', position: 0 }];
+          updateQuestion({
+            ...activeQuestion,
+            type,
+            ...(type === 'MULTI_PART_SHORT_ANSWER' ? { parts, questionParts: parts } : {}),
+          });
+        }}
         onSave={handleSave}
         onCancel={() => navigate('/admin/exams')}
       />

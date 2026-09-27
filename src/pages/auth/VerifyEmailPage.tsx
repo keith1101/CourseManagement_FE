@@ -1,5 +1,5 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { CheckCircle2, Mail, Send, ShieldCheck } from 'lucide-react';
+import React, { useState } from 'react';
+import { CheckCircle2, Lock, Mail, Send, ShieldCheck } from 'lucide-react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { AuthLayout } from '../../layouts/AuthLayout';
 import { Button } from '../../components/common/Button';
@@ -15,37 +15,50 @@ export const VerifyEmailPage: React.FC = () => {
   const token = searchParams.get('token')?.trim() || '';
   const initialEmail = searchParams.get('email')?.trim() || '';
   const [email, setEmail] = useState(initialEmail);
-  const [status, setStatus] = useState<VerificationStatus>(
-    token ? 'loading' : 'pending',
-  );
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [status, setStatus] = useState<VerificationStatus>('pending');
   const [message, setMessage] = useState(
     'Vui lòng kiểm tra hộp thư để hoàn tất đăng ký.',
   );
+  const [isVerifying, setIsVerifying] = useState(false);
   const [isResending, setIsResending] = useState(false);
-  const requestedToken = useRef<string | null>(null);
   const { success, error } = useToast();
 
-  useEffect(() => {
-    if (!token || requestedToken.current === token) return;
+  const handleVerify = async (event: React.FormEvent) => {
+    event.preventDefault();
 
-    requestedToken.current = token;
+    if (!token) {
+      error('Liên kết xác nhận không hợp lệ.');
+      return;
+    }
+    if (password.length < 8) {
+      error('Mật khẩu phải có ít nhất 8 ký tự.');
+      return;
+    }
+    if (password !== confirmPassword) {
+      error('Mật khẩu xác nhận không khớp.');
+      return;
+    }
+
+    setIsVerifying(true);
     setStatus('loading');
-
-    void authApi.verifyEmail(token)
-      .then((result) => {
-        setStatus('success');
-        setMessage(result.message);
-      })
-      .catch((requestError) => {
-        setStatus('error');
-        setMessage(
-          getApiErrorMessage(
-            requestError,
-            'Không thể xác nhận email. Vui lòng yêu cầu gửi lại email.',
-          ),
-        );
-      });
-  }, [token]);
+    try {
+      const result = await authApi.verifyEmail(token, password);
+      setStatus('success');
+      setMessage(result.message);
+    } catch (requestError) {
+      setStatus('error');
+      setMessage(
+        getApiErrorMessage(
+          requestError,
+          'Không thể xác nhận email. Vui lòng yêu cầu gửi lại email.',
+        ),
+      );
+    } finally {
+      setIsVerifying(false);
+    }
+  };
 
   const handleResend = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -56,11 +69,10 @@ export const VerifyEmailPage: React.FC = () => {
     }
 
     setIsResending(true);
-
     try {
       await authApi.resendVerification(email.trim());
       const resendMessage =
-        'Nếu tài khoản tồn tại và chưa được xác minh, email xác nhận mới đã được gửi. Vui lòng kiểm tra hộp thư và thư mục Spam.';
+        'Nếu tài khoản tồn tại và chưa được xác minh, hướng dẫn xác nhận sẽ được gửi qua email.';
       success(resendMessage);
       setMessage(resendMessage);
     } catch (requestError) {
@@ -115,6 +127,52 @@ export const VerifyEmailPage: React.FC = () => {
             </Button>
           </Link>
         </div>
+      </AuthLayout>
+    );
+  }
+
+  if (token && status === 'pending') {
+    return (
+      <AuthLayout
+        title="Xác nhận email"
+        subtitle="Tạo mật khẩu để kích hoạt tài khoản"
+      >
+        <form onSubmit={handleVerify}>
+          <Input
+            label="Mật khẩu"
+            type="password"
+            autoComplete="new-password"
+            required
+            minLength={8}
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+            placeholder="Ít nhất 8 ký tự"
+            leftIcon={<Lock size={18} />}
+            disabled={isVerifying}
+          />
+          <Input
+            label="Xác nhận mật khẩu"
+            type="password"
+            autoComplete="new-password"
+            required
+            minLength={8}
+            value={confirmPassword}
+            onChange={(event) => setConfirmPassword(event.target.value)}
+            placeholder="Nhập lại mật khẩu"
+            leftIcon={<Lock size={18} />}
+            disabled={isVerifying}
+          />
+          <Button
+            type="submit"
+            variant="primary"
+            size="lg"
+            isLoading={isVerifying}
+            leftIcon={<ShieldCheck size={18} />}
+            style={{ width: '100%' }}
+          >
+            Xác nhận và tạo tài khoản
+          </Button>
+        </form>
       </AuthLayout>
     );
   }

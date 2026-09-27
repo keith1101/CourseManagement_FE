@@ -11,7 +11,6 @@ export const authApi = {
   register: async (data: RegisterDto): Promise<RegistrationResult> => {
     const res = await apiClient.post<RegistrationResult>('/auth/register', {
       email: data.email,
-      password: data.password,
       fullName: data.fullName,
       phone: data.phoneNumber || undefined,
     });
@@ -44,10 +43,9 @@ export const authApi = {
 
   verifyEmail: async (
     token: string,
+    password: string,
   ): Promise<{ message: string; email: string }> => {
-    const res = await apiClient.post('/auth/verify-email', { 
-      token, 
-    });
+    const res = await apiClient.post('/auth/verify-email', { token, password });
 
     return res.data;
   },

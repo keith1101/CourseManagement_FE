@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { Edit2, FileEdit, Plus, Trash2, Search } from 'lucide-react';
+import { Edit2, FileEdit, Plus, Trash2, Search, Download } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Badge } from '../../components/common/Badge';
 import { Button } from '../../components/common/Button';
@@ -11,10 +11,14 @@ import { EmptyState } from '../../components/common/EmptyState';
 import { examsApi } from '../../api/exams';
 import { Exam, AccessLevel } from '../../types';
 import { useToast } from '../../contexts/ToastContext';
+import { useAuth } from '../../contexts/AuthContext';
 import { getApiErrorMessage } from '../../api/errors';
+import { downloadBlob } from '../../utils/download';
 
 export const ExamsManagementPage: React.FC = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'ADMIN';
   const { success, error } = useToast();
   const [exams, setExams] = useState<Exam[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -26,6 +30,7 @@ export const ExamsManagementPage: React.FC = () => {
   const [description, setDescription] = useState('');
   const [accessLevel, setAccessLevel] = useState<AccessLevel>('FREE');
   const [isSaving, setIsSaving] = useState(false);
+  const [exportingExamId, setExportingExamId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -100,6 +105,24 @@ export const ExamsManagementPage: React.FC = () => {
       success('Đã xóa đề thi.');
     } catch (err) {
       error(getApiErrorMessage(err, 'Không thể xóa đề thi.'));
+    }
+  };
+
+  const handleExportPdf = async (examId: string) => {
+    if (exportingExamId !== null) return;
+    setExportingExamId(examId);
+    try {
+      const { blob, filename } = await examsApi.exportExamPdf(examId);
+      downloadBlob(blob, filename);
+    } catch (err: any) {
+      const statusCode = err?.response?.status;
+      if (statusCode === 401 || statusCode === 403) {
+        error('Bạn không có quyền xuất PDF.');
+      } else {
+        error('Không thể xuất PDF. Vui lòng thử lại.');
+      }
+    } finally {
+      setExportingExamId(null);
     }
   };
 
@@ -229,6 +252,19 @@ export const ExamsManagementPage: React.FC = () => {
                       >
                         Soạn câu hỏi
                       </Button>
+                      {isAdmin && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => void handleExportPdf(exam.id)}
+                          disabled={exportingExamId !== null}
+                          isLoading={exportingExamId === exam.id}
+                          leftIcon={<Download size={14} />}
+                          title="Xuất đề thi PDF"
+                        >
+                          {exportingExamId === exam.id ? 'Đang tạo PDF...' : 'Xuất PDF'}
+                        </Button>
+                      )}
                       <button
                         type="button"
                         onClick={() => openEdit(exam)}

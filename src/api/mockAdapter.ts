@@ -359,7 +359,36 @@ export const setupMockAdapter = (client: AxiosInstance) => {
       }
     }
 
-    if (url.startsWith('/exams/') && method === 'get' && !url.includes('/questions')) {
+    if (url.startsWith('/exams/') && url.endsWith('/pdf') && method === 'get') {
+      const savedUser = localStorage.getItem('user_info');
+      const currentUser = savedUser
+        ? usersState.find((user) => user.id === JSON.parse(savedUser).id)
+        : undefined;
+      if (currentUser?.role !== 'ADMIN') {
+        return Promise.reject({
+          isMock: true,
+          mockResponse: mockResponse({ message: 'Forbidden' }, 403),
+        });
+      }
+      const id = url.split('/')[2];
+      const exam = examsState.find((e) => e.id === id);
+      const filename = exam ? `${exam.title.replace(/\s+/g, '_')}.pdf` : 'exam.pdf';
+      const pdfBlob = new Blob(['%PDF-1.4 Mock Exam PDF Content'], { type: 'application/pdf' });
+      return Promise.reject({
+        isMock: true,
+        mockResponse: {
+          data: pdfBlob,
+          status: 200,
+          statusText: 'OK',
+          headers: {
+            'content-disposition': `attachment; filename="${filename}"`,
+          },
+          config,
+        },
+      });
+    }
+
+    if (url.startsWith('/exams/') && method === 'get' && !url.includes('/questions') && !url.endsWith('/pdf')) {
       const id = url.split('/')[2];
       const exam = examsState.find((e) => e.id === id) || examsState[0];
       const savedUser = localStorage.getItem('user_info');

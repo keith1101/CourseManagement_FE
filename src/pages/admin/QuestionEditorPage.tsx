@@ -9,7 +9,9 @@ import { questionsApi } from '../../api/questions';
 import { subjectsApi } from '../../api/subjects';
 import { AnswerOption, Exam, Question, Subject } from '../../types';
 import { useToast } from '../../contexts/ToastContext';
+import { useAuth } from '../../contexts/AuthContext';
 import { getApiErrorMessage } from '../../api/errors';
+import { downloadBlob } from '../../utils/download';
 
 const defaultOptions = (): AnswerOption[] => [
   { label: 'A', content: '', isCorrect: true },
@@ -36,6 +38,8 @@ const emptyQuestion = (examId: string, order: number, subjectId = ''): Question 
 export const QuestionEditorPage: React.FC = () => {
   const { examId } = useParams<{ examId: string }>();
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'ADMIN';
   const { success, error, warning } = useToast();
   const [exam, setExam] = useState<Exam | null>(null);
   const [subjects, setSubjects] = useState<Subject[]>([]);
@@ -44,6 +48,25 @@ export const QuestionEditorPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
+  const [isExportingPdf, setIsExportingPdf] = useState(false);
+
+  const handleExportPdf = async () => {
+    if (!examId || isExportingPdf) return;
+    setIsExportingPdf(true);
+    try {
+      const { blob, filename } = await examsApi.exportExamPdf(examId);
+      downloadBlob(blob, filename);
+    } catch (err: any) {
+      const statusCode = err?.response?.status;
+      if (statusCode === 401 || statusCode === 403) {
+        error('Bạn không có quyền xuất PDF.');
+      } else {
+        error('Không thể xuất PDF. Vui lòng thử lại.');
+      }
+    } finally {
+      setIsExportingPdf(false);
+    }
+  };
 
   const load = useCallback(async () => {
     if (!examId) return;
@@ -217,6 +240,9 @@ export const QuestionEditorPage: React.FC = () => {
         }}
         onSave={handleSave}
         onCancel={() => navigate('/admin/exams')}
+        isAdmin={isAdmin}
+        onExportPdf={handleExportPdf}
+        isExportingPdf={isExportingPdf}
       />
       <div className="question-editor-body">
         <QuestionSidebar

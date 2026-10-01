@@ -1,6 +1,7 @@
 import { apiClient } from './client';
 import { Exam, ExamStatus } from '../types';
 import { mapExam } from './mappers';
+import { getFilenameFromContentDisposition } from '../utils/download';
 
 const toPayload = (data: Partial<Exam>) => ({
   title: data.title,
@@ -38,5 +39,27 @@ export const examsApi = {
   deleteExam: async (id: string): Promise<{ success: boolean }> => {
     await apiClient.delete(`/exams/${id}`);
     return { success: true };
+  },
+
+  exportExamPdf: async (id: string): Promise<{ blob: Blob; filename: string }> => {
+    const token = localStorage.getItem('access_token');
+    const res = await apiClient.get<Blob>(`/exams/${id}/pdf`, {
+      responseType: 'blob',
+      headers: {
+        Accept: 'application/pdf',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+    });
+
+    const contentDisposition =
+      (typeof res.headers?.get === 'function' ? res.headers.get('content-disposition') : null) ||
+      res.headers?.['content-disposition'] ||
+      res.headers?.['Content-Disposition'];
+    const filename = getFilenameFromContentDisposition(contentDisposition);
+
+    return {
+      blob: res.data,
+      filename,
+    };
   },
 };

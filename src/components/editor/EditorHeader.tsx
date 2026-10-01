@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowLeft, Clock, Award, Save, X, Layers } from 'lucide-react';
+import { ArrowLeft, Clock, Award, Save, X, Layers, Download } from 'lucide-react';
 import { QuestionType } from '../../types';
 import { Button } from '../common/Button';
 
@@ -15,6 +15,9 @@ export interface EditorHeaderProps {
   onQuestionTypeChange: (type: QuestionType) => void;
   onSave: () => void;
   onCancel: () => void;
+  isAdmin?: boolean;
+  onExportPdf?: () => void;
+  isExportingPdf?: boolean;
 }
 
 export const EditorHeader: React.FC<EditorHeaderProps> = ({
@@ -29,6 +32,9 @@ export const EditorHeader: React.FC<EditorHeaderProps> = ({
   onQuestionTypeChange,
   onSave,
   onCancel,
+  isAdmin,
+  onExportPdf,
+  isExportingPdf,
 }) => {
   return (
     <header className="editor-header">
@@ -210,6 +216,25 @@ export const EditorHeader: React.FC<EditorHeaderProps> = ({
 
       {/* Right: Actions */}
       <div className="editor-header-actions" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+        {isAdmin && onExportPdf && (
+          <Button
+            type="button"
+            onClick={onExportPdf}
+            variant="outline"
+            size="sm"
+            disabled={isExportingPdf}
+            isLoading={isExportingPdf}
+            leftIcon={<Download size={14} />}
+            style={{
+              borderColor: 'rgba(255, 255, 255, 0.4)',
+              color: '#FFFFFF',
+              backgroundColor: 'rgba(255, 255, 255, 0.08)',
+            }}
+            title="Xuất đề thi PDF"
+          >
+            {isExportingPdf ? 'Đang tạo PDF...' : 'Xuất PDF'}
+          </Button>
+        )}
         <button
           onClick={onCancel}
           style={{

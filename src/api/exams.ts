@@ -49,6 +49,7 @@ export const examsApi = {
         Accept: 'application/pdf',
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
+      timeout: 120000,
     });
 
     const contentDisposition =

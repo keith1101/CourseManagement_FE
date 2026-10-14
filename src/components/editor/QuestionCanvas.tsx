@@ -323,10 +323,15 @@ export const QuestionCanvas: React.FC<QuestionCanvasProps> = ({ question, onChan
           <textarea
             rows={3}
             className="input-field"
-            value={question.options[0]?.content || ''}
+            value={question.correctTextAnswer ?? question.options?.[0]?.content ?? ''}
             onChange={(e) => {
-              const opts = [{ label: 'A', content: e.target.value, isCorrect: true }];
-              onChange({ ...question, options: opts });
+              const val = e.target.value;
+              const opts = [{ label: 'A', content: val, isCorrect: true }];
+              onChange({
+                ...question,
+                correctTextAnswer: val,
+                options: opts,
+              });
             }}
             placeholder="Nhập nội dung đáp án chuẩn..."
             style={{ padding: '14px 16px', minHeight: '90px' }}

@@ -75,40 +75,54 @@ export const mapQuestion = (raw: any): Question => {
         }))
     : undefined;
 
+  // The backend stores every choice question as MULTIPLE_CHOICE, but its
+  // answer-key contract requires exactly one correct option. Keep the UI
+  // in single-select mode after a question is reloaded.
+  const mappedType = isMultiPart
+    ? 'MULTI_PART_SHORT_ANSWER'
+    : type === 'SHORT_ANSWER' || type === 'ESSAY' || type === 'FILL_BLANK'
+    ? 'ESSAY'
+    : type === 'MULTIPLE_CHOICE'
+    ? 'SINGLE_CHOICE'
+    : type || 'SINGLE_CHOICE';
+
+  const correctTextAnswer =
+    raw.correctTextAnswer ??
+    raw.questionAcceptedAnswers?.find((a: any) => a.isPrimary)?.rawValue ??
+    raw.questionAcceptedAnswers?.[0]?.rawValue ??
+    undefined;
+
+  const rawOptions = (raw.questionOptions ?? raw.options ?? []).map(mapOption);
+  const options =
+    mappedType === 'ESSAY' && rawOptions.length === 0 && correctTextAnswer
+      ? [{ label: 'A', content: correctTextAnswer, isCorrect: true, position: 0 }]
+      : rawOptions;
+
   return {
-    id: raw.id,
-    examId: raw.examId,
-    subjectId: raw.subjectId || '',
-    title: raw.title,
-    content: raw.contentText ?? raw.content ?? '',
-    // The backend stores every choice question as MULTIPLE_CHOICE, but its
-    // answer-key contract requires exactly one correct option. Keep the UI
-    // in single-select mode after a question is reloaded.
-    type: isMultiPart
-      ? 'MULTI_PART_SHORT_ANSWER'
-      : type === 'SHORT_ANSWER' || type === 'ESSAY' || type === 'FILL_BLANK'
-      ? 'ESSAY'
-      : type === 'MULTIPLE_CHOICE'
-      ? 'SINGLE_CHOICE'
-      : type || 'SINGLE_CHOICE',
-    points: raw.points ?? (isMultiPart ? (parts?.length || 1) : 1),
-    timeLimit: raw.timeLimitSeconds ?? raw.timeLimit ?? 30,
-    image: raw.imageUrl ?? raw.image,
-    imageStorageUri: raw.imageStorageUri,
-    instruction: raw.instruction,
-    options: (raw.questionOptions ?? raw.options ?? []).map(mapOption),
-    parts,
-    questionParts: parts,
-    hint: raw.hint,
-    hintImage: raw.hintImageUrl ?? raw.hintImage,
-    hintImageStorageUri: raw.hintImageStorageUri,
-    explanation: raw.explaination ?? raw.explanation,
-    explanationImage: raw.explanationImageUrl ?? raw.explanationImage,
-    explanationImageStorageUri: raw.explanationImageStorageUri,
-    correctTextAnswer: raw.correctTextAnswer ?? raw.questionAcceptedAnswers?.find((a: any) => a.isPrimary)?.rawValue,
-    order: raw.position ?? raw.order ?? 0,
+      id: raw.id,
+      examId: raw.examId,
+      subjectId: raw.subjectId || '',
+      title: raw.title,
+      content: raw.contentText ?? raw.content ?? '',
+      type: mappedType,
+      points: raw.points ?? (isMultiPart ? (parts?.length || 1) : 1),
+      timeLimit: raw.timeLimitSeconds ?? raw.timeLimit ?? 30,
+      image: raw.imageUrl ?? raw.image,
+      imageStorageUri: raw.imageStorageUri,
+      instruction: raw.instruction,
+      options,
+      parts,
+      questionParts: parts,
+      hint: raw.hint,
+      hintImage: raw.hintImageUrl ?? raw.hintImage,
+      hintImageStorageUri: raw.hintImageStorageUri,
+      explanation: raw.explaination ?? raw.explanation,
+      explanationImage: raw.explanationImageUrl ?? raw.explanationImage,
+      explanationImageStorageUri: raw.explanationImageStorageUri,
+      correctTextAnswer,
+      order: raw.position ?? raw.order ?? 0,
+    };
   };
-};
 
 export const mapExam = (raw: any): Exam => ({
   id: raw.id,

@@ -54,7 +54,7 @@ const toPayload = (data: Partial<Question>) => {
     ),
     timeLimitSeconds: data.timeLimit || 30,
     correctTextAnswer: isShortAnswer
-      ? data.correctTextAnswer || data.options?.[0]?.content || undefined
+      ? (data.correctTextAnswer ?? data.options?.[0]?.content ?? undefined) || undefined
       : undefined,
     options: isShortAnswer
       ? []

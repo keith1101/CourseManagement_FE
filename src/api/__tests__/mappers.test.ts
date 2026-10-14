@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { mapOption, mapAnswer, mapAttempt } from '../mappers';
+import { mapOption, mapAnswer, mapAttempt, mapQuestion } from '../mappers';
 
 describe('API Mappers - Grading and Result Consistency', () => {
   it('preserves isCorrect: true, isCorrect: false, and does NOT force undefined to false in mapOption', () => {
@@ -123,6 +123,25 @@ describe('API Mappers - Grading and Result Consistency', () => {
       { partId: 'part-2', isCorrect: false, correctAnswer: 'overweight' },
     ]);
     expect(mapped.isCorrect).toBe(false);
+  });
+
+  it('correctly maps essay question and backfills options when correctTextAnswer is returned', () => {
+    const rawEssay = {
+      id: 'q-essay-1',
+      examId: 'exam-1',
+      subjectId: 'sub-1',
+      questionType: 'SHORT_ANSWER',
+      contentText: 'Tính diện tích hình chữ nhật',
+      correctTextAnswer: '35',
+      questionOptions: [],
+    };
+
+    const question = mapQuestion(rawEssay);
+    expect(question.type).toBe('ESSAY');
+    expect(question.correctTextAnswer).toBe('35');
+    expect(question.options).toHaveLength(1);
+    expect(question.options[0].content).toBe('35');
+    expect(question.options[0].isCorrect).toBe(true);
   });
 });
 
